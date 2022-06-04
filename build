@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "Lets build!"
+echo "The bootstraps"
+cd bootstrapping
+./build 
+cd ..
+echo "The kernel"
+cd kernel
+./build_kernel
+cd ..
+echo "The programs"
+echo "The image"
+echo "Finished!"

@@ -1,0 +1,11 @@
+#!/bin/bash 
+
+echo "Build UEFI files"
+x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o bootloader.o bootloader.c
+x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o data.o data.c
+
+echo "Link UEFI files"
+x86_64-w64-mingw32-gcc -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -e efi_main -o SANDEROS64.EFI bootloader.o data.o
+
+echo "Cleanup UEFI files"
+rm *.o
