@@ -1,5 +1,6 @@
 #include <efi.h>
 #include <efilib.h>
+#include "elf.h"
 
 // THANKS TO : 
 // https://www.youtube.com/watch?v=FnRKA8JaxYE&list=PLxN4E629pPnJxCQCLy7E0SQY_zuumOVyZ&index=2
@@ -44,6 +45,34 @@ EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
         Status = ST->ConOut->OutputString(ST->ConOut, L"! \r\n");
     }else{
         Status = ST->ConOut->OutputString(ST->ConOut, L"Kernel is found!\r\n");
+        Elf64_Ehdr header;
+        UINTN size = sizeof(header);
+        kernel_file_link->Read(kernel_file_link, &size, &header);
+        Status = ST->ConOut->OutputString(ST->ConOut, L"Header loaded into memory\r\n");
+
+        Elf64_Phdr* phdrs;
+		kernel_file_link->SetPosition(kernel_file_link, header.e_phoff);
+		UINTN size2 = header.e_phnum * header.e_phentsize;
+		SystemTable->BootServices->AllocatePool(EfiLoaderData, size2, (void**)&phdrs);
+		kernel_file_link->Read(kernel_file_link, &size2, phdrs);
+        Status = ST->ConOut->OutputString(ST->ConOut, L"Header locations loaded into memory\r\n");
+
+        for (Elf64_Phdr* phdr = phdrs;(char*)phdr < (char*)phdrs + header.e_phnum * header.e_phentsize;phdr = (Elf64_Phdr*)((char*)phdr + header.e_phentsize)){
+            if (phdr->p_type==PT_LOAD){
+                int pages = (phdr->p_memsz + 0x1000 - 1) / 0x1000;
+                Elf64_Addr segment = phdr->p_paddr;
+                SystemTable->BootServices->AllocatePages(AllocateAddress, EfiLoaderData, pages, &segment);
+
+                kernel_file_link->SetPosition(kernel_file_link, phdr->p_offset);
+                UINTN size = phdr->p_filesz;
+                kernel_file_link->Read(kernel_file_link, &size, (void*)segment);
+            }
+        }
+        Status = ST->ConOut->OutputString(ST->ConOut, L"All locations are loaded into memory!\r\n");
+
+        typedef int func(void);
+        func* kernel_main_routine = (func*)header.e_entry;
+        int i = kernel_main_routine();
     }
  
     Status = ST->ConOut->OutputString(ST->ConOut, L"EOS: End of system reached!\r\n");

@@ -1,6 +1,6 @@
 #/bin/bash
 echo "Assemble ASM files..."
-$HOME/opt/cross/bin/x86_64-elf-as bootstrapping/grub_efi.asm -o bootstrap.o
+$HOME/opt/cross/bin/x86_64-elf-as bootstrapping/efi_loader.asm -o bootstrap.o
 
 echo "Compiling C files..."
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
