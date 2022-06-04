@@ -1,12 +1,15 @@
-#/bin/bash
-echo "Assemble ASM files..."
-$HOME/opt/cross/bin/x86_64-elf-as bootstrapping/efi_loader.asm -o bootstrap.o
+#!/bin/bash 
 
-echo "Compiling C files..."
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
+mkdir build_dir
 
-echo "Linking O files..."
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld bootstrap.o kernel.o -o ./kernel.bin -nostdlib -lgcc
+echo "Build UEFI files"
+x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o build_dir/bootloader.o bootstrapping/uefi/bootloader.c
+x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o build_dir/data.o bootstrapping/uefi/data.c
+x86_64-w64-mingw32-gcc -ffreestanding -c -o build_dir/kernel.o kernel.c
 
-echo "Cleanup"
-rm *.o
+echo "Link UEFI files"
+x86_64-w64-mingw32-gcc -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -L /usr/local/lib -e efi_main -o ../SANDEROS64.EFI build_dir/kernel.o build_dir/bootloader.o build_dir/data.o
+
+echo "Cleanup mess"
+rm build_dir/*
+rm -rf build_dir
