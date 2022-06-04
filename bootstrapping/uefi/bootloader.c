@@ -1,31 +1,59 @@
 #include <efi.h>
 #include <efilib.h>
+
+// THANKS TO : 
+// https://www.youtube.com/watch?v=FnRKA8JaxYE&list=PLxN4E629pPnJxCQCLy7E0SQY_zuumOVyZ&index=2
+// https://github.com/Absurdponcho/PonchoOS/blob/main/gnu-efi/bootloader/main.c
+
+EFI_FILE* LoadFile(EFI_FILE* Directory, CHAR16* Path, EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE* SystemTable){
+	EFI_FILE* LoadedFile;
+
+	EFI_LOADED_IMAGE_PROTOCOL* LoadedImage;
+	SystemTable->BootServices->HandleProtocol(ImageHandle, &gEfiLoadedImageProtocolGuid, (void**)&LoadedImage);
+
+	EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* FileSystem;
+	SystemTable->BootServices->HandleProtocol(LoadedImage->DeviceHandle, &gEfiSimpleFileSystemProtocolGuid, (void**)&FileSystem);
+
+	if (Directory == NULL){
+		FileSystem->OpenVolume(FileSystem, &Directory);
+	}
+
+	EFI_STATUS s = Directory->Open(Directory, &LoadedFile, Path, EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY);
+	if (s != EFI_SUCCESS){
+		return NULL;
+	}
+	return LoadedFile;
+
+}
  
 EFI_STATUS efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
     EFI_STATUS Status;
     EFI_INPUT_KEY Key;
- 
-    /* Store the system table for future use in other functions */
+
     ST = SystemTable;
+
+    CHAR16* kernelfilename = L"sanderos\\kernel.bin";
+    Status = ST->ConOut->OutputString(ST->ConOut, L"About to load ");
+    Status = ST->ConOut->OutputString(ST->ConOut, kernelfilename);
+    Status = ST->ConOut->OutputString(ST->ConOut, L"! \r\n");
+    EFI_FILE* kernel_file_link = LoadFile(NULL, kernelfilename, ImageHandle, SystemTable);
+    if(kernel_file_link==NULL){
+        Status = ST->ConOut->OutputString(ST->ConOut, L"Unable to find ");
+        Status = ST->ConOut->OutputString(ST->ConOut, kernelfilename);
+        Status = ST->ConOut->OutputString(ST->ConOut, L"! \r\n");
+    }else{
+        Status = ST->ConOut->OutputString(ST->ConOut, L"Kernel is found!\r\n");
+    }
  
-    /* Say hi */
-    Status = ST->ConOut->OutputString(ST->ConOut, L"Hello World\r\n"); // EFI Applications use Unicode and CRLF, a la Windows
-    if (EFI_ERROR(Status))
+    Status = ST->ConOut->OutputString(ST->ConOut, L"EOS: End of system reached!\r\n");
+    if (EFI_ERROR(Status)){
         return Status;
- 
-    /* Now wait for a keystroke before continuing, otherwise your
-       message will flash off the screen before you see it.
- 
-       First, we need to empty the console input buffer to flush
-       out any keystrokes entered before this point */
+    }
     Status = ST->ConIn->Reset(ST->ConIn, FALSE);
-    if (EFI_ERROR(Status))
+    if (EFI_ERROR(Status)){
         return Status;
- 
-    /* Now wait until a key becomes available.  This is a simple
-       polling implementation.  You could try and use the WaitForKey
-       event instead if you like */
+    }
     while ((Status = ST->ConIn->ReadKeyStroke(ST->ConIn, &Key)) == EFI_NOT_READY) ;
  
     return Status;
