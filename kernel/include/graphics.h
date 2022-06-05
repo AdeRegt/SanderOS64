@@ -11,3 +11,5 @@ typedef struct {
 void set_graphics_info(GraphicsInfo *gi);
 void clear_screen(unsigned int colour);
 void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour);
+void printString(char* message);
+void k_printf(char* format,...);

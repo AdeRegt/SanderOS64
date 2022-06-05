@@ -6,6 +6,6 @@ void kernel_main(GraphicsInfo *gi){
     clear_screen(0xFFFFFFFF);
 
     setActiveFont(getDefaultFont());
-    drawCharacter(getActiveFont(),'@',0x00000000,50,50);
+    k_printf("Hallo wereld! %x %d %s %c \nabc",10,10,"inputstring",'!');
     for(;;);
 }
