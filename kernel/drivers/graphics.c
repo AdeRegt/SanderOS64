@@ -117,6 +117,8 @@ void k_printf(char* format,...){
                 printString(s);
             }else if(deze=='x'){
                 int t = va_arg(arg,int);
+                putc('0');
+                putc('x');
                 char *chachacha = convert(t,16);
                 printString(chachacha);
             }else if(deze=='d'){
@@ -135,4 +137,11 @@ void k_printf(char* format,...){
         }
     }
     va_end(arg);
+}
+
+
+void initialise_graphics_driver(){
+    clear_screen(0xFFFFFFFF);
+    setActiveFont(getDefaultFont());
+    k_printf("Graphics driver initialised!\nBase Address: %x\nBufferSize: %x \nHeight: %x \nPixelsPerScanline: %x \nWidth: %x \n",graphics_info->BaseAddress,graphics_info->BufferSize,graphics_info->Height,graphics_info->PixelsPerScanLine,graphics_info->Width);
 }

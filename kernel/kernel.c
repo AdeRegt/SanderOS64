@@ -1,11 +1,8 @@
 #include "include/graphics.h"
-#include "include/psf.h"
+#include "include/memory.h"
 
 void kernel_main(GraphicsInfo *gi){
     set_graphics_info(gi);
-    clear_screen(0xFFFFFFFF);
-
-    setActiveFont(getDefaultFont());
-    k_printf("Hallo wereld! %x %d %s %c \nabc",10,10,"inputstring",'!');
+    initialise_graphics_driver();
     for(;;);
 }
