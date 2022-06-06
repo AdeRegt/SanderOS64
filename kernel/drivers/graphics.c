@@ -36,8 +36,13 @@ unsigned long pointerX = 50;
 unsigned long pointerY = 50;
 
 void putc(char deze){
-    if(deze=='\n'){
-        pointerX = 10;
+    if(pointerY>graphics_info->Height){
+        clear_screen(0xFFFFFFFF);
+        pointerX = 50;
+        pointerY = 50;
+    }
+    if(deze=='\n'||pointerX>graphics_info->Width){
+        pointerX = 50;
         pointerY += 16;
     }else{
         drawCharacter(getActiveFont(),deze,0x00000000,pointerX,pointerY);

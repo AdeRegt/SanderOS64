@@ -6,7 +6,7 @@
         {
             "label": "Build kernel",
             "type": "shell",
-            "command": "./build && cp ./SANDEROS64.EFI /mnt/5DDC-4569/sanderos/SANDEROS64.EFI",
+            "command": "./build",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

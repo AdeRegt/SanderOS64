@@ -1,9 +1,15 @@
 #!/bin/bash
 echo "Lets build!"
+echo "The bootloader"
+cd bootloader
+./build_bootloaders
+cd ..
 echo "The kernel"
 cd kernel
 ./build_kernel
 cd ..
 echo "The programs"
 echo "The image"
+cp ./SANDEROS64.EFI "${SANDEROS_MOUNT_POINT}/sanderos/SANDEROS64.EFI"
+cp ./kernel.bin "${SANDEROS_MOUNT_POINT}/sanderos/kernel.bin"
 echo "Finished!"

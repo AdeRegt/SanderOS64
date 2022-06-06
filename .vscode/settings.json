@@ -1,6 +1,8 @@
 {
     "files.associations": {
         "efilib.h": "c",
-        "efi.h": "c"
+        "efi.h": "c",
+        "graphics.h": "c",
+        "kernel.h": "c"
     }
 }

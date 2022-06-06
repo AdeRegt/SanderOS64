@@ -14,3 +14,4 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour);
 void printString(char* message);
 void k_printf(char* format,...);
 void initialise_graphics_driver();
+void putc(char deze);

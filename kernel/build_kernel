@@ -1,18 +1,15 @@
-#!/bin/bash 
+#/bin/bash
+echo "Assemble ASM files..."
 
-mkdir build_dir
+echo "Compiling C files..."
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/graphics.c -o graphics.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/memory.c -o memory.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
 
-echo "Build UEFI files"
-x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o build_dir/bootloader.o bootstrapping/uefi/bootloader.c
-x86_64-w64-mingw32-gcc -ffreestanding -I/usr/local/include/efi -I/usr/local/include/efi/x86_64 -I/usr/local/include/efi/protocol -c -o build_dir/data.o bootstrapping/uefi/data.c
-x86_64-w64-mingw32-gcc -ffreestanding -c -o build_dir/kernel.o kernel.c
-x86_64-w64-mingw32-gcc -ffreestanding -c -o build_dir/graphics.o drivers/graphics.c
-x86_64-w64-mingw32-gcc -ffreestanding -c -o build_dir/psf.o drivers/psf.c
-x86_64-w64-mingw32-gcc -ffreestanding -c -o build_dir/memory.o drivers/memory.c
+echo "Linking O files..."
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o -o ./../kernel.bin -nostdlib -lgcc
 
-echo "Link UEFI files"
-x86_64-w64-mingw32-gcc -nostdlib -Wl,-dll -shared -Wl,--subsystem,10 -L /usr/local/lib -e efi_main -o ../SANDEROS64.EFI build_dir/kernel.o build_dir/memory.o build_dir/psf.o build_dir/graphics.o build_dir/bootloader.o build_dir/data.o -lgcc
-
-echo "Cleanup mess"
-rm build_dir/*
-rm -rf build_dir
+echo "Cleanup"
+rm *.o
