@@ -1,5 +1,6 @@
 #/bin/bash
 echo "Assemble ASM files..."
+nasm drivers/gdt_setup.asm -f elf64 -o gdtsetup.o 
 
 echo "Compiling C files..."
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
@@ -7,9 +8,10 @@ $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/memory.c -o memory.o
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/gdt.c -o gdt.o
 
 echo "Linking O files..."
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o -o ./../bin/kernel.bin -nostdlib -lgcc
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o -o ./../bin/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

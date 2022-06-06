@@ -2,7 +2,7 @@
 #include "../include/graphics.h"
 #include "../include/memory.h"
 
-PageMapLevel4Table pagemaplevel4 __attribute__ ((aligned(0x1000)));
+PageMapLevel4Table *pagemaplevel4;
 
 PageLookupResult page_map_indexer(unsigned long long virtual_address){
     PageLookupResult plr;
@@ -18,8 +18,9 @@ PageLookupResult page_map_indexer(unsigned long long virtual_address){
 }
 
 void map_memory(void *virtualmemory,void* physicalmemory){
+    // k_printf("Mapping page %x to %x \n",physicalmemory,virtualmemory);
     PageLookupResult lookup = page_map_indexer((unsigned long long)virtualmemory);
-    PageMapLevel4Table* PLM4 = (PageMapLevel4Table*) &pagemaplevel4;
+    PageMapLevel4Table* PLM4 = (PageMapLevel4Table*) pagemaplevel4;
     Page PDE = PLM4->pagedirectorypointertables[lookup.page_map_level_4_table_index];
     PageDirectoryPointerTable *PDP;
     if(!PDE.present){
@@ -68,10 +69,18 @@ void map_memory(void *virtualmemory,void* physicalmemory){
 
 void initialise_paging_driver(){
     k_printf("Aplying memory map...\n");
+    pagemaplevel4 = requestPage();
+    memset(pagemaplevel4, 0, 0x1000);
     for(unsigned long long i = 0 ; i < getMaximumMemory() ; i+=0x1000){
         map_memory((void *)i,(void *)i);
     }
+    GraphicsInfo *gi = get_graphics_info();
+    unsigned long long fbBase = (unsigned long long)gi->BaseAddress;
+    unsigned long long fbSize = (unsigned long long)gi->BufferSize + 0x1000;
+    for(unsigned long long i = fbBase ; i < (fbBase + fbSize) ; i+=0x1000){
+        map_memory((void *)i,(void *)i);
+    }
     k_printf("Now setting the CPU register\n");
-    // asm ("mov %0, %%cr3" : : "r" (&pagemaplevel4));
+    asm ("mov %0, %%cr3" : : "r" (pagemaplevel4));
     k_printf("When we hit this point, we are safe!\n");
 }

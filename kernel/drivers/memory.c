@@ -19,6 +19,9 @@ unsigned long long getMaximumMemory(){
     return max_memory;
 }
 
+extern unsigned long long _KernelStart;
+extern unsigned long long _KernelEnd;
+
 void initialise_memory_driver(){
     unsigned long long mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;
@@ -41,6 +44,10 @@ void initialise_memory_driver(){
     }
     k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
     k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
+
+    unsigned long long kernelSize = (unsigned long long)&_KernelEnd - (unsigned long long)&_KernelStart;
+    unsigned long long kernelPages = (unsigned long long)kernelSize / 4096 + 1;
+    k_printf("The kernel has a size of %x which are %x kernelpages it starts at %x to %x \n",kernelSize,kernelPages,_KernelStart,_KernelEnd);
 }
 
 void memset(void *start, unsigned char value, unsigned long long num){
@@ -67,10 +74,10 @@ void set_memory_map_bit(unsigned long long index,char value){
 }
 
 void *requestPage(){
-    for(unsigned long long i = 0 ; i < (MEMORY_MAP_SIZE) ; i++){
+    for(unsigned long long i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
         if(memorymap[i]==0){
             memorymap[i] = 1;
-            return (void *)(i * 0x1000);
+            return (void *)(free_memory_min+(i * 0x1000));
         }
     }
     k_printf("Out of memory!\n");for(;;);
