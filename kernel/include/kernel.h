@@ -1,3 +1,7 @@
+#include "graphics.h"
+#include "psf.h"
+#include "memory.h"
+
 typedef struct{
 	GraphicsInfo* graphics_info;
 	PSF1_Font* font;

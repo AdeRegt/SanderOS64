@@ -10,6 +10,6 @@ cd kernel
 cd ..
 echo "The programs"
 echo "The image"
-cp ./SANDEROS64.EFI "${SANDEROS_MOUNT_POINT}/sanderos/SANDEROS64.EFI"
-cp ./kernel.bin "${SANDEROS_MOUNT_POINT}/sanderos/kernel.bin"
+echo "Copy all important files to drive ${SANDEROS_MOUNT_POINT}"
+cp ./bin/* "${SANDEROS_MOUNT_POINT}/sanderos"
 echo "Finished!"

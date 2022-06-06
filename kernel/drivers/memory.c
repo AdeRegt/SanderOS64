@@ -2,9 +2,32 @@
 #include "../include/graphics.h"
 
 unsigned long memorymap[MEMORY_MAP_SIZE];
+unsigned long long max_memory;
+unsigned long long free_memory;
+unsigned long long used_memory;
+
+MemoryInfo *memory_info;
+
+void set_memory_info(MemoryInfo *gi){
+    memory_info = gi;
+}
 
 void initialise_memory_driver(){
-    
+    unsigned long long mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
+    max_memory = 0;
+    free_memory = 0;
+    used_memory = 0;
+    for (int i = 0; i < mMapEntries; i++){
+        MemoryDescriptor* desc = (MemoryDescriptor*)((unsigned long long)memory_info->mMap + (i * memory_info->mMapDescSize));
+        max_memory += desc->NumberOfPages * 4096 / 1024;
+        if(desc->Type==7){
+            free_memory += desc->NumberOfPages * 4096 / 1024;
+        }else{
+            used_memory += desc->NumberOfPages * 4096 / 1024;
+        }
+    }
+    k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
+    for(;;);
 }
 
 void memset(void *start, unsigned char value, unsigned long long num){

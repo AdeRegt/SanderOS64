@@ -1,6 +1,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include <elf.h>
+#include "../../kernel/include/kernel.h"
 
 typedef unsigned long long size_t;
 
@@ -118,14 +119,6 @@ int memcmp(const void* aptr, const void* bptr, size_t n){
 	return 0;
 }
 
-typedef struct {
-	Framebuffer* framebuffer;
-	PSF1_FONT* psf1_Font;
-	EFI_MEMORY_DESCRIPTOR* mMap;
-	UINTN mMapSize;
-	UINTN mMapDescSize;
-} BootInfo;
-
 EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	InitializeLib(ImageHandle, SystemTable);
 
@@ -197,7 +190,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	Print(L"Kernel Loaded\n\r");
 	
 
-	PSF1_FONT* newFont = LoadPSF1Font(NULL, L"sanderos\\zap-light16.psf", ImageHandle, SystemTable);
+	PSF1_FONT* newFont = LoadPSF1Font(NULL, L"sanderos\\zap-vga16.psf", ImageHandle, SystemTable);
 	if (newFont == NULL){
 		Print(L"Font is not valid or is not found\n\r");
 	}
@@ -208,13 +201,6 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	
 
 	Framebuffer* newBuffer = InitializeGOP();
-
-	Print(L"Base: 0x%x\n\rSize: 0x%x\n\rWidth: %d\n\rHeight: %d\n\rPixelsPerScanline: %d\n\r", 
-	newBuffer->BaseAddress, 
-	newBuffer->BufferSize, 
-	newBuffer->Width, 
-	newBuffer->Height, 
-	newBuffer->PixelsPerScanLine);
 
 	EFI_MEMORY_DESCRIPTOR* Map = NULL;
 	UINTN MapSize, MapKey;
@@ -230,12 +216,15 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) header.e_entry);
 
+	MemoryInfo mi;
+	mi.mMap = (MemoryDescriptor*)Map;
+	mi.mMapDescSize = DescriptorSize;
+	mi.mMapSize = MapSize;
+
 	BootInfo bootInfo;
-	bootInfo.framebuffer = newBuffer;
-	bootInfo.psf1_Font = newFont;
-	bootInfo.mMap = Map;
-	bootInfo.mMapSize = MapSize;
-	bootInfo.mMapDescSize = DescriptorSize;
+	bootInfo.graphics_info = (GraphicsInfo*) newBuffer;
+	bootInfo.font = (PSF1_Font*) newFont;
+	bootInfo.memory_info = (MemoryInfo*) &mi;
 
 	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
 

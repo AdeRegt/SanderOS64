@@ -9,7 +9,7 @@ $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
 
 echo "Linking O files..."
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o -o ./../kernel.bin -nostdlib -lgcc
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o -o ./../bin/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

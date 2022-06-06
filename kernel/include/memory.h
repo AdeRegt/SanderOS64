@@ -9,10 +9,10 @@ typedef struct {
     uint64_t                          VirtualStart;   // Field size is 64 bits
     uint64_t                          NumberOfPages;  // Field size is 64 bits
     uint64_t                          Attribute;      // Field size is 64 bits
-} EFI_MEMORY_DESCRIPTOR;
+} MemoryDescriptor;
 
 typedef struct{
-    EFI_MEMORY_DESCRIPTOR* mMap;
+    MemoryDescriptor* mMap;
 	uint64_t mMapSize;
 	uint64_t mMapDescSize;
 }MemoryInfo;
@@ -20,3 +20,4 @@ typedef struct{
 void initialise_memory_driver();
 void memset(void *start, unsigned char value, unsigned long long num);
 void *requestPage();
+void set_memory_info(MemoryInfo *gi);
