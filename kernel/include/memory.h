@@ -21,3 +21,4 @@ void initialise_memory_driver();
 void memset(void *start, unsigned char value, unsigned long long num);
 void *requestPage();
 void set_memory_info(MemoryInfo *gi);
+unsigned long long getMaximumMemory();

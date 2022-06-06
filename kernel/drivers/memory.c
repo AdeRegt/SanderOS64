@@ -6,10 +6,17 @@ unsigned long long max_memory;
 unsigned long long free_memory;
 unsigned long long used_memory;
 
+unsigned long long free_memory_min;
+unsigned long long free_memory_max;
+
 MemoryInfo *memory_info;
 
 void set_memory_info(MemoryInfo *gi){
     memory_info = gi;
+}
+
+unsigned long long getMaximumMemory(){
+    return max_memory;
 }
 
 void initialise_memory_driver(){
@@ -19,15 +26,21 @@ void initialise_memory_driver(){
     used_memory = 0;
     for (int i = 0; i < mMapEntries; i++){
         MemoryDescriptor* desc = (MemoryDescriptor*)((unsigned long long)memory_info->mMap + (i * memory_info->mMapDescSize));
-        max_memory += desc->NumberOfPages * 4096 / 1024;
+        unsigned long long size = desc->NumberOfPages * 4096 / 1024;
+        max_memory += size;
         if(desc->Type==7){
-            free_memory += desc->NumberOfPages * 4096 / 1024;
+            int z = desc->PhysicalStart;
+            if( size>1000000 && z!=0 ){
+                free_memory += size;
+                free_memory_min = desc->PhysicalStart;
+                free_memory_max = desc->PhysicalStart + size;
+            }
         }else{
-            used_memory += desc->NumberOfPages * 4096 / 1024;
+            used_memory += size;
         }
     }
     k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
-    for(;;);
+    k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
 }
 
 void memset(void *start, unsigned char value, unsigned long long num){
@@ -54,10 +67,10 @@ void set_memory_map_bit(unsigned long long index,char value){
 }
 
 void *requestPage(){
-    for(unsigned long long i = 0 ; i < MEMORY_MAP_SIZE ; i++){
+    for(unsigned long long i = 0 ; i < (MEMORY_MAP_SIZE) ; i++){
         if(memorymap[i]==0){
             memorymap[i] = 1;
-            return (void *)(i * (unsigned long long)(0x1000));
+            return (void *)(i * 0x1000);
         }
     }
     k_printf("Out of memory!\n");for(;;);

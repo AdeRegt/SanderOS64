@@ -68,8 +68,8 @@ void map_memory(void *virtualmemory,void* physicalmemory){
 
 void initialise_paging_driver(){
     k_printf("Aplying memory map...\n");
-    for(unsigned long long i = 0 ; i < 0x100000 ; i++){
-        map_memory((void *)(i*0x1000),(void *)(i*0x1000));
+    for(unsigned long long i = 0 ; i < getMaximumMemory() ; i+=0x1000){
+        map_memory((void *)i,(void *)i);
     }
     k_printf("Now setting the CPU register\n");
     // asm ("mov %0, %%cr3" : : "r" (&pagemaplevel4));
