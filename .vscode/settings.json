@@ -3,6 +3,8 @@
         "efilib.h": "c",
         "efi.h": "c",
         "graphics.h": "c",
-        "kernel.h": "c"
+        "kernel.h": "c",
+        "memory.h": "c",
+        "paging.h": "c"
     }
 }

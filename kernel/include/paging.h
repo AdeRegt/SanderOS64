@@ -12,23 +12,9 @@ typedef struct{
     unsigned long long address: 52;
 }Page;
 
-// __attribute__ ((aligned(0x1000)))
-
 typedef struct{
-    Page page[512];
+    Page pages[512];
 }PageTable;
-
-typedef struct{
-    Page pagetables[512];
-}PageDirectoryTable;
-
-typedef struct{
-    Page pagedirectorytables[512];
-}PageDirectoryPointerTable;
-
-typedef struct{
-    Page pagedirectorypointertables[512];
-}PageMapLevel4Table;
 
 typedef struct{
     unsigned long long page_map_level_4_table_index;        // PDP_i

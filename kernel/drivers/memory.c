@@ -29,11 +29,10 @@ void initialise_memory_driver(){
     used_memory = 0;
     for (int i = 0; i < mMapEntries; i++){
         MemoryDescriptor* desc = (MemoryDescriptor*)((unsigned long long)memory_info->mMap + (i * memory_info->mMapDescSize));
-        unsigned long long size = desc->NumberOfPages * 4096 / 1024;
+        unsigned long long size = desc->NumberOfPages * 4096 ;
         max_memory += size;
         if(desc->Type==7){
-            int z = desc->PhysicalStart;
-            if( size>1000000 && z!=0 ){
+            if( size>1000000 && desc->PhysicalStart!=0 ){
                 free_memory += size;
                 free_memory_min = desc->PhysicalStart;
                 free_memory_max = desc->PhysicalStart + size;

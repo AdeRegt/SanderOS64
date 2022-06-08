@@ -125,17 +125,17 @@ void k_printf(char* format,...){
                 char *s = va_arg(arg,char *);
                 printString(s);
             }else if(deze=='x'){
-                int t = va_arg(arg,int);
+                int t = va_arg(arg,unsigned int);
                 putc('0');
                 putc('x');
                 char *chachacha = convert(t,16);
                 printString(chachacha);
             }else if(deze=='d'){
-                int t = va_arg(arg,int);
+                int t = va_arg(arg,unsigned int);
                 char *chachacha = convert(t,10);
                 printString(chachacha);
             }else if(deze=='o'){
-                int t = va_arg(arg,int);
+                int t = va_arg(arg,unsigned int);
                 char *chachacha = convert(t,8);
                 printString(chachacha);
             }
