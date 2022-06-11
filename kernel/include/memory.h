@@ -19,6 +19,7 @@ typedef struct{
 
 void initialise_memory_driver();
 void memset(void *start, unsigned char value, unsigned long long num);
+uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length);
 void *requestPage();
 void set_memory_info(MemoryInfo *gi);
 unsigned long long getMaximumMemory();

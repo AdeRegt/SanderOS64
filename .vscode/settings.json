@@ -5,6 +5,7 @@
         "graphics.h": "c",
         "kernel.h": "c",
         "memory.h": "c",
-        "paging.h": "c"
+        "paging.h": "c",
+        "idt.h": "c"
     }
 }

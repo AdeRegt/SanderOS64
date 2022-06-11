@@ -80,6 +80,4 @@ void initialise_paging_driver(){
     k_printf("Now setting the CPU register\n");
     asm ("mov %0, %%cr3" : : "r" (pagemaplevel4));
     k_printf("When we hit this point, we are safe!\n");
-    k_printf("EOF\n");
-    for(;;);
 }

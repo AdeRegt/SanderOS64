@@ -9,10 +9,13 @@ $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
 $HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/gdt.c -o gdt.o
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/idt.c -o idt.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mno-red-zone -mgeneral-regs-only -c drivers/idt.c -o idt.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/pci.c -o pci.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/ports.c -o ports.o
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/ahci.c -o ahci.o
 
 echo "Linking O files..."
-$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o -o ./../bin/kernel.bin -nostdlib -lgcc
+$HOME/opt/cross/bin/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o ports.o ahci.o -o ./../bin/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

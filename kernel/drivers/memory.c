@@ -55,6 +55,13 @@ void memset(void *start, unsigned char value, unsigned long long num){
     }
 }
 
+uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length){
+	for (uint64_t i = 0; i < length; i++){
+		if (*a != *b) return 0;
+	}
+	return 1;
+}
+
 char get_memory_map_bit(unsigned long long index){
     unsigned long long byteIndex = index/8;
     unsigned char bitIndex = index % 8;

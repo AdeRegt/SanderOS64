@@ -29,6 +29,13 @@ typedef struct {
 
 
 
+UINTN strcmp(CHAR8* a, CHAR8* b, UINTN length){
+	for (UINTN i = 0; i < length; i++){
+		if (*a != *b) return 0;
+	}
+	return 1;
+}
+
 Framebuffer framebuffer;
 Framebuffer* InitializeGOP(){
 	EFI_GUID gopGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
@@ -216,6 +223,19 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) header.e_entry);
 
+	EFI_CONFIGURATION_TABLE* configTable = SystemTable->ConfigurationTable;
+	void* rsdp = NULL; 
+	EFI_GUID Acpi2TableGuid = ACPI_20_TABLE_GUID;
+
+	for (UINTN index = 0; index < SystemTable->NumberOfTableEntries; index++){
+		if (CompareGuid(&configTable[index].VendorGuid, &Acpi2TableGuid)){
+			if (strcmp((CHAR8*)"RSD PTR ", (CHAR8*)configTable->VendorTable, 8)){
+				rsdp = (void*)configTable->VendorTable;
+			}
+		}
+		configTable++;
+	}
+
 	MemoryInfo mi;
 	mi.mMap = (MemoryDescriptor*)Map;
 	mi.mMapDescSize = DescriptorSize;
@@ -225,6 +245,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	bootInfo.graphics_info = (GraphicsInfo*) newBuffer;
 	bootInfo.font = (PSF1_Font*) newFont;
 	bootInfo.memory_info = (MemoryInfo*) &mi;
+	bootInfo.rsdp = rsdp;
 
 	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
 

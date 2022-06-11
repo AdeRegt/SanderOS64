@@ -13,11 +13,8 @@ struct interrupt_frame {
 } __attribute__((packed));
 
 __attribute__((interrupt)) void PageFault_Handler(struct interrupt_frame* frame){
-    asm ("cli");
-    k_printf("ACK");
-    asm ("hlt");
     k_printf("Page fault detected");
-    while(1);
+    asm volatile("hlt");
 }
 
 void interrupt_set_offset(IDTDescEntry* int_PageFault,uint64_t offset){
@@ -29,16 +26,18 @@ void interrupt_set_offset(IDTDescEntry* int_PageFault,uint64_t offset){
 void setInterrupt(int offset,void *fun){
     IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + offset * sizeof(IDTDescEntry));
     interrupt_set_offset(int_PageFault,(uint64_t)fun);
-    int_PageFault->type_attr = IDT_TA_TrapGate;
+    int_PageFault->type_attr = IDT_TA_InterruptGate;
     int_PageFault->selector = 0x08;
 }
 
 void initialise_idt_driver(){
-    idtr.Limit = 0x0FFF;
-    idtr.Offset = (uint64_t)requestPage();
-    setInterrupt(0x0E,PageFault_Handler);
-    // for(unsigned short i = 0 ; i < idtr.Limit ; i++){
-    //     setInterrupt(i,PageFault_Handler);
-    // }
-    asm ("lidt %0" : : "m" (idtr));
+    k_printf("get some info from the old idt...\n");
+    asm volatile ("sidt %0" : "=m"(idtr));
+    k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
+    IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
+    IDTDescEntry pfe = idtentries[0x0e];
+    k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
+    interrupt_set_offset(&pfe,(uint64_t)PageFault_Handler);
+    k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
+    
 }
