@@ -45,7 +45,7 @@ void putc(char deze){
         pointerX = 50;
         pointerY = 50;
     }
-    if(deze=='\n'||pointerX>graphics_info->Width){
+    if(deze=='\n'||pointerX>(graphics_info->Width-50)){
         pointerX = 50;
         pointerY += 16;
     }else{

@@ -6,6 +6,7 @@
         "kernel.h": "c",
         "memory.h": "c",
         "paging.h": "c",
-        "idt.h": "c"
+        "idt.h": "c",
+        "ahci.h": "c"
     }
 }
