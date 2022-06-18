@@ -13,3 +13,12 @@ LoadGDT:
     push rdi
     retfq
 GLOBAL LoadGDT
+
+global olaf
+olaf: 
+    mov  rax,4     ; system call number (sys_write)
+    mov  rbx,1     ; file descriptor (stdout)
+    mov  rcx,0 ; message to write
+    mov  rdx,12    ; message length
+    int  0xCD      ; call kernel
+    ret

@@ -21,3 +21,4 @@ typedef struct __attribute__((packed)) {
 } IDTR ;
 
 void initialise_idt_driver();
+void setInterrupt(int offset,void *fun);
