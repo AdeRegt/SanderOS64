@@ -23,3 +23,4 @@ uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length);
 void *requestPage();
 void set_memory_info(MemoryInfo *gi);
 unsigned long long getMaximumMemory();
+void memcpy(void *to, void *from, unsigned long long num);

@@ -20,5 +20,13 @@ typedef struct __attribute__((packed)) {
     uint64_t Offset;
 } IDTR ;
 
+typedef struct{
+    uint64_t ip;
+    uint64_t cs;
+    uint64_t flags;
+    uint64_t sp;
+    uint64_t ss;
+}interrupt_frame;
+
 void initialise_idt_driver();
 void setInterrupt(int offset,void *fun);

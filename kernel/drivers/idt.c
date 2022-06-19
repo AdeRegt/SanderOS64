@@ -5,16 +5,13 @@
 
 IDTR idtr;
 
-struct interrupt_frame {
-    uint16_t ip;
-    uint16_t cs;
-    uint16_t flags;
-    uint16_t sp;
-    uint16_t ss;
-} __attribute__((packed));
-
-__attribute__((interrupt)) void PageFault_Handler(struct interrupt_frame* frame){
+__attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
     k_printf("Interrupt: Page fault detected\n");
+	outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
+__attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
@@ -28,7 +25,14 @@ void interrupt_set_offset(IDTDescEntry* int_PageFault,uint64_t offset){
 void setInterrupt(int offset,void *fun){
     IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset+32) * sizeof(IDTDescEntry)));
     interrupt_set_offset(int_PageFault,(uint64_t)fun);
-    int_PageFault->type_attr = IDT_TA_InterruptGate;
+    int_PageFault->type_attr = IDT_TA_TrapGate;
+    int_PageFault->selector = 0x08;
+}
+
+void setRawInterrupt(int offset,void *fun){
+    IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset) * sizeof(IDTDescEntry)));
+    interrupt_set_offset(int_PageFault,(uint64_t)fun);
+    int_PageFault->type_attr = IDT_TA_TrapGate;
     int_PageFault->selector = 0x08;
 }
 
@@ -51,6 +55,10 @@ void initialise_idt_driver(){
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     IDTDescEntry pfe = idtentries[0xcd];
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
-    setInterrupt(0xCD,PageFault_Handler);
+    for(uint16_t i = 0 ; i < idtr.Limit ; i++){
+        setRawInterrupt(i,NakedInterruptHandler);
+    }
+    setRawInterrupt(0xCD,PageFault_Handler);
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
+	asm volatile("sti");
 }

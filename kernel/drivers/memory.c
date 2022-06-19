@@ -55,6 +55,12 @@ void memset(void *start, unsigned char value, unsigned long long num){
     }
 }
 
+void memcpy(void *to, void *from, unsigned long long num){
+    for(unsigned long long i = 0 ; i < num ; i++){
+        *(unsigned char*)((unsigned long long)to + i) = *(unsigned char*)((unsigned long long)from + i);
+    }
+}
+
 uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length){
 	for (uint64_t i = 0; i < length; i++){
 		if (*a != *b) return 0;

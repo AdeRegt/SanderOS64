@@ -1,6 +1,9 @@
 #include "../include/xhci.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
+#include "../include/idt.h"
+#include "../include/ports.h"
+#include "../include/timer.h"
 
 unsigned long baseaddr;
 
@@ -69,12 +72,19 @@ void xhci_reset(){
     operational_registers->dcbaap = (uint64_t) dcbaap;
 
     // run!
-    operational_registers->usbcmd |= 1;
+    operational_registers->usbcmd |= 0b1101;
 }
 
-void initialise_xhci_driver(unsigned long ba){
+__attribute__((interrupt)) void xhci_interrupt(interrupt_frame* frame){
+    k_printf("Interrupt: XHCI-interrupt with code %x \n",operational_registers->usbsts);
+	outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
+void initialise_xhci_driver(unsigned long ba,unsigned long ints){
     baseaddr = ba & 0xFFFFFF00;
-    k_printf("xhci: the xhci memory registers are stored at %x \n",baseaddr);
+    k_printf("xhci: the xhci memory registers are stored at %x with int %x \n",baseaddr,ints);
+    setInterrupt(ints,xhci_interrupt);
     capability_registers = (XHCICapabilityRegisters*) baseaddr;
     xhci_dump_capabilities();
     operational_registers = (XHCIOperationalRegisters*)(baseaddr + capability_registers->caplength);
@@ -82,11 +92,7 @@ void initialise_xhci_driver(unsigned long ba){
     runtime_registers = (XHCIRuntimeRegisters*)(baseaddr + capability_registers->rtsoff);
     xhci_reset();
     xhci_dump_operationals();
-    while(1){
-        if(event_ring_control[0].trb_type==XHCI_TRB_TYPE_EVENT_PORT_STATUS_CHANGE_EVENT){
-            break;
-        }
-    }
-    k_printf("We have a event here!\n");
+    while(event_ring_control[0].trb_type==0);
+    k_printf("Found item\n");
     for(;;);
 }

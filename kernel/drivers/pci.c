@@ -42,14 +42,23 @@ void initialise_pci_driver(){
 				if(vendor != 0xFFFF){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
+                    #ifdef BOOT_WITH_AHCI
+                    if(classc==0x01&&sublca==0x06){
+	                    unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
+                        unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+                        initialise_ahci_driver(bar5,usbint);
+                    }
+                    #endif
+                    #ifdef BOOT_WITH_XHCI
 					unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
                     if(classc==0x0C&&sublca==0x03&&subsub==0x30){
                         // this is a xhci driver! we can do this...
                         k_printf("xhci device found...\n");
 	                    unsigned long bar0 = getBARaddress(bus,slot,function,0x10);
-                        // initialise_ahci_driver(bar5);
-                        initialise_xhci_driver(bar0);
+                        unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+                        initialise_xhci_driver(bar0,usbint);
                     }
+                    #endif
                 }
             }
         }

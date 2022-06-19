@@ -10,7 +10,7 @@
 #define XHCI_TRB_TYPE_EVENT_DEVICE_NOTIFICATION_EVENT 38
 #define XHCI_TRB_TYPE_EVENT_MFINDEX_WRAP_EVENT 39
 
-void initialise_xhci_driver(unsigned long addr);
+void initialise_xhci_driver(unsigned long addr,unsigned long interrupt);
 
 typedef struct{
     uint8_t caplength;

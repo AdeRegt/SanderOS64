@@ -3,6 +3,7 @@
 #include "include/gdt.h"
 #include "include/idt.h"
 #include "include/pci.h"
+#include "include/timer.h"
 
 BootInfo *bi;
 
@@ -19,6 +20,7 @@ void kernel_main(BootInfo *gi){
     initialise_memory_driver();
     initialise_paging_driver();
     initialise_idt_driver();
+    initialise_timer_driver();
     initialise_pci_driver();
     for(;;);
 }
