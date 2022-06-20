@@ -1,8 +1,10 @@
 #include "../include/ahci.h"
+#include "../include/device.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
 #include "../include/idt.h"
 #include "../include/ports.h"
+#include "../include/fs/fat.h"
 
 #define	SATA_SIG_ATA	0x00000101	// SATA drive
 #define	SATA_SIG_ATAPI	0xEB140101	// SATAPI drive
@@ -119,18 +121,19 @@ void ahci_port_startCMD(HBAPort *hbaPort){
 void ahci_port_configure(HBAPort *hbaPort){
 	ahci_port_stopCMD(hbaPort);
 
-	void* newBase = requestPage();
+	void* newBase = requestPage();//memory + (1<<10);
+	// k_printf("mem clb: %x \n",newBase);
 	hbaPort->commandListBase = (uint32_t)(uint64_t)newBase;
 	hbaPort->commandListBaseUpper = (uint32_t)((uint64_t)newBase >> 32);
 	memset((void*)(uint64_t)(hbaPort->commandListBase), 0, 1024);
 
-	void* fisBase = requestPage();
+	void* fisBase = requestPage();//memory + (32<<10) + (1<<8);
+	// k_printf("mem fis: %x \n",fisBase);
 	hbaPort->fisBaseAddress = (uint32_t)(uint64_t)fisBase;
 	hbaPort->fisBaseAddressUpper = (uint32_t)((uint64_t)fisBase >> 32);
 	memset(fisBase, 0, 256);
 
 	HBACommandHeader* cmdHeader = (HBACommandHeader*)((uint64_t)hbaPort->commandListBase + ((uint64_t)hbaPort->commandListBaseUpper << 32));
-
 	for (int i = 0; i < 32; i++){
 		cmdHeader[i].prdtLength = 8;
 
@@ -139,9 +142,12 @@ void ahci_port_configure(HBAPort *hbaPort){
 		cmdHeader[i].commandTableBaseAddress = (uint32_t)(uint64_t)address;
 		cmdHeader[i].commandTableBaseAddressUpper = (uint32_t)((uint64_t)address >> 32);
 		memset(cmdTableAddress, 0, 256);
-// k_printf("we came hereE...\n");
 	}
 	ahci_port_startCMD(hbaPort);
+}
+
+char ahci_ata_read(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer){
+	return ahci_read_sector((HBAPort*)dev->attachment,sector,counter,buffer);
 }
 
 void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
@@ -152,15 +158,30 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 		if (portsImplemented & (1 << i)){
 			HBAPort* port = (HBAPort*)&memory->ports[i];
 			k_printf("AHCI: device found at port %d \n",i);
-			if(memory->ports[i].signature==SATA_SIG_ATA||memory->ports[i].signature==SATA_SIG_ATAPI){
+			uint32_t sataStatus = port->sataStatus;
+			uint8_t interfacePowerManagement = (sataStatus >> 8) & 0b111;
+        	uint8_t deviceDetection = sataStatus & 0b111;
+
+			if(deviceDetection!=0x3){
+				continue;
+			}
+			if(interfacePowerManagement!=0x1){
+				continue;
+			}
+
+			if(port->signature==SATA_SIG_ATA||port->signature==SATA_SIG_ATAPI){
 				ahci_port_configure(port);
 				k_printf("Port configured\n");
 			}
-			if(memory->ports[i].signature==SATA_SIG_ATA){
+			if(port->signature==SATA_SIG_ATA){
 				k_printf("Found the hdd\n");
-				char *bufpo = (char*)requestPage();
-				ahci_read_sector(port,1,4,bufpo);
-			}else if(memory->ports[i].signature==SATA_SIG_ATAPI){
+				char* buffer = (char*) requestPage();
+				char xu1 = ahci_read_sector(port,0,1,(void*)buffer);
+				if(xu1){
+					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, 0, 3, port);
+					fat_detect_and_initialise(dev,buffer);
+				}
+			}else if(port->signature==SATA_SIG_ATAPI){
 				k_printf("Found the cdrom\n");
 			}
 		}

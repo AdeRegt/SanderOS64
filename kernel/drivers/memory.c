@@ -36,6 +36,7 @@ void initialise_memory_driver(){
                 free_memory += size;
                 free_memory_min = desc->PhysicalStart;
                 free_memory_max = desc->PhysicalStart + size;
+                break;
             }
         }else{
             used_memory += size;
