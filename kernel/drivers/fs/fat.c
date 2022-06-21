@@ -12,13 +12,16 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
                 k_printf("device: unable to read sector!\n");
             }
             for(int z = 512 ; z < 1024 ; z = z+128){
-                if(((efi[z+8+6]&0xFF)==0xC9&&(efi[z+8+7]&0xFF)==0x3B)||((efi[z+8+6]&0xFF)==0x99&&(efi[z+8+7]&0xFF)==0xC7)){
+                if((efi[z+8+6]&0xFF)==0x99&&(efi[z+8+7]&0xFF)==0xC7){
                     k_printf("efi_header: found FAT partition!\n");
                 }else{
                     k_printf("efi_header: unknown header %x %x \n",(efi[z+8+6]&0xFF),(efi[z+8+7]&0xFF));
                 }
             }
+        }else if(fe[i].type==0x0E||fe[i].type==0x0B||fe[i].type==0x0C||fe[i].type==0x06){
+            k_printf("mbr: found FAT partition!\n");
         }
     }
+    k_printf("fat: end of initialisation\n");
     for(;;);
 }

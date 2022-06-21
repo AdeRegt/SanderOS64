@@ -10,7 +10,7 @@ cd kernel
 cd ..
 echo "The programs"
 echo "The image"
-guestfish --rw -a hdd.vhd -m /dev/sda:./ -f diskcmd.nsh
+guestfish --rw -a hdd.vhd -m /dev/sda1:./ -f diskcmd.nsh
 echo "Copy all important files to drive ${SANDEROS_MOUNT_POINT}"
 cp ./bin/* "${SANDEROS_MOUNT_POINT}/sanderos"
 cp ./bin/* "/media/sander/SOS/sanderos"
