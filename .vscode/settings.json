@@ -8,6 +8,8 @@
         "paging.h": "c",
         "idt.h": "c",
         "ahci.h": "c",
-        "ports.h": "c"
+        "ports.h": "c",
+        "fat.h": "c",
+        "device.h": "c"
     }
 }

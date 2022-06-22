@@ -16,6 +16,9 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
     *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress) = colour;
 }
 
+unsigned long pointerX = 50;
+unsigned long pointerY = 50;
+
 void clear_screen(unsigned int colour){
     unsigned int BBP = 4;
     for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
@@ -23,6 +26,8 @@ void clear_screen(unsigned int colour){
             draw_pixel_at(x,y,colour);
         }
     }
+    pointerX = 50;
+    pointerY = 50;
 }
 
 int strlen(char* msg){
@@ -35,9 +40,6 @@ int strlen(char* msg){
     }
     return length;
 }
-
-unsigned long pointerX = 50;
-unsigned long pointerY = 50;
 
 void putc(char deze){
     if(pointerY>graphics_info->Height){
