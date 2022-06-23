@@ -37,3 +37,13 @@ typedef struct {
 	uint16_t cluster_low;
 	uint32_t size;
 }__attribute__((packed)) FATFileDefinition;
+
+typedef struct{
+	uint32_t total_sectors;
+	uint32_t fat_size;
+	uint32_t root_dir_sectors;
+	uint32_t first_data_sector;
+	uint32_t first_fat_sector;
+	uint32_t first_root_dir_sector;
+	FATBootBlock *bb;
+}__attribute__((packed)) FATFileSystemSettings;

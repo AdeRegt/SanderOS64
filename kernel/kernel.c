@@ -4,6 +4,7 @@
 #include "include/idt.h"
 #include "include/pci.h"
 #include "include/timer.h"
+#include "include/device.h"
 
 BootInfo *bi;
 
@@ -22,5 +23,11 @@ void kernel_main(BootInfo *gi){
     initialise_idt_driver();
     initialise_timer_driver();
     initialise_pci_driver();
+    char* filedir = dir("A:SANDEROS");
+    if(filedir){
+        k_printf("now reading: %s \n",filedir);
+    }else{
+        k_printf("Unable to detect a valid FS!\n");
+    }
     for(;;);
 }

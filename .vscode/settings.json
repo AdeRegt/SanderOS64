@@ -10,6 +10,7 @@
         "ahci.h": "c",
         "ports.h": "c",
         "fat.h": "c",
-        "device.h": "c"
+        "device.h": "c",
+        "timer.h": "c"
     }
 }

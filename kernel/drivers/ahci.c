@@ -186,5 +186,5 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 			}
 		}
 	}
-	k_printf("[AHCI] End of operation\n");for(;;);
+	k_printf("[AHCI] End of operation\n");
 }
