@@ -130,16 +130,16 @@ void k_printf(char* format,...){
                 int t = va_arg(arg,unsigned int);
                 putc('0');
                 putc('x');
-                char *chachacha = convert(t,16);
-                printString(chachacha);
+                char *convertednumber = convert(t,16);
+                printString(convertednumber);
             }else if(deze=='d'){
                 int t = va_arg(arg,unsigned int);
-                char *chachacha = convert(t,10);
-                printString(chachacha);
+                char *convertednumber = convert(t,10);
+                printString(convertednumber);
             }else if(deze=='o'){
                 int t = va_arg(arg,unsigned int);
-                char *chachacha = convert(t,8);
-                printString(chachacha);
+                char *convertednumber = convert(t,8);
+                printString(convertednumber);
             }
             length++;
         }else{
