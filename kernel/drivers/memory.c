@@ -95,3 +95,10 @@ void *requestPage(){
     }
     k_printf("Out of memory!\n");for(;;);
 }
+
+void freePage(void* memory){
+    uint64_t calculation = (uint64_t) memory;
+    calculation -= free_memory_min;
+    calculation /= 0x1000;
+    memorymap[calculation] = 0;
+}
