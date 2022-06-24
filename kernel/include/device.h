@@ -21,3 +21,4 @@ Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir);
 
 char device_read_raw_sector(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer);
 char* dir(char* basepath);
+char readFile(char* path,void *buffer);

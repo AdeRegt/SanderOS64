@@ -3,14 +3,13 @@
 #include "../../include/graphics.h"
 #include "../../include/memory.h"
 
-void fat_read(){}
-
-char *fat_dir(Filesystem* fs,char* path){
+char fat_read(Filesystem* fs,char* path,void *bufferedcapacity){
     FATFileSystemSettings *fss = (FATFileSystemSettings*) fs->argument;
-    char *resultstring = (char*) requestPage();
-    memset(resultstring,0,512);
-    int resultstringpointer = 0;
     int count_of_slashes = 0;
+    int stringcount = 0;
+    if(path[0]!=0){
+        count_of_slashes++;
+    }
     int i = 0;
     while(1){
         if(path[i]==0){
@@ -20,18 +19,156 @@ char *fat_dir(Filesystem* fs,char* path){
             count_of_slashes++;
         }
         i++;
+        stringcount++;
     }
     uint32_t secset = fss->first_root_dir_sector;
-    k_printf("slashes: %d \n",count_of_slashes);
-    k_printf("requesting: %s \n",path);
+    uint32_t filesize = 0;
     void *es = (void*) requestPage();
+    FATFileDefinition* u = (FATFileDefinition*) es;
+    i = 0;
+    for(int segment_id = 0 ; segment_id < count_of_slashes ; segment_id++){
+        char buffer[16];
+        memset(&buffer,0,16);
+        int z = 0;
+        int found_solution_for_this_part = 0;
+        while(1){
+            char deze = path[i];
+            if(deze==0||deze=='/'){
+                i++;
+                break;
+            }
+            buffer[z] = deze;
+            z++;
+            i++;
+            if(i==stringcount){
+                break;
+            }
+        }
+        memset(es,0,512);
+        if(!device_read_raw_sector(fs->blockdevice,secset,1,(void*)es)){
+            k_printf("device: unable to read sector for the fat root dir!\n");
+            return 0;
+        }
+        for(int q = 0 ; q < 16 ; q++){
+            if(u[q].attributes==0x20||u[q].attributes==0x10){
+                int gz = 1;
+                int w = 0;
+                for(int z = 0 ; z < 11 ; z++){
+                    if(u[q].filename[z]==' '||u[q].filename[z]==0x00){
+                        continue;
+                    }
+                    if( buffer[w] != u[q].filename[z] ){
+                        gz = 0;
+                    }
+                    w++;
+                }
+                if(gz){
+                    uint16_t bigaddr[2];
+                    bigaddr[0] = u[q].cluster_low;
+                    bigaddr[1] = u[q].cluster_high;
+                    uint32_t rawcalc = ((uint32_t*)&bigaddr)[0];
+                    rawcalc -= 2;
+                    rawcalc *= fss->bb->sectors_per_cluster;
+                    rawcalc += fss->first_data_sector;
+
+                    secset = rawcalc;
+                    filesize = u[q].size;
+
+                    found_solution_for_this_part = 1;
+                }
+            }
+        }
+        if(found_solution_for_this_part==0){
+            return 0;
+        }
+    }
+
+    uint32_t toreadsectors = (filesize/fs->blockdevice->blocksize)+1;
+    return device_read_raw_sector(fs->blockdevice,secset,toreadsectors,bufferedcapacity);
+}
+
+char *fat_dir(Filesystem* fs,char* path){
+    FATFileSystemSettings *fss = (FATFileSystemSettings*) fs->argument;
+    char *resultstring = (char*) requestPage();
+    memset(resultstring,0,512);
+    int resultstringpointer = 0;
+    int count_of_slashes = 0;
+    int stringcount = 0;
+    if(path[0]!=0){
+        count_of_slashes++;
+    }
+    int i = 0;
+    while(1){
+        if(path[i]==0){
+            break;
+        }
+        if(path[i]=='/'){
+            count_of_slashes++;
+        }
+        i++;
+        stringcount++;
+    }
+    uint32_t secset = fss->first_root_dir_sector;
+    void *es = (void*) requestPage();
+    FATFileDefinition* u = (FATFileDefinition*) es;
+    i = 0;
+    for(int segment_id = 0 ; segment_id < count_of_slashes ; segment_id++){
+        char buffer[16];
+        memset(&buffer,0,16);
+        int z = 0;
+        int found_solution_for_this_part = 0;
+        while(1){
+            char deze = path[i];
+            if(deze==0||deze=='/'){
+                i++;
+                break;
+            }
+            buffer[z] = deze;
+            z++;
+            i++;
+            if(i==stringcount){
+                break;
+            }
+        }
+        memset(es,0,512);
+        if(!device_read_raw_sector(fs->blockdevice,secset,1,(void*)es)){
+            k_printf("device: unable to read sector for the fat root dir!\n");
+            return 0;
+        }
+        for(int q = 0 ; q < 16 ; q++){
+            if(u[q].attributes==0x20||u[q].attributes==0x10){
+                int gz = 1;
+                for(int z = 0 ; z < 11 ; z++){
+                    if(buffer[z] && u[i].filename[z]!=' ' ){
+                        if( buffer[z] != u[q].filename[z] ){
+                            gz = 0;
+                        }
+                    }
+                }
+                if(gz){
+                    uint16_t bigaddr[2];
+                    bigaddr[0] = u[q].cluster_low;
+                    bigaddr[1] = u[q].cluster_high;
+                    uint32_t rawcalc = ((uint32_t*)&bigaddr)[0];
+                    rawcalc -= 2;
+                    rawcalc *= fss->bb->sectors_per_cluster;
+                    rawcalc += fss->first_data_sector;
+                    secset = rawcalc;
+                    found_solution_for_this_part = 1;
+                }
+            }
+        }
+        if(found_solution_for_this_part==0){
+            return 0;
+        }
+    }
+
     memset(es,0,512);
     if(!device_read_raw_sector(fs->blockdevice,secset,1,(void*)es)){
         k_printf("device: unable to read sector for the fat root dir!\n");
         return 0;
     }
 
-    FATFileDefinition* u = (FATFileDefinition*) es;
     int g = 0;
     for(int i = 0 ; i < 16 ; i++){
         if(u[i].attributes==0x20||u[i].attributes==0x10){
@@ -39,7 +176,9 @@ char *fat_dir(Filesystem* fs,char* path){
                 resultstring[resultstringpointer++] = ';';
             }
             for(int z = 0 ; z < 11 ; z++){
-                resultstring[resultstringpointer++] = u[i].filename[z];
+                if( u[i].filename[z] && u[i].filename[z]!=' ' ){
+                    resultstring[resultstringpointer++] = u[i].filename[z];
+                }
             }
             g++;
         }

@@ -11,6 +11,8 @@
         "ports.h": "c",
         "fat.h": "c",
         "device.h": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "xhci.h": "c",
+        "pci.h": "c"
     }
 }

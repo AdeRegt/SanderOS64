@@ -197,7 +197,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	Print(L"Kernel Loaded\n\r");
 	
 
-	PSF1_FONT* newFont = LoadPSF1Font(NULL, L"sanderos\\zap-vga16.psf", ImageHandle, SystemTable);
+	PSF1_FONT* newFont = LoadPSF1Font(NULL, L"sanderos\\fonts\\default.psf", ImageHandle, SystemTable);
 	if (newFont == NULL){
 		Print(L"Font is not valid or is not found\n\r");
 	}

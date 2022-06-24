@@ -4,3 +4,4 @@
 #define PCI_DATA 0xCFC
 
 void initialise_pci_driver();
+void initialise_drivers_from_pci();

@@ -32,6 +32,25 @@ unsigned long getBARaddress(int bus,int slot,int function,int barNO){
 	return result;
 }
 
+void initialise_drivers_from_pci(){
+    // scan for available drivers
+	for(int bus = 0 ; bus < 256 ; bus++){
+		for(int slot = 0 ; slot < 32 ; slot++){
+			for(int function = 0 ; function <= 7 ; function++){
+				unsigned short vendor = pciConfigReadWord(bus,slot,function,0);
+				unsigned short device = pciConfigReadWord(bus,slot,function,2);
+				if(vendor != 0xFFFF){
+					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
+					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
+					unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
+					k_printf("PCI-device: vendor:%x device:%x classc:%x sublca:%x subsub:%x \n",vendor,device,classc,sublca,subsub);
+                    
+                }
+            }
+        }
+    }
+}
+
 void initialise_pci_driver(){
     k_printf("Scanning for diskdriver to find bootdevice...\n");
     // scan for usb device
@@ -59,22 +78,6 @@ void initialise_pci_driver(){
                         initialise_xhci_driver(bar0,usbint);
                     }
                     #endif
-                }
-            }
-        }
-    }
-    // scan for available drivers
-	for(int bus = 0 ; bus < 256 ; bus++){
-		for(int slot = 0 ; slot < 32 ; slot++){
-			for(int function = 0 ; function <= 7 ; function++){
-				unsigned short vendor = pciConfigReadWord(bus,slot,function,0);
-				unsigned short device = pciConfigReadWord(bus,slot,function,2);
-				if(vendor != 0xFFFF){
-					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
-					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
-					unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
-					k_printf("PCI-device: vendor:%x device:%x classc:%x sublca:%x subsub:%x \n",vendor,device,classc,sublca,subsub);
-                    
                 }
             }
         }

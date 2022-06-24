@@ -49,3 +49,15 @@ char* dir(char* basepath){
     }
     return 0;
 }
+
+char readFile(char* path,void *buffer){
+    char driveletter = path[0] - 'A';
+    Filesystem fs = filesystems[driveletter];
+    if(fs.readfile){
+        char (*foo)(Filesystem*, char*, void*) = (void*)fs.readfile;
+        path++;
+        path++;
+	    return foo((Filesystem*)&fs,path,buffer);
+    }
+    return 0;
+}

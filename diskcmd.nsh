@@ -1,3 +1,3 @@
-copy-in ./bin/kernel.bin /sanderos
-copy-in ./bin/SANDEROS64.EFI /sanderos
-copy-in ./startup.nsh /
+copy-in ./bin/sanderos/kernel.bin /sanderos
+copy-in ./bin/sanderos/SANDEROS64.EFI /sanderos
+copy-in ./bin/sanderos/fonts/default.psf /sanderos/fonts

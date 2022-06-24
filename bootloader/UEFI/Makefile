@@ -84,7 +84,7 @@ TARGETS = $(TARGET_APPS) $(TARGET_BSDRIVERS) $(TARGET_RTDRIVERS)
 CFLAGS += -Wno-error=unused-parameter -Wno-error=unused-variable
 
 all:	$(TARGETS)
-	mv ./main.efi ./../../bin/SANDEROS64.EFI
+	mv ./main.efi ./../../bin/sanderos/SANDEROS64.EFI
 
 clean:
 	rm -f $(TARGETS) *~ *.o *.so
