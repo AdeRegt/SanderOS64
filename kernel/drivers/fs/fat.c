@@ -54,6 +54,9 @@ char fat_read(Filesystem* fs,char* path,void *bufferedcapacity){
                 int gz = 1;
                 int w = 0;
                 for(int z = 0 ; z < 11 ; z++){
+                    if( buffer[w] == '.' ){
+                        w++;
+                    }
                     if(u[q].filename[z]==' '||u[q].filename[z]==0x00){
                         continue;
                     }
@@ -176,6 +179,9 @@ char *fat_dir(Filesystem* fs,char* path){
                 resultstring[resultstringpointer++] = ';';
             }
             for(int z = 0 ; z < 11 ; z++){
+                if(z==8&&u[i].attributes==0x20){
+                    resultstring[resultstringpointer++] = '.';
+                }
                 if( u[i].filename[z] && u[i].filename[z]!=' ' ){
                     resultstring[resultstringpointer++] = u[i].filename[z];
                 }

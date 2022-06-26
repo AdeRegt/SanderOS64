@@ -29,9 +29,8 @@ void kernel_main(BootInfo *gi){
         k_printf("Unable to detect a valid kernel FS!\n");
         for(;;);
     }
-    clear_screen(0xFF00FF00);
     initialise_drivers_from_pci();
-    char lmr = loadModule("A:SANDEROS/DRIVERS/PS2KEYSYS",0);
-    k_printf("-> %d \n",lmr);
+    char lmr = loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
+    k_printf("-> %d %s \n",lmr,filedir);
     for(;;);
 }
