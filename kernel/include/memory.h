@@ -25,3 +25,4 @@ void freePage(void* memory);
 void set_memory_info(MemoryInfo *gi);
 unsigned long long getMaximumMemory();
 void memcpy(void *to, void *from, unsigned long long num);
+uint64_t strlen(uint8_t* message);

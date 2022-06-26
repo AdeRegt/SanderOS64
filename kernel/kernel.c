@@ -5,6 +5,7 @@
 #include "include/pci.h"
 #include "include/timer.h"
 #include "include/device.h"
+#include "include/exec/module.h"
 
 BootInfo *bi;
 
@@ -28,6 +29,9 @@ void kernel_main(BootInfo *gi){
         k_printf("Unable to detect a valid kernel FS!\n");
         for(;;);
     }
+    clear_screen(0xFF00FF00);
     initialise_drivers_from_pci();
+    char lmr = loadModule("A:SANDEROS/DRIVERS/PS2KEYSYS",0);
+    k_printf("-> %d \n",lmr);
     for(;;);
 }

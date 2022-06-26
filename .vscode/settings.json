@@ -13,6 +13,7 @@
         "device.h": "c",
         "timer.h": "c",
         "xhci.h": "c",
-        "pci.h": "c"
+        "pci.h": "c",
+        "module.h": "c"
     }
 }

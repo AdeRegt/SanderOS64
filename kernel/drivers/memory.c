@@ -69,6 +69,15 @@ uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length){
 	return 1;
 }
 
+uint64_t strlen(uint8_t* message){
+    uint64_t res = 0;
+    uint8_t this = 1;
+    while(this){
+        this = message[res++];
+    }
+    return res;
+}
+
 char get_memory_map_bit(unsigned long long index){
     unsigned long long byteIndex = index/8;
     unsigned char bitIndex = index % 8;

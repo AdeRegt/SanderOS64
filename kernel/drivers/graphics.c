@@ -30,17 +30,6 @@ void clear_screen(unsigned int colour){
     pointerY = 50;
 }
 
-int strlen(char* msg){
-    int length = 0;
-    while(1){
-        if(msg[length]==0){
-            break;
-        }
-        length++;
-    }
-    return length;
-}
-
 void putc(char deze){
     if(pointerY>graphics_info->Height){
         clear_screen(0xFFFFFFFF);

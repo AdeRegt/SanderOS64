@@ -8,6 +8,10 @@ echo "The kernel"
 cd kernel
 ./build_kernel
 cd ..
+echo "The drivers"
+cd drivers 
+./build_drivers
+cd ..
 echo "The programs"
 echo "The image"
 guestfish --rw -a hdd.vhd -m /dev/sda1:./ -f diskcmd.nsh
