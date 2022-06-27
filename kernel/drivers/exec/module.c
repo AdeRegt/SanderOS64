@@ -5,7 +5,7 @@
 #include "../../include/graphics.h"
 
 void stalk(char *t,...){
-    k_printf("call went well!\n%s\n",t);
+    k_printf("call went well!\n%x\n",t);
 }
 
 char loadModule(char* path, PCIInfo *pci){
@@ -30,6 +30,8 @@ char loadModule(char* path, PCIInfo *pci){
         return 0;
     }
 
+    uint64_t entrypoint = 0;
+
     Elf64_Shdr *sections = (Elf64_Shdr*) (programmem + elfheader->e_shoff);
     for(Elf64_Half i = 0 ; i < elfheader->e_shnum ; i++){
         Elf64_Shdr *section = (Elf64_Shdr*) &sections[i];
@@ -46,8 +48,11 @@ char loadModule(char* path, PCIInfo *pci){
                 Elf64_Xword type = ELF64_R_TYPE(relocation->r_info);
                 Elf64_Sym *symbol = (Elf64_Sym*) &((Elf64_Sym*)(programmem+section_symbol->sh_offset))[sym];
                 uint64_t symval = symbol->st_value;
+
+                Elf64_Shdr *symbol_target = (Elf64_Shdr*) &((Elf64_Shdr*)(programmem + elfheader->e_shoff))[symbol->st_shndx];
                 
                 if( symbol->st_info&0x10 ){
+                    entrypoint = (uint64_t)programmem + section_target->sh_offset;
                     char* symbolname = (char*) (programmem + section_string->sh_offset + symbol->st_name);
                     if(strcmp(symbolname,"k_printf",strlen("k_printf"))){
                         symval = (uint64_t) k_printf;
@@ -57,16 +62,20 @@ char loadModule(char* path, PCIInfo *pci){
                     }
                 }
 
+                uint64_t S = symval;
+                uint64_t A = (uint64_t)(relocation->r_addend + (symbol->st_info&0x10?0:(programmem + symbol_target->sh_offset)));
+                uint64_t P = 0;
+
                 if(type==1){ 
                     // R_X86_64_64 1 word64 S + A
                     // k_printf("R_X86_64_64 - ");
                     uint64_t *ref = (uint64_t *)((programmem + section_target->sh_offset + relocation->r_offset));
-                    *ref = ((symval) + (*ref) + symbol->st_value + relocation->r_addend);
+                    *ref = S + A;
                 }else if(type==2){ 
                     // R_X86_64_PC32 2 word32 S + A - P
                     // k_printf("R_X86_64_PC32 - ");
-                    uint32_t *ref = (uint32_t *)((programmem + section_target->sh_offset + relocation->r_offset ));
-                    *ref = ((symval) + (*ref)- relocation->r_offset + symbol->st_value + relocation->r_addend);
+                    uint32_t *ref = (uint32_t *)((programmem + section_target->sh_offset + relocation->r_offset));
+                    *ref = S + A - P;
                 }else{
                     k_printf("unknown relocation type: %d \n",type);
                     return 0;
@@ -89,8 +98,7 @@ char loadModule(char* path, PCIInfo *pci){
 
     }
 
-    uint64_t tv = 0x127040;
-	void (*KernelStart)() = ((__attribute__((sysv_abi)) void (*)()) tv );
+	void (*KernelStart)() = ((__attribute__((sysv_abi)) void (*)()) entrypoint );
     KernelStart();
     return 1;
 }
