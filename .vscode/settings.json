@@ -14,6 +14,7 @@
         "timer.h": "c",
         "xhci.h": "c",
         "pci.h": "c",
-        "module.h": "c"
+        "module.h": "c",
+        "elf.h": "c"
     }
 }
