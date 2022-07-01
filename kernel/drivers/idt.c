@@ -11,6 +11,11 @@ __attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
 	outportb(0x20,0x20);
 }
 
+__attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
+    k_printf("Interrupt: error\n");
+	asm volatile("cli\nhlt");
+}
+
 __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
@@ -57,6 +62,9 @@ void initialise_idt_driver(){
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
         setRawInterrupt(i,NakedInterruptHandler);
+    }
+    for(uint16_t i = 0 ; i < 32 ; i++){
+        setRawInterrupt(i,GeneralFault_Handler);
     }
     setRawInterrupt(0xCD,PageFault_Handler);
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);

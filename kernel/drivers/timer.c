@@ -3,21 +3,28 @@
 #include "../include/ports.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
+#include "../include/multitasking.h"
 
 static int counter = 0;
 
 void sleep(uint64_t time){
     for(uint64_t i = 0 ; i < time ; i++){
+        counter = 0;
         while(counter==0);
     }
 }
 
-__attribute__((interrupt)) void timer_interrupt(interrupt_frame* frame){
+void timerfunc(){
     counter = 1;
+}
+
+__attribute__((interrupt)) void timer_interrupt(interrupt_frame* frame){
+    timerfunc();
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
     return;
 }
+
 
 void initialise_timer_driver(){
     setInterrupt(0,timer_interrupt);

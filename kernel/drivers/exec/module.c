@@ -17,7 +17,7 @@ char loadModule(char* path, PCIInfo *pci){
         return 0;
     }
 
-	void (*KernelStart)() = ((__attribute__((sysv_abi)) void (*)()) entrypoint );
-    KernelStart();
+	void (*DriverStart)(PCIInfo* pi) = ((__attribute__((sysv_abi)) void (*)(PCIInfo*)) entrypoint );
+    DriverStart(pci);
     return 1;
 }

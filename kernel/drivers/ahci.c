@@ -151,6 +151,7 @@ char ahci_ata_read(Blockdevice* dev, uint64_t sector, uint32_t counter, void* bu
 }
 
 void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
+	k_printf("AHCI: ints at %x \n",ints);
 	setInterrupt(ints,ahci_interrupt);
 	memory = (HBAMemory*)bar5;
 	uint32_t portsImplemented = memory->portsImplemented;

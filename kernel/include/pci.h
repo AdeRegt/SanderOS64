@@ -4,8 +4,11 @@
 #define PCI_DATA 0xCFC
 
 typedef struct{
-
-}PCIInfo;
+    int bus;
+    int slot;
+    int function;
+}__attribute__((packed)) PCIInfo;
 
 void initialise_pci_driver();
 void initialise_drivers_from_pci();
+unsigned long getBARaddress(int bus,int slot,int function,int barNO);

@@ -2,7 +2,8 @@
 #include "../include/kernel.h"
 #include "../include/ports.h"
 #include "../include/ahci.h"
-#include "../include/xhci.h"
+#include "../include/exec/module.h"
+#include "../include/device.h"
 
 unsigned short pciConfigReadWord (unsigned char bus, unsigned char slot, unsigned char func, unsigned char offset) {
     unsigned long address;
@@ -34,6 +35,8 @@ unsigned long getBARaddress(int bus,int slot,int function,int barNO){
 
 void initialise_drivers_from_pci(){
     // scan for available drivers
+    char* filedir = dir("A:SANDEROS/DRIVERS");
+    k_printf("Available drivers: %s \n",filedir);
 	for(int bus = 0 ; bus < 256 ; bus++){
 		for(int slot = 0 ; slot < 32 ; slot++){
 			for(int function = 0 ; function <= 7 ; function++){
@@ -43,8 +46,13 @@ void initialise_drivers_from_pci(){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
 					unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
-					k_printf("PCI-device: vendor:%x device:%x classc:%x sublca:%x subsub:%x \n",vendor,device,classc,sublca,subsub);
-                    
+                    PCIInfo pi;
+                    pi.bus = bus;
+                    pi.slot = slot;
+                    pi.function = function;
+					if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
+                        loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
+                    }
                 }
             }
         }
@@ -61,23 +69,17 @@ void initialise_pci_driver(){
 				if(vendor != 0xFFFF){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
-                    #ifdef BOOT_WITH_AHCI
                     if(classc==0x01&&sublca==0x06){
 	                    unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
                         unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
                         initialise_ahci_driver(bar5,usbint);
                     }
-                    #endif
-                    #ifdef BOOT_WITH_XHCI
 					unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
-                    if(classc==0x0C&&sublca==0x03&&subsub==0x30){
-                        // this is a xhci driver! we can do this...
-                        k_printf("xhci device found...\n");
-	                    unsigned long bar0 = getBARaddress(bus,slot,function,0x10);
+					if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
+                        unsigned long bar5 = getBARaddress(bus,slot,function,0x10);
                         unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
-                        initialise_xhci_driver(bar0,usbint);
+                        initialise_xhci_driver(bar5,usbint);
                     }
-                    #endif
                 }
             }
         }

@@ -5,7 +5,7 @@
 #include "include/pci.h"
 #include "include/timer.h"
 #include "include/device.h"
-#include "include/exec/module.h"
+#include "include/multitasking.h"
 
 BootInfo *bi;
 
@@ -23,6 +23,7 @@ void kernel_main(BootInfo *gi){
     initialise_paging_driver();
     initialise_idt_driver();
     initialise_timer_driver();
+    // initialise_multitasking_driver();
     initialise_pci_driver();
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
@@ -30,7 +31,6 @@ void kernel_main(BootInfo *gi){
         for(;;);
     }
     initialise_drivers_from_pci();
-    char lmr = loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
-    k_printf("-> %d %s \n",lmr,filedir);
+    k_printf("__end of kernel!\n");
     for(;;);
 }

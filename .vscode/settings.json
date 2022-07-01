@@ -15,6 +15,8 @@
         "xhci.h": "c",
         "pci.h": "c",
         "module.h": "c",
-        "elf.h": "c"
+        "elf.h": "c",
+        "driver.h": "c",
+        "multitasking.h": "c"
     }
 }

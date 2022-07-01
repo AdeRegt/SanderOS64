@@ -1,6 +1,10 @@
 #include "../../include/exec/elf.h"
 #include "../../include/graphics.h"
 #include "../../include/memory.h"
+#include "../../include/ports.h"
+#include "../../include/idt.h"
+#include "../../include/pci.h"
+#include "../../include/timer.h"
 
 uint64_t elf_load_image(void *programmem){
     // casting elfheader
@@ -41,9 +45,33 @@ uint64_t elf_load_image(void *programmem){
                         char* symbolname = (char*) (programmem + section_string->sh_offset + symbol->st_name);
                         if(strcmp(symbolname,"k_printf",strlen("k_printf"))){
                             symval = (uint64_t) k_printf;
+                        }else if(strcmp(symbolname,"importb",strlen("importb"))){
+                            symval = (uint64_t) inportb;
+                        }else if(strcmp(symbolname,"outportb",strlen("outportb"))){
+                            symval = (uint64_t) outportb;
+                        }else if(strcmp(symbolname,"setInterrupt",strlen("setInterrupt"))){
+                            symval = (uint64_t) setInterrupt;
+                        }else if(strcmp(symbolname,"memset",strlen("memset"))){
+                            symval = (uint64_t) memset;
+                        }else if(strcmp(symbolname,"getBARaddress",strlen("getBARaddress"))){
+                            symval = (uint64_t) getBARaddress;
+                        }else if(strcmp(symbolname,"sleep",strlen("sleep"))){
+                            symval = (uint64_t) sleep;
                         }else{
-                            k_printf("cannot find symbol: %s \n",symbolname);
-                            return 0;
+                            int fnd = 0;
+                            for(Elf64_Xword d = 0 ; d < (section_symbol->sh_size/section_symbol->sh_entsize) ; d++){
+                                Elf64_Sym *symbol2 = (Elf64_Sym*) &((Elf64_Sym*)(programmem+section_symbol->sh_offset))[d];
+                                Elf64_Shdr *symbol_target2 = (Elf64_Shdr*) &((Elf64_Shdr*)(programmem + elfheader->e_shoff))[symbol2->st_shndx];
+                                char* symbolname2 = (char*) (programmem + section_string->sh_offset + symbol2->st_name);
+                                if(strcmp(symbolname2,symbolname,strlen(symbolname)) && symbol2->st_shndx ){
+                                    symval = (uint64_t)(programmem + symbol_target2->sh_offset + symbol2->st_value);
+                                    fnd = 1;
+                                }
+                            }
+                            if(fnd==0){
+                                k_printf("cannot find symbol: %s \n",symbolname);
+                                return 0;
+                            }
                         }
                     }
 
@@ -73,7 +101,6 @@ uint64_t elf_load_image(void *programmem){
                 if(section->sh_size && section->sh_flags & SHF_ALLOC){
                     void *meminfo = requestPage();
                     section->sh_offset = meminfo - programmem;
-                    k_printf(" newalloc:%x ",section->sh_offset);
                 }
             }
 
