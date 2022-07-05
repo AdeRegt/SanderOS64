@@ -13,6 +13,30 @@ typedef struct {
 	unsigned int PixelsPerScanLine;
 } Framebuffer;
 
+typedef struct {
+	unsigned char Signature[8];
+	uint8_t Checksum;
+	uint8_t OEMId[6];
+	uint8_t Revision;
+	uint32_t RSDTAddress;
+	uint32_t Length;
+	uint64_t XSDTAddress;
+	uint8_t ExtendedChecksum;
+	uint8_t Reserved[3];
+} __attribute__((packed)) RSDP2;
+
+typedef struct {
+	unsigned char Signature[4];
+	uint32_t Length;
+	uint8_t Revision;
+	uint8_t Checksum;
+	uint8_t OEMID[6];
+	uint8_t OEMTableID[8];
+	uint32_t OEMRevision;
+	uint32_t CreatorID;
+	uint32_t CreatorRevision;
+}__attribute__((packed)) SDTHeader;
+
 #define PSF1_MAGIC0 0x36
 #define PSF1_MAGIC1 0x04
 
@@ -126,6 +150,23 @@ int memcmp(const void* aptr, const void* bptr, size_t n){
 	return 0;
 }
 
+void* FindTable(SDTHeader* sdtHeader, char* signature){
+
+    int entries = (sdtHeader->Length - sizeof(SDTHeader)) / 8;
+
+	for (int t = 0; t < entries; t++){
+		SDTHeader* newSDTHeader = (SDTHeader*)*(uint64_t*)((uint64_t)sdtHeader + sizeof(SDTHeader) + (t * 8));
+		for (int i = 0; i < 4; i++){
+			if (newSDTHeader->Signature[i] != signature[i])
+			{
+				break;
+			}
+			if (i == 3) return newSDTHeader;
+		}
+	}
+	return 0;
+}
+
 EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	InitializeLib(ImageHandle, SystemTable);
 
@@ -223,18 +264,26 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) header.e_entry);
 
-	EFI_CONFIGURATION_TABLE* configTable = SystemTable->ConfigurationTable;
+	// EFI_CONFIGURATION_TABLE* configTable = SystemTable->ConfigurationTable;
 	void* rsdp = NULL; 
-	EFI_GUID Acpi2TableGuid = ACPI_20_TABLE_GUID;
+	// EFI_GUID Acpi2TableGuid = ACPI_20_TABLE_GUID;
 
-	for (UINTN index = 0; index < SystemTable->NumberOfTableEntries; index++){
-		if (CompareGuid(&configTable[index].VendorGuid, &Acpi2TableGuid)){
-			if (strcmp((CHAR8*)"RSD PTR ", (CHAR8*)configTable->VendorTable, 8)){
-				rsdp = (void*)configTable->VendorTable;
-			}
-		}
-		configTable++;
-	}
+	// for (UINTN index = 0; index < SystemTable->NumberOfTableEntries; index++){
+	// 	if (CompareGuid(&configTable[index].VendorGuid, &Acpi2TableGuid)){
+	// 		if (strcmp((CHAR8*)"RSD PTR ", (CHAR8*)configTable->VendorTable, 8)){
+	// 			rsdp = (void*)configTable->VendorTable;
+	// 			Print(L"Found RSD PTR\n");
+	// 			RSDP2 *rs2 = (RSDP2*)rsdp;
+	// 			SDTHeader* xsdt = (SDTHeader*)(rs2->XSDTAddress);
+	// 			void * res = FindTable(xsdt,(char*)"MCFG");
+	// 			if(res){
+	// 				rsdp = res;
+	// 			}
+	// 			break;
+	// 		}
+	// 	}
+	// 	configTable++;
+	// }
 
 	MemoryInfo mi;
 	mi.mMap = (MemoryDescriptor*)Map;
@@ -247,6 +296,8 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	bootInfo.memory_info = (MemoryInfo*) &mi;
 	bootInfo.rsdp = rsdp;
 
+
+	Print(L"Addr: %x \n",KernelStart);
 	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
 
 	KernelStart(&bootInfo);

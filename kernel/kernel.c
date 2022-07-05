@@ -6,6 +6,7 @@
 #include "include/timer.h"
 #include "include/device.h"
 #include "include/multitasking.h"
+#include "include/ps2.h"
 
 BootInfo *bi;
 
@@ -31,6 +32,7 @@ void kernel_main(BootInfo *gi){
         for(;;);
     }
     initialise_drivers_from_pci();
+    initialise_ps2_driver();
     k_printf("__end of kernel!\n");
     for(;;);
 }
