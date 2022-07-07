@@ -1,6 +1,17 @@
 # SanderOS64
 A 64bit OS
 
+## Target
+* Boot via UEFI :white_check_mark:
+* Boot via GRUB
+* Load kernel from AHCI :white_check_mark:
+* Read filesystem from AHCI :white_check_mark:
+* Write filesystem from AHCI
+* Load drivers
+* Edit text files
+* Use FASM to assemble programs
+* Send messages to IRC client
+
 ## Installation
 To build the system, you need to have the following for the first time:
 * Download the GNU-EFI folder and extract it in a location
