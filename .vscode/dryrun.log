@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/sander/Bureaublad/SanderOS64'
+make: Leaving directory '/home/sander/Bureaublad/SanderOS64'
+ 
+make: *** No targets specified and no makefile found.  Stop.
+

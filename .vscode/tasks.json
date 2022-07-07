@@ -23,5 +23,15 @@
                 "isDefault": true
             }
         },
+        {
+            "label": "Build kernel and install",
+            "type": "shell",
+            "command": "./build --install",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
     ]
 }
