@@ -1,13 +1,17 @@
 #include "../include/memory.h"
 #include "../include/graphics.h"
 
-unsigned long memorymap[MEMORY_MAP_SIZE];
-unsigned long long max_memory;
-unsigned long long free_memory;
-unsigned long long used_memory;
+uint8_t memorymap[MEMORY_MAP_SIZE];
+uint8_t emptymap[MEMORY_MAP_SIZE];
+uint64_t max_memory;
+uint64_t free_memory;
+uint64_t used_memory;
 
-unsigned long long free_memory_min;
-unsigned long long free_memory_max;
+uint64_t free_memory_min;
+uint64_t free_memory_max;
+
+uint64_t empty_memory_min;
+uint64_t empty_memory_max;
 
 MemoryInfo *memory_info;
 
@@ -15,28 +19,30 @@ void set_memory_info(MemoryInfo *gi){
     memory_info = gi;
 }
 
-unsigned long long getMaximumMemory(){
+uint64_t getMaximumMemory(){
     return max_memory;
 }
 
-extern unsigned long long _KernelStart;
-extern unsigned long long _KernelEnd;
+extern uint64_t _KernelStart;
+extern uint64_t _KernelEnd;
 
 void initialise_memory_driver(){
-    unsigned long long mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
+    uint64_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;
     free_memory = 0;
     used_memory = 0;
     for (int i = 0; i < mMapEntries; i++){
-        MemoryDescriptor* desc = (MemoryDescriptor*)((unsigned long long)memory_info->mMap + (i * memory_info->mMapDescSize));
-        unsigned long long size = desc->NumberOfPages * 4096 ;
+        MemoryDescriptor* desc = (MemoryDescriptor*)((uint64_t)memory_info->mMap + (i * memory_info->mMapDescSize));
+        uint64_t size = desc->NumberOfPages * 4096 ;
         max_memory += size;
         if(desc->Type==7){
-            if( size>1000000 && desc->PhysicalStart!=0 ){
+            if( size>1000000 && desc->PhysicalStart!=0 && free_memory_min==0 ){
                 free_memory += size;
                 free_memory_min = desc->PhysicalStart;
                 free_memory_max = desc->PhysicalStart + size;
-                break;
+            }else if(size>1000000 && desc->PhysicalStart!=0 && empty_memory_min==0 ){
+                empty_memory_min = desc->PhysicalStart;
+                empty_memory_max = desc->PhysicalStart + size;
             }
         }else{
             used_memory += size;
@@ -45,20 +51,20 @@ void initialise_memory_driver(){
     k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
     k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
 
-    unsigned long long kernelSize = (unsigned long long)&_KernelEnd - (unsigned long long)&_KernelStart;
-    unsigned long long kernelPages = (unsigned long long)kernelSize / 4096 + 1;
+    uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
+    uint64_t kernelPages = (uint64_t)kernelSize / 4096 + 1;
     k_printf("The kernel has a size of %x which are %x kernelpages it starts at %x to %x \n",kernelSize,kernelPages,_KernelStart,_KernelEnd);
 }
 
-void memset(void *start, unsigned char value, unsigned long long num){
-    for(unsigned long long i = 0 ; i < num ; i++){
-        *(unsigned char*)((unsigned long long)start + i) = value;
+void memset(void *start, unsigned char value, uint64_t num){
+    for(uint64_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((uint64_t)start + i) = value;
     }
 }
 
-void memcpy(void *to, void *from, unsigned long long num){
-    for(unsigned long long i = 0 ; i < num ; i++){
-        *(unsigned char*)((unsigned long long)to + i) = *(unsigned char*)((unsigned long long)from + i);
+void memcpy(void *to, void *from, uint64_t num){
+    for(uint64_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((uint64_t)to + i) = *(unsigned char*)((uint64_t)from + i);
     }
 }
 
@@ -78,15 +84,15 @@ uint64_t strlen(uint8_t* message){
     return res;
 }
 
-char get_memory_map_bit(unsigned long long index){
-    unsigned long long byteIndex = index/8;
+char get_memory_map_bit(uint64_t index){
+    uint64_t byteIndex = index/8;
     unsigned char bitIndex = index % 8;
     unsigned char bitIndexer = 0b10000000 >> bitIndex;
     return (memorymap[byteIndex] & bitIndexer) !=0;
 }
 
-void set_memory_map_bit(unsigned long long index,char value){
-    unsigned long long byteIndex = index/8;
+void set_memory_map_bit(uint64_t index,char value){
+    uint64_t byteIndex = index/8;
     unsigned char bitIndex = index % 8;
     unsigned char bitIndexer = 0b10000000 >> bitIndex;
     memorymap[byteIndex] &= ~bitIndexer;
@@ -96,7 +102,7 @@ void set_memory_map_bit(unsigned long long index,char value){
 }
 
 void *requestPage(){
-    for(unsigned long long i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
+    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
         if(memorymap[i]==0){
             memorymap[i] = 1;
             return (void *)(free_memory_min+(i * 0x1000));
@@ -110,4 +116,21 @@ void freePage(void* memory){
     calculation -= free_memory_min;
     calculation /= 0x1000;
     memorymap[calculation] = 0;
+}
+
+void *malloc(uint64_t size){
+    for(uint64_t i = 0 ; i < ((empty_memory_max-empty_memory_min)/0x100) ; i++){
+        if(emptymap[i]==0){
+            emptymap[i] = 1;
+            return (void *)(empty_memory_min+(i * 0x100));
+        }
+    }
+    return 0;
+}
+
+void free(void* memory){
+    uint64_t calculation = (uint64_t) memory;
+    calculation -= empty_memory_min;
+    calculation /= 0x100;
+    emptymap[calculation] = 0;
 }

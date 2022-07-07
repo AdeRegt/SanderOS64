@@ -18,11 +18,14 @@ typedef struct{
 }MemoryInfo;
 
 void initialise_memory_driver();
-void memset(void *start, unsigned char value, unsigned long long num);
+void memset(void *start, unsigned char value, uint64_t num);
 uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length);
 void *requestPage();
 void freePage(void* memory);
 void set_memory_info(MemoryInfo *gi);
-unsigned long long getMaximumMemory();
-void memcpy(void *to, void *from, unsigned long long num);
+uint64_t getMaximumMemory();
+void memcpy(void *to, void *from, uint64_t num);
 uint64_t strlen(uint8_t* message);
+
+void *malloc(uint64_t size);
+void free(void* memory);

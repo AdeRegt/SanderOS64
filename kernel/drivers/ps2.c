@@ -81,12 +81,43 @@ int ps2_echo(){
 	return 1;
 }
 
+uint8_t mousewaita(){
+	unsigned long timeout = 100000;
+	while(--timeout){
+		if((inportb(0x64) & 0x01)==1){
+			return 1;
+		}
+	}
+    return 0;
+}
+
+uint8_t mousewaitb(){
+	unsigned long timeout = 100000;
+	while(--timeout){
+		if(!(inportb(0x64) & 0x02)){
+			return 1;
+		}
+	}
+    return 0;
+}
+
 static uint8_t last_pressed_key = 0;
 
 __attribute__((interrupt)) void ps2_keyboard__interrupt(interrupt_frame* frame){
     uint8_t pressed_key = inportb(PS2_DATA_PORT);
     if((pressed_key&0x80)==0){
         last_pressed_key = kbdus[pressed_key];
+    }
+    outportb(0x20,0x20);
+}
+
+__attribute__((interrupt)) void ps2_mouse__interrupt(interrupt_frame* frame){
+    uint8_t status = inportb(PS2_STATUS_REGISTER);
+    if(status & 1){
+        uint8_t pressed_key = inportb(PS2_DATA_PORT);
+        if(status & 0x20){
+            k_printf("Mouse interrupt!\n");
+        }
     }
     outportb(0x20,0x20);
 }
@@ -111,10 +142,44 @@ uint8_t initialise_ps2_keyboard_driver(){
     return 0;
 }
 
+uint8_t initialise_ps2_mouse_driver(){
+    if(!mousewaita()){goto error;}
+	outportb(0x64,0xA8);
+	if(!mousewaita()){goto error;}
+	outportb(0x64,0x20);
+	if(!mousewaitb()){goto error;}
+	unsigned char status =  inportb(0x60);
+	inportb(0x60);
+	status |= (1 << 1);
+	status &= ~(1 << 5);
+	if(!mousewaita()){goto error;}
+	outportb(0x64,0x60);
+	if(!mousewaita()){goto error;}
+	outportb(0x60,status);
+	
+	if(!writeToSecondPS2Port(0xF6)){goto error;}
+	if(!waitforps2ok()){goto error;}
+	if(!writeToSecondPS2Port(0xF4)){goto error;}
+	if(!waitforps2ok()){goto error;}
+	
+    setInterrupt(12,ps2_mouse__interrupt);
+    return 1;
+    
+    error:
+    return 0;
+}
+
 void initialise_ps2_driver(){
     k_printf("ps2: trying to initialise ps2\n");
     if(ps2_echo()){
         k_printf("ps2: echo as expected!\n");
+        // do we have a ps2 mouse pressent?
+        if(initialise_ps2_mouse_driver()){
+            k_printf("ps2: mouse detected!\n");
+        }else{
+            k_printf("ps2: failed to load mouse!\n");
+        }
+        // lets initialise keyboard!
         if(initialise_ps2_keyboard_driver()){
             k_printf("ps2: keyboard detected!\n");
         }else{
