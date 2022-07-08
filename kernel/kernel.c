@@ -7,6 +7,7 @@
 #include "include/device.h"
 #include "include/multitasking.h"
 #include "include/ps2.h"
+#include "include/exec/program.h"
 
 BootInfo *bi;
 
@@ -33,6 +34,8 @@ void kernel_main(BootInfo *gi){
     }
     initialise_drivers_from_pci();
     initialise_ps2_driver();
+    int rt = exec("A:SANDEROS/CMD.BIN",0);
+    k_printf("__core program returns with %d !\n",rt);
     k_printf("__end of kernel!\n");
     for(;;);
 }

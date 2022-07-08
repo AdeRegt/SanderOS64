@@ -118,6 +118,8 @@ uint64_t elf_load_image(void *programmem){
                 elfheader->e_entry = (Elf64_Addr)(programmem + symbol_target->sh_offset + symbol->st_value);
             }
         }
+    }else if( elfheader->e_type==2 ){
+        Elf64_Phdr* phdrs = (Elf64_Phdr*) (programmem + elfheader->e_phoff );
     }else{
         return 0;
     }

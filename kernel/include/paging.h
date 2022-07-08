@@ -23,4 +23,6 @@ typedef struct{
     unsigned long long page_table_index;                    // P_i
 }PageLookupResult;
 
+#define EXTERNAL_PROGRAM_ADDRESS 0xC000000000
+
 void initialise_paging_driver();

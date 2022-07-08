@@ -52,11 +52,22 @@ void map_memory(void *virtualmemory,void* physicalmemory){
     }
 
     PDE = PD->pages[lookup.page_directory_table_index];
-    PDE.address     = (unsigned long long)physicalmemory >> 12;
-    PDE.present     = 1;
-    PDE.readwrite   = 1;
-    PDE.largepages  = 1;
-    PD->pages[lookup.page_directory_table_index] = PDE;
+    PageTable *PE;
+    if(!PDE.present){
+        PE = (PageTable*) requestPage();
+        memset(PE, 0, 0x1000);
+        PDE.address     = (unsigned long long)PE >> 12;
+        PDE.present     = 1;
+        PDE.readwrite   = 1;
+        PD->pages[lookup.page_directory_table_index] = PDE;
+    }else{
+        PE = (PageTable*)((unsigned long long)PDE.address<<12);
+    }
+
+    Page *PDX = (Page*) &PE->pages[lookup.page_table_index];
+    PDX->address     = (unsigned long long)physicalmemory >> 12;
+    PDX->present     = 1;
+    PDX->readwrite   = 1;
 }
 
 
@@ -80,4 +91,23 @@ void initialise_paging_driver(){
     k_printf("Now setting the CPU register\n");
     asm ("mov %0, %%cr3" : : "r" (pagemaplevel4));
     k_printf("When we hit this point, we are safe!\n");
+
+    //
+    // Pre-enable pages!
+    // uint64_t addr = 0x401000;//EXTERNAL_PROGRAM_ADDRESS;
+    // PageLookupResult plr = page_map_indexer(addr);
+    // void *dff = requestPage();
+    // map_memory((void*)addr,dff);
+    // ((uint8_t*)addr)[2] = 'x';
+    // PageTable* PLM4 = (PageTable*) pagemaplevel4;
+    // Page PDE = PLM4->pages[plr.page_map_level_4_table_index];
+    // dumpPageInfo(PDE);
+    // PageTable *PDP = (PageTable*)((unsigned long long)PDE.address<<12);
+    // PDE = PDP->pages[plr.page_directory_pointer_table_index];
+    // dumpPageInfo(PDE);
+    // PageTable *PD = (PageTable*)((unsigned long long)PDE.address<<12);
+    // PDE = PD->pages[plr.page_directory_table_index];
+    // dumpPageInfo(PDE);
+    // k_printf("--> %d %d %d [%d] \n",plr.page_map_level_4_table_index,plr.page_directory_pointer_table_index,plr.page_directory_table_index,plr.page_table_index);
+    // for(;;);
 }
