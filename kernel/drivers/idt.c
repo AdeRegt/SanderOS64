@@ -2,17 +2,18 @@
 #include "../include/graphics.h" 
 #include "../include/memory.h" 
 #include "../include/ports.h" 
+#include "../include/multitasking.h"
 
 IDTR idtr;
 
 __attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
-    k_printf("Interrupt: Page fault detected\n");
+    k_printf("Interrupt: Page fault detected\n");for(;;);
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
 
 __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
-    k_printf("Interrupt: error\n");
+    k_printf("\nInterrupt: error cs:%x flags:%x ip:%x sp:%x ss:%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
 	asm volatile("cli\nhlt");
 }
 
@@ -41,6 +42,62 @@ void setRawInterrupt(int offset,void *fun){
     int_PageFault->selector = 0x08;
 }
 
+extern void isrint();
+extern void isr2int();
+
+void end_of_program(){
+    k_printf("Program ended!\n");
+    for(;;);
+}
+
+typedef struct{
+  long tv_sec;		/* Seconds.  */
+  long tv_usec;	/* Microseconds.  */
+}__attribute__((packed)) timeval;
+
+void isrhandler(stack_registers *ix){
+    k_printf("interrupt: isr: RAX=%x RIP=%x \n",ix->rax,ix->rip);
+    if(ix->rax==1){
+        ix->rip = (uint64_t)end_of_program;
+    }else if(ix->rax==2){
+        k_printf("isr: fork not implemented!\n");
+    }else if(ix->rax==3){
+        k_printf("isr: read not implemented!\n");
+    }else if(ix->rax==4){
+        k_printf("isr: write not implemented!\n");
+    }else{
+        k_printf("isr: Unknown isr code!\n");
+    }
+    outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
+void isr2handler(stack_registers *ix){
+    if(ix->rax==1){
+        char* z = ((char*) (ix->rsi));
+        for(uint64_t i = 0 ; i < ix->rdx ; i++){
+            k_printf("%c",z[i]);
+        }
+    }else if(ix->rax==60){
+        ix->rip = (uint64_t)end_of_program;
+    }else if(ix->rax==96){
+        timeval* tv = (timeval*) ix->rdi;
+        tv->tv_sec = 10000;
+        tv->tv_usec = 10000;
+        ix->rax = 0;
+    }else if(ix->rax==400){
+        ix->rax = (uint64_t) malloc(ix->rdx);
+    }else{
+        k_printf("\n\n------------------------\n"); 
+        k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);
+        k_printf("isr2: Unknown isr code!\n");
+        k_printf("------------------------\n\n"); 
+        for(;;);
+    }
+    outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
 void initialise_idt_driver(){
     k_printf("get some info from the old idt...\n");
     asm volatile ("sidt %0" : "=m"(idtr));
@@ -66,7 +123,8 @@ void initialise_idt_driver(){
     for(uint16_t i = 0 ; i < 32 ; i++){
         setRawInterrupt(i,GeneralFault_Handler);
     }
-    setRawInterrupt(0xCD,PageFault_Handler);
+    setRawInterrupt(0x80,isrint);
+    setRawInterrupt(0x81,isr2int);
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
 	asm volatile("sti");
 }

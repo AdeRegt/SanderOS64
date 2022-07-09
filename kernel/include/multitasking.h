@@ -32,6 +32,9 @@ typedef struct{
     volatile int innercounter;
 }__attribute__((packed)) Task;
 
+#define MAX_TASKS 10
+
 void initialise_multitasking_driver();
 extern void multitaskingint();
 Task* getTasks();
+void addTask(void *task,void *cr3);

@@ -5,6 +5,17 @@
 #include "../../include/idt.h"
 #include "../../include/pci.h"
 #include "../../include/timer.h"
+#include "../../include/paging.h"
+
+uint8_t is_elf(void *programmem){
+    Elf64_Ehdr* elfheader = (Elf64_Ehdr*) programmem;
+
+    // check elfheader
+    if(!(elfheader->e_ident[0]==0x7F && elfheader->e_ident[1]=='E' && elfheader->e_ident[2]=='L' && elfheader->e_ident[3]=='F' && elfheader->e_ident[4]==2 )){
+        return 0;
+    }
+    return 1;
+}
 
 uint64_t elf_load_image(void *programmem){
     // casting elfheader
@@ -119,10 +130,16 @@ uint64_t elf_load_image(void *programmem){
             }
         }
     }else if( elfheader->e_type==2 ){
-        Elf64_Phdr* phdrs = (Elf64_Phdr*) (programmem + elfheader->e_phoff );
+        Elf64_Phdr* phdrs = (Elf64_Phdr*) ( programmem + elfheader->e_phoff );
+        for(Elf64_Half i = 0 ; i<elfheader->e_phnum ; i++){
+            Elf64_Phdr* ch = (Elf64_Phdr*) (programmem + (elfheader->e_phentsize * elfheader->e_phnum));
+            if(ch->p_type==1){
+                memcpy((void*)ch->p_paddr, programmem + ch->p_offset , ch->p_filesz);
+            }
+        }
     }else{
         return 0;
     }
-
+    k_printf("Programs EP at %x \n",elfheader->e_entry);
     return elfheader->e_entry;
 }

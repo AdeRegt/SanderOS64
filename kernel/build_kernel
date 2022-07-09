@@ -2,6 +2,7 @@
 echo "Assemble ASM files..."
 nasm drivers/gdt_setup.asm -f elf64 -o gdtsetup.o 
 nasm drivers/multitasking.asm -f elf64 -o multitasking.o 
+nasm drivers/isr.asm -f elf64 -o isr.o 
 
 echo "Compiling C files..."
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
@@ -26,7 +27,7 @@ $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-z
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/program.c -o program.o
 
 echo "Linking O files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

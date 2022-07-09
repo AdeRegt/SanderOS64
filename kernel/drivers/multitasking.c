@@ -6,46 +6,44 @@
 #include "../include/timer.h"
 
 static int vl = 0xF;
-static Task tasks[2];
+static int cmt = 1;
+static Task tasks[MAX_TASKS];
 
 Task* getTasks(){
     return (Task*) &tasks;
 }
 
 void multitaskinghandler(stack_registers *ix){
+    vl = 0;
+    goto finishup;
     if(vl==0xf){
-        memcpy(&tasks[0].sessionregs,ix,sizeof(stack_registers));
-        memcpy(&tasks[1].sessionregs,ix,sizeof(stack_registers));
-        vl = 1;
+        for(int i = 0 ; i < MAX_TASKS ; i++){
+            memcpy(&tasks[0].sessionregs,ix,sizeof(stack_registers));
+        }
+        vl = 0;
+        k_printf("Finished first multitasking instance!\n");
+        goto finishup;
     }else{
         memcpy(&tasks[vl].sessionregs,ix,sizeof(stack_registers));
-        if(vl==0){
-            vl=1;
-        }else if(vl==1){
+        vl++;
+        if(vl==cmt){
             vl=0;
         }
     }
+    // k_printf("Switch to pid %d %d | ",vl,cmt);
     memcpy(ix,&tasks[vl].sessionregs,sizeof(stack_registers));
+    finishup:
     timerfunc();
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
 
-void setTask(void *task){
-    tasks[1].sessionregs.rip = (uint64_t)task;
-}
-
-void ttt(){
-    k_printf("AAA");
-    for(int i = 0 ; i<5; i++){
-        sleep(1);
-        k_printf("%x ",tasks[1].innercounter);
-    }
-    for(;;);
+void addTask(void *task,void *cr3){
+    tasks[cmt].sessionregs.rip = (uint64_t)task;
+    cmt++;
 }
 
 void initialise_multitasking_driver(){
     setInterrupt(0,multitaskingint);
     while(vl==0xF);
-    setTask(ttt);
 }

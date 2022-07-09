@@ -1,6 +1,4 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
-make: *** No rule to make target 'all'.  Stop.
-
 # GNU Make 4.2.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2016 Free Software Foundation, Inc.
@@ -8,7 +6,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri Jul  8 17:26:13 2022
+# Make data base, printed on Sat Jul  9 10:26:33 2022
 
 # Variables
 
@@ -67,7 +65,7 @@ QT_SCALE_FACTOR = 1
 # environment
 CLUTTER_IM_MODULE = ibus
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-7a8c63f7-fbc7-449b-a05b-ef2ca5c0f44a.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-484148a6-7db4-4050-a3b1-a44ba6864a74.sock
 # environment
 VSCODE_CWD = /home/sander
 # environment
@@ -79,7 +77,7 @@ PATH = /usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1562,unix/snd1:/tmp/.ICE-unix/1562
+SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1677,unix/snd1:/tmp/.ICE-unix/1677
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
@@ -97,7 +95,7 @@ XDG_SESSION_DESKTOP = lightdm-xsession
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 4211
+GIO_LAUNCHED_DESKTOP_FILE_PID = 6871
 # automatic
 %F = $(notdir $%)
 # environment
@@ -113,7 +111,7 @@ PWD = /home/sander/Bureaublad/SanderOS64
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 1610
+SSH_AGENT_PID = 1725
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -149,7 +147,7 @@ QT_IM_MODULE = ibus
 # environment
 SHLVL = 0
 # environment
-XDG_SESSION_ID = 2
+XDG_SESSION_ID = 3
 # environment
 USER = sander
 # makefile
@@ -213,7 +211,7 @@ LANG = C
 # environment
 SANDEROS_MOUNT_POINT = /mnt/5DDC-4569
 # environment
-VSCODE_PID = 4211
+VSCODE_PID = 6871
 # variable set hash-table stats:
 # Load=101/1024=10%, Rehash=0, Collisions=8/123=7%
 
@@ -281,6 +279,8 @@ GNUmakefile:
 # strcache performance: lookups = 24 / hit rate = 12%
 # hash-table stats:
 # Load=21/8192=0%, Rehash=0, Collisions=1/24=4%
-# Finished Make data base on Fri Jul  8 17:26:13 2022
+# Finished Make data base on Sat Jul  9 10:26:33 2022
 
  
+make: *** No rule to make target 'all'.  Stop.
+

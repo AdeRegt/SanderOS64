@@ -17,6 +17,8 @@
         "module.h": "c",
         "elf.h": "c",
         "driver.h": "c",
-        "multitasking.h": "c"
+        "multitasking.h": "c",
+        "program.h": "c",
+        "time.h": "c"
     }
 }

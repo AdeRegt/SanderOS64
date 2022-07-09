@@ -3,6 +3,92 @@
 #include "../../include/graphics.h"
 #include "../../include/memory.h"
 
+uint64_t fat_filesize(Filesystem* fs,char* path){
+    FATFileSystemSettings *fss = (FATFileSystemSettings*) fs->argument;
+    int count_of_slashes = 0;
+    int stringcount = 0;
+    if(path[0]!=0){
+        count_of_slashes++;
+    }
+    int i = 0;
+    while(1){
+        if(path[i]==0){
+            break;
+        }
+        if(path[i]=='/'){
+            count_of_slashes++;
+        }
+        i++;
+        stringcount++;
+    }
+    uint32_t secset = fss->first_root_dir_sector;
+    uint32_t filesize = 0;
+    void *es = (void*) requestPage();
+    FATFileDefinition* u = (FATFileDefinition*) es;
+    i = 0;
+    for(int segment_id = 0 ; segment_id < count_of_slashes ; segment_id++){
+        char buffer[16];
+        memset(&buffer,0,16);
+        int z = 0;
+        int found_solution_for_this_part = 0;
+        while(1){
+            char deze = path[i];
+            if(deze==0||deze=='/'){
+                i++;
+                break;
+            }
+            buffer[z] = deze;
+            z++;
+            i++;
+            if(i==stringcount){
+                break;
+            }
+        }
+        memset(es,0,512);
+        if(!device_read_raw_sector(fs->blockdevice,secset,1,(void*)es)){
+            k_printf("device: unable to read sector for the fat root dir!\n");
+            return 0;
+        }
+        for(int q = 0 ; q < 16 ; q++){
+            if(u[q].attributes==0x20||u[q].attributes==0x10){
+                int gz = 1;
+                int w = 0;
+                for(int z = 0 ; z < 11 ; z++){
+                    if( buffer[w] == '.' ){
+                        w++;
+                    }
+                    if(u[q].filename[z]==' '||u[q].filename[z]==0x00){
+                        continue;
+                    }
+                    if( buffer[w] != u[q].filename[z] ){
+                        gz = 0;
+                    }
+                    w++;
+                }
+                if(gz){
+                    uint16_t bigaddr[2];
+                    bigaddr[0] = u[q].cluster_low;
+                    bigaddr[1] = u[q].cluster_high;
+                    uint32_t rawcalc = ((uint32_t*)&bigaddr)[0];
+                    rawcalc -= 2;
+                    rawcalc *= fss->bb->sectors_per_cluster;
+                    rawcalc += fss->first_data_sector;
+
+                    secset = rawcalc;
+                    filesize = u[q].size;
+
+                    found_solution_for_this_part = 1;
+                }
+            }
+        }
+        if(found_solution_for_this_part==0){
+            return 0;
+        }
+    }
+
+    return filesize;
+}
+
 char fat_read(Filesystem* fs,char* path,void *bufferedcapacity){
     FATFileSystemSettings *fss = (FATFileSystemSettings*) fs->argument;
     int count_of_slashes = 0;
@@ -242,7 +328,7 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
         uint32_t first_fat_sector = bpb->reserved_sector_count;
         uint32_t first_root_dir_sector = first_data_sector - root_dir_sectors;
 
-        Filesystem *fs = registerFileSystem(dev,fat_read,fat_dir);
+        Filesystem *fs = registerFileSystem(dev,fat_read,fat_dir,fat_filesize);
         FATFileSystemSettings *fss = (FATFileSystemSettings*) requestPage();
         fss->bb = bpb;
         fss->fat_size = fat_size;

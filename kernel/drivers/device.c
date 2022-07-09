@@ -30,11 +30,12 @@ Filesystem* getFreeFilesystem(){
     return dev;
 }
 
-Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir){
+Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir,void *filesize){
     Filesystem* fs = getFreeFilesystem();
     fs->blockdevice = bd;
     fs->readfile = read;
     fs->dir = dir;
+    fs->filesize = filesize;
     return fs;
 }
 
@@ -58,6 +59,18 @@ char readFile(char* path,void *buffer){
         path++;
         path++;
 	    return foo((Filesystem*)&fs,path,buffer);
+    }
+    return 0;
+}
+
+uint64_t getFileSize(char* path){
+    char driveletter = path[0] - 'A';
+    Filesystem fs = filesystems[driveletter];
+    if(fs.filesize){
+        uint64_t (*foo)(Filesystem*, char*) = (void*)fs.filesize;
+        path++;
+        path++;
+	    return foo((Filesystem*)&fs,path);
     }
     return 0;
 }

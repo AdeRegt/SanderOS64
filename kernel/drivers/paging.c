@@ -21,10 +21,10 @@ void dumpPageInfo(Page pageinfo){
     k_printf("-pageinfo: AX:%x AD:%x AV:%x CD:%x LP:%x PR:%x RW:%x SU:%x WT:%x \n",pageinfo.accessed,(uint64_t)pageinfo.address<<12,pageinfo.available,pageinfo.cachedisabled,pageinfo.largepages,pageinfo.present,pageinfo.readwrite,pageinfo.usersuper,pageinfo.writetrough);
 }
 
-void map_memory(void *virtualmemory,void* physicalmemory){
+void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
     // k_printf("Mapping page %x to %x \n",physicalmemory,virtualmemory);
     PageLookupResult lookup = page_map_indexer((unsigned long long)virtualmemory);
-    PageTable* PLM4 = (PageTable*) pagemaplevel4;
+    PageTable* PLM4 = (PageTable*) pml4mem;
     Page PDE = PLM4->pages[lookup.page_map_level_4_table_index];
     PageTable *PDP;
     if(!PDE.present){

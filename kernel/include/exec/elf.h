@@ -112,3 +112,4 @@ typedef struct
 #define ELF64_R_INFO(s, t)(((s) << 32) + ((t) & 0xffffffffL))
 
 uint64_t elf_load_image(void *programmem);
+uint8_t is_elf(void *programmem);
