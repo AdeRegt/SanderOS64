@@ -5,7 +5,11 @@
 
 char loadModule(char* path, PCIInfo *pci){
     // request paging
+    uint64_t fz = getFileSize(path);
     void *programmem = requestPage();
+    for(uint64_t i = 0 ; i < (fz/0x1000) ; i++){
+        requestPage();
+    }
 
     // loading file
     if( !readFile(path,programmem) ){

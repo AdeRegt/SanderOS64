@@ -30,6 +30,8 @@ typedef struct{
 typedef struct{
     stack_registers sessionregs;
     volatile int innercounter;
+    uint64_t cr3;
+    uint64_t size;
 }__attribute__((packed)) Task;
 
 #define MAX_TASKS 10
@@ -37,4 +39,4 @@ typedef struct{
 void initialise_multitasking_driver();
 extern void multitaskingint();
 Task* getTasks();
-void addTask(void *task,void *cr3);
+int addTask(void *task,void *cr3,uint64_t size);

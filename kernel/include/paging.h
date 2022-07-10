@@ -27,3 +27,5 @@ typedef struct{
 
 void initialise_paging_driver();
 void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory);
+void unmap_memory(void* pml4mem, void *virtualmemory);
+Page *getPageOf(void* pml4mem, void *virtualmemory);

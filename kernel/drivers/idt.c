@@ -123,6 +123,7 @@ void initialise_idt_driver(){
     for(uint16_t i = 0 ; i < 32 ; i++){
         setRawInterrupt(i,GeneralFault_Handler);
     }
+    setRawInterrupt(0xCD,PageFault_Handler);
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);

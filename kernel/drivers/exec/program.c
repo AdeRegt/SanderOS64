@@ -6,6 +6,8 @@
 #include "../../include/multitasking.h"
 #include "../../include/graphics.h"
 
+int use_paging = 1;
+
 int exec(uint8_t *path,char **argv){
 
     //
@@ -25,13 +27,22 @@ int exec(uint8_t *path,char **argv){
     // Then interpetate the engine....
     uint64_t address = 0;
     if(is_elf(buffer)){
+        if(use_paging){
+            return 0;
+        }
         address = elf_load_image(buffer);
         if(!address){
             return 0;
         }
     }else{
-        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
-        address = EXTERNAL_PROGRAM_ADDRESS;
+        if(use_paging){
+            clear_screen(0xFFFFFFFF);
+            k_printf("New pid=%d \n",addTask(buffer,buffer,fz));
+            return 0;
+        }else{
+            memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
+            address = EXTERNAL_PROGRAM_ADDRESS;
+        }
     }
 
     // call!

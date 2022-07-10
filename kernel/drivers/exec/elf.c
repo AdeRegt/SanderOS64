@@ -88,18 +88,21 @@ uint64_t elf_load_image(void *programmem){
 
                     uint64_t S = symval;
                     uint64_t A = (uint64_t)(relocation->r_addend + (symbol->st_info&0x10?0:(programmem + symbol_target->sh_offset)));
-                    uint64_t P = 0;
+                    uint64_t P = (uint64_t)programmem + section_target->sh_offset + relocation->r_offset;
 
                     if(type==1){ 
                         // R_X86_64_64 1 word64 S + A
                         // k_printf("R_X86_64_64 - ");
                         uint64_t *ref = (uint64_t *)((programmem + section_target->sh_offset + relocation->r_offset));
-                        *ref = S + A;
+                        uint64_t c = S + A;
+                        *ref = c;
                     }else if(type==2){ 
                         // R_X86_64_PC32 2 word32 S + A - P
                         // k_printf("R_X86_64_PC32 - ");
                         uint32_t *ref = (uint32_t *)((programmem + section_target->sh_offset + relocation->r_offset));
-                        *ref = S + A - P;
+                        uint32_t c = S + A - P;
+                        *ref = c;
+                        // k_printf("%d %d %d \n",relocation->r_addend,relocation->r_info,relocation->r_offset);
                     }else{
                         k_printf("unknown relocation type: %d \n",type);
                         return 0;
@@ -128,13 +131,16 @@ uint64_t elf_load_image(void *programmem){
             if(strcmp(symbolname,"driver_start",strlen("driver_start"))){
                 elfheader->e_entry = (Elf64_Addr)(programmem + symbol_target->sh_offset + symbol->st_value);
             }
+            // if(symbol->st_shndx==1){
+            //     k_printf("Symbol %s : %x\n",symbolname,(programmem + symbol_target->sh_offset + symbol->st_value));
+            // }
         }
     }else if( elfheader->e_type==2 ){
         Elf64_Phdr* phdrs = (Elf64_Phdr*) ( programmem + elfheader->e_phoff );
         for(Elf64_Half i = 0 ; i<elfheader->e_phnum ; i++){
             Elf64_Phdr* ch = (Elf64_Phdr*) (programmem + (elfheader->e_phentsize * elfheader->e_phnum));
             if(ch->p_type==1){
-                memcpy((void*)ch->p_paddr, programmem + ch->p_offset , ch->p_filesz);
+                memcpy((void*)ch->p_paddr, programmem + ch->p_offset , ch->p_memsz);
             }
         }
     }else{

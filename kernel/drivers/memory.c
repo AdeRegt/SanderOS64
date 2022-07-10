@@ -13,6 +13,10 @@ uint64_t free_memory_max;
 uint64_t empty_memory_min;
 uint64_t empty_memory_max;
 
+uint64_t getExmptyMax(){
+    return empty_memory_max;
+}
+
 MemoryInfo *memory_info;
 
 void set_memory_info(MemoryInfo *gi){
