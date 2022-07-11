@@ -14,10 +14,8 @@ int exec(uint8_t *path,char **argv){
     // First load the image....
     uint64_t fz = getFileSize(path);
 
-    void* buffer = requestPage();
-    for(uint64_t i = 0 ; i < ((fz/0x1000)+1) ; i++){
-        requestPage();
-    }
+    void* buffer = requestBigPage();
+    
     char raw_program = readFile((uint8_t*)path,buffer);
     if(raw_program==0){
         return 0;
@@ -36,7 +34,6 @@ int exec(uint8_t *path,char **argv){
         }
     }else{
         if(use_paging){
-            clear_screen(0xFFFFFFFF);
             k_printf("New pid=%d \n",addTask(buffer,buffer,fz));
             return 0;
         }else{

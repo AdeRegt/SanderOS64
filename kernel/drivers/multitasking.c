@@ -22,10 +22,9 @@ int getPid(){
 }
 
 void new_program_starter(){
-    k_printf("Welcome, new program at pid %d %x!\n",getPid(),tasks[getPid()].cr3);
-    // int (*callProgram)(int argc,char** argv) = (void*) tasks[getPid()].cr3;
-    // int res = callProgram(0,0);
-    asm volatile("call 0xC00000");
+    k_printf("\nWelcome, new program at pid %d %x!\n",getPid(),tasks[getPid()].cr3);
+    int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
+    int res = callProgram(0,0);
     k_printf("\n__EOP\n");
     for(;;);
 }
@@ -61,12 +60,7 @@ void multitaskinghandler(stack_registers *ix){
     // k_printf("Switch to pid %d %d | ",vl,cmt);
     memcpy(ix,&tasks[vl].sessionregs,sizeof(stack_registers));
     if(tasks[vl].cr3){
-        for(uint64_t now = tasks[vl].cr3 ; now < (tasks[vl].cr3 + tasks[vl].size)+0x1000 ; now += 0x1000){
-            // unmap_memory((void*) cr3,(void*) tasks[vl].cr3 + now);
-            map_memory((void*) cr3,(void*) EXTERNAL_PROGRAM_ADDRESS + now,(void*) tasks[vl].cr3 + now);
-        }
-    }else{
-        map_memory((void*) cr3,(void*) EXTERNAL_PROGRAM_ADDRESS,(void*) EXTERNAL_PROGRAM_ADDRESS);
+        map_memory((void*) cr3,(void*) EXTERNAL_PROGRAM_ADDRESS ,(void*) tasks[vl].cr3 );
     }
     // k_printf("Switch to pid %d !\n",vl);
     timerfunc();
@@ -88,7 +82,7 @@ int addTask(void *task,void *cr3,uint64_t size){
     // for(uint64_t at = 0 ; at < (uint64_t)(bz+0x1000) ; at += 0x1000 ){
     //     map_memory(cr3,(void*)gba + at,gba + at);
     // }
-
+    
     // fill the registry
     tasks[cmt].sessionregs.rip = (uint64_t)new_program_starter;
     // tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();

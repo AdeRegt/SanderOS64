@@ -1,5 +1,6 @@
 #include "../include/memory.h"
 #include "../include/graphics.h"
+#include "../include/paging.h"
 
 uint8_t memorymap[MEMORY_MAP_SIZE];
 uint8_t emptymap[MEMORY_MAP_SIZE];
@@ -110,6 +111,20 @@ void *requestPage(){
         if(memorymap[i]==0){
             memorymap[i] = 1;
             return (void *)(free_memory_min+(i * 0x1000));
+        }
+    }
+    k_printf("Out of memory!\n");for(;;);
+}
+
+void *requestBigPage(){
+    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
+        if(memorymap[i]==0){
+            if(((free_memory_min+(0x1000*i))&0xFFFFF)==0){
+                if(((free_memory_min+(0x1000*i))%PAGE_GAP_SIZE)==0){
+                    memorymap[i] = 1;
+                    return (void *)(free_memory_min+(i * 0x1000));
+                }
+            }
         }
     }
     k_printf("Out of memory!\n");for(;;);

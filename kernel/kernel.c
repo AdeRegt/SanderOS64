@@ -35,6 +35,7 @@ void kernel_main(BootInfo *gi){
     }
     initialise_drivers_from_pci();
     initialise_ps2_driver();
+    clear_screen(0xFFFFFFFF);
     char* argv[1];
     argv[0] = "A:TEST";
     int rt = exec("A:PROGRAMS/FASM.BIN",argv);
