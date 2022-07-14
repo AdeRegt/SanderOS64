@@ -11,7 +11,7 @@ $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-z
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/gdt.c -o gdt.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mno-red-zone -mgeneral-regs-only -c drivers/idt.c -o idt.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mno-red-zone -mgeneral-regs-only -O0 -c drivers/idt.c -o idt.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/pci.c -D BOOT_WITH_AHCI -o pci.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/ports.c -o ports.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ahci.c -o ahci.o
@@ -22,12 +22,13 @@ $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-z
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/fat.c -o fat.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/mbr.c -o mbr.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/device.c -o device.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/tty.c -o tty.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/elf.c -o elf.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/module.c -o module.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/program.c -o program.o
 
 echo "Linking O files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o tty.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

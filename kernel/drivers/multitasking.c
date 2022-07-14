@@ -22,7 +22,7 @@ int getPid(){
 }
 
 void new_program_starter(){
-    k_printf("\nWelcome, new program at pid %d %x!\n",getPid(),tasks[getPid()].cr3);
+    k_printf("\nWelcome, new program at pid %d with physical location at %x and virtual memory location at %x !\n",getPid(),tasks[getPid()].cr3,EXTERNAL_PROGRAM_ADDRESS);
     int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
     int res = callProgram(0,0);
     k_printf("\n__EOP\n");

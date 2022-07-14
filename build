@@ -8,11 +8,18 @@ echo "The kernel"
 cd kernel
 ./build_kernel || exit
 cd ..
+echo "The programsapi"
+cd programsapi 
+./build_programsapi || exit
+cd ..
 echo "The drivers"
 cd drivers 
 ./build_drivers || exit
 cd ..
 echo "The programs"
+cd programs 
+./build_programs || exit
+cd ..
 
 if [[ $* == *--install* ]]; then
     echo "Copy all important files to drive ${SANDEROS_MOUNT_POINT}"

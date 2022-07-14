@@ -13,3 +13,4 @@
 
 void initialise_ps2_driver();
 uint8_t getch(uint8_t wait);
+uint8_t *scanLine(uint64_t size);

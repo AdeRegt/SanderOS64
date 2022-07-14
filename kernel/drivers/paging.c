@@ -73,10 +73,5 @@ void initialise_paging_driver(){
     }
     asm volatile ("mov %0, %%cr3" : : "r" (pagemaplevel4));
     k_printf("When we hit this point, we are safe! (new method)\n");
-
-    // map_memory(pagemaplevel4,(void*)0x6000000000,(void*)0x200000);
-    // uint64_t* test = (uint64_t*) 0x6000000000;
-    // *test = 24;
-    // k_printf("%d <-- this should be %d !",*test,24);
-    // for(;;);
+    
 }

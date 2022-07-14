@@ -3,6 +3,7 @@
 #include "../include/memory.h" 
 #include "../include/ports.h" 
 #include "../include/multitasking.h"
+#include "../include/ps2.h"
 
 IDTR idtr;
 
@@ -56,20 +57,27 @@ typedef struct{
 }__attribute__((packed)) timeval;
 
 void isrhandler(stack_registers *ix){
-    k_printf("interrupt: isr: RAX=%x RIP=%x \n",ix->rax,ix->rip);
+    outportb(0xA0,0x20);
+	outportb(0x20,0x20);
     if(ix->rax==1){
+        k_printf("program returned with %d from %x \n",ix->rbx,ix->rip);
         ix->rip = (uint64_t)end_of_program;
     }else if(ix->rax==2){
         k_printf("isr: fork not implemented!\n");
     }else if(ix->rax==3){
-        k_printf("isr: read not implemented!\n");
+        if(ix->rbx){
+            char* u = (char*) ix->rcx;
+            u[0] = '!';
+        }
     }else if(ix->rax==4){
-        k_printf("isr: write not implemented!\n");
+        // k_printf("rbx: %d | rcx: %d | rdx: %d \n",ix->rbx,ix->rcx,ix->rdx);
+        char* z = ((char*) (ix->rcx));
+        for(uint64_t i = 0 ; i < ix->rdx ; i++){
+            k_printf("%c",z[i]);
+        }
     }else{
         k_printf("isr: Unknown isr code!\n");
     }
-    outportb(0xA0,0x20);
-	outportb(0x20,0x20);
 }
 
 void isr2handler(stack_registers *ix){

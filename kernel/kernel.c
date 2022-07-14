@@ -7,6 +7,7 @@
 #include "include/device.h"
 #include "include/multitasking.h"
 #include "include/ps2.h"
+#include "include/tty.h"
 #include "include/exec/program.h"
 #include "include/exec/module.h"
 
@@ -26,7 +27,7 @@ void kernel_main(BootInfo *gi){
     initialise_paging_driver();
     initialise_idt_driver();
     initialise_timer_driver();
-;    initialise_multitasking_driver();
+    initialise_multitasking_driver();
     initialise_pci_driver();
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
@@ -35,10 +36,10 @@ void kernel_main(BootInfo *gi){
     }
     initialise_drivers_from_pci();
     initialise_ps2_driver();
-    clear_screen(0xFFFFFFFF);
+    initialise_tty();
     char* argv[1];
     argv[0] = "A:TEST";
-    int rt = exec("A:PROGRAMS/FASM.BIN",argv);
+    int rt = exec("A:SANDEROS/CMD.BIN",argv);
     k_printf("__core program returns with %d !\n",rt);
     k_printf("__end of kernel!\n");
     for(;;);

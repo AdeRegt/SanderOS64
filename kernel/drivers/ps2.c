@@ -2,6 +2,7 @@
 #include "../include/graphics.h"
 #include "../include/ports.h"
 #include "../include/idt.h"
+#include "../include/memory.h"
 
 uint8_t kbdus[128] ={
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8',	/* 9 */
@@ -126,9 +127,23 @@ uint8_t getch(uint8_t wait){
     if(wait){
         while(last_pressed_key==0);
     }
+    k_printf("%c",last_pressed_key);
     uint8_t tmp = last_pressed_key;
     last_pressed_key = 0;
     return tmp;
+}
+
+uint8_t *scanLine(uint64_t size){
+    uint8_t* tw = (uint8_t*) malloc(size);
+    memset((void*)tw,0,size);
+    for(uint64_t i = 0 ; i < (size-1) ; i++){
+        uint8_t u = getch(1);
+        if(u=='\n'){
+            break;
+        }
+        tw[i] = u;
+    }
+    return tw;
 }
 
 uint8_t initialise_ps2_keyboard_driver(){

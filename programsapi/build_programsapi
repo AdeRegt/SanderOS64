@@ -1,0 +1,4 @@
+#! /bin/bash
+
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -c crt0.S -o crt0.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -c stdlib.c -o stdlib.o

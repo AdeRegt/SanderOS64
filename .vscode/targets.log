@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Mon Jul 11 19:32:16 2022
+# Make data base, printed on Thu Jul 14 17:30:26 2022
 
 # Variables
 
@@ -65,7 +65,7 @@ QT_SCALE_FACTOR = 1
 # environment
 CLUTTER_IM_MODULE = ibus
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-19af5587-94ae-4cae-aef6-64a3676fa546.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-16891f5d-3847-4860-890c-6dd3956c7561.sock
 # environment
 VSCODE_CWD = /home/sander
 # environment
@@ -77,7 +77,7 @@ PATH = /usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1550,unix/snd1:/tmp/.ICE-unix/1550
+SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1619,unix/snd1:/tmp/.ICE-unix/1619
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
@@ -95,7 +95,7 @@ XDG_SESSION_DESKTOP = lightdm-xsession
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 4230
+GIO_LAUNCHED_DESKTOP_FILE_PID = 3488
 # automatic
 %F = $(notdir $%)
 # environment
@@ -111,7 +111,7 @@ PWD = /home/sander/Bureaublad/SanderOS64
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 1600
+SSH_AGENT_PID = 1667
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -147,7 +147,7 @@ QT_IM_MODULE = ibus
 # environment
 SHLVL = 0
 # environment
-XDG_SESSION_ID = 3
+XDG_SESSION_ID = 2
 # environment
 USER = sander
 # makefile
@@ -211,7 +211,7 @@ LANG = C
 # environment
 SANDEROS_MOUNT_POINT = /mnt/5DDC-4569
 # environment
-VSCODE_PID = 4230
+VSCODE_PID = 3488
 # variable set hash-table stats:
 # Load=101/1024=10%, Rehash=0, Collisions=8/123=7%
 
@@ -279,7 +279,7 @@ GNUmakefile:
 # strcache performance: lookups = 24 / hit rate = 12%
 # hash-table stats:
 # Load=21/8192=0%, Rehash=0, Collisions=1/24=4%
-# Finished Make data base on Mon Jul 11 19:32:16 2022
+# Finished Make data base on Thu Jul 14 17:30:26 2022
 
  
 make: *** No rule to make target 'all'.  Stop.
