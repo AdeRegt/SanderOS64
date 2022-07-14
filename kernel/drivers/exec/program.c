@@ -34,8 +34,8 @@ int exec(uint8_t *path,char **argv){
         }
     }else{
         if(use_paging){
-            k_printf("New pid=%d \n",addTask(buffer,buffer,fz));
-            return 0;
+            addTask(buffer,buffer,fz);
+            return 0xCDCDCD;
         }else{
             memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
             address = EXTERNAL_PROGRAM_ADDRESS;

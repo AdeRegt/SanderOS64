@@ -3,6 +3,7 @@
 #include "../include/ps2.h"
 #include "../include/memory.h"
 #include "../include/device.h"
+#include "../include/exec/program.h"
 
 void initialise_tty(){
     clear_screen(0xFFFFFFFF);
@@ -17,7 +18,12 @@ void initialise_tty(){
             char* argv[1];
             argv[0] = "A:TEST";
             int rt = exec(tw,argv);
-            k_printf("Program exited with %d \n",rt);
+            if(rt==0xCDCDCD){
+                k_printf("Program is running in the background\n");
+            }else{
+                k_printf("Program exited with %d \n",rt);
+            }
         }
+        free(tw);
     }
 }

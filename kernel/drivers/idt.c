@@ -56,6 +56,7 @@ typedef struct{
   long tv_usec;	/* Microseconds.  */
 }__attribute__((packed)) timeval;
 
+// http://faculty.nps.edu/cseagle/assembly/sys_call.html
 void isrhandler(stack_registers *ix){
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);

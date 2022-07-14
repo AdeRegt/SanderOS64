@@ -22,10 +22,9 @@ int getPid(){
 }
 
 void new_program_starter(){
-    k_printf("\nWelcome, new program at pid %d with physical location at %x and virtual memory location at %x !\n",getPid(),tasks[getPid()].cr3,EXTERNAL_PROGRAM_ADDRESS);
     int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
     int res = callProgram(0,0);
-    k_printf("\n__EOP\n");
+    
     for(;;);
 }
 
@@ -85,7 +84,7 @@ int addTask(void *task,void *cr3,uint64_t size){
     
     // fill the registry
     tasks[cmt].sessionregs.rip = (uint64_t)new_program_starter;
-    // tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();
+    tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();
     // tasks[cmt].sessionregs.ss = (uint64_t)requestPage();
     tasks[cmt].cr3 = (uint64_t)cr3;
     tasks[cmt].size = (uint64_t)size;
