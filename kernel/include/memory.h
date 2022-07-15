@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #define MEMORY_MAP_SIZE 1024
+#define PAGE_SIZE 0x1000
 
 typedef struct {
     uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad

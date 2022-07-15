@@ -4,6 +4,7 @@
 #include "../include/ports.h" 
 #include "../include/multitasking.h"
 #include "../include/ps2.h"
+#include "../include/device.h"
 
 IDTR idtr;
 
@@ -47,7 +48,7 @@ extern void isrint();
 extern void isr2int();
 
 void end_of_program(){
-    k_printf("Program ended!\n");
+    k_printf("Program with pid %d ended!\n",getPid());
     for(;;);
 }
 
@@ -77,7 +78,7 @@ void isrhandler(stack_registers *ix){
             k_printf("%c",z[i]);
         }
     }else{
-        k_printf("isr: Unknown isr code!\n");
+        k_printf("isr: Unknown isr code!\n");for(;;);
     }
 }
 
@@ -87,6 +88,35 @@ void isr2handler(stack_registers *ix){
         for(uint64_t i = 0 ; i < ix->rdx ; i++){
             k_printf("%c",z[i]);
         }
+    }else if(ix->rax==2){
+        // fileopen option!
+        char* path = (char*) ix->rdi;
+        uint64_t filesize = getFileSize(path);
+        if(filesize==0){
+            ix->rax = -1;
+            goto eot;
+        }
+        // filesize / PAGE_SIZE;
+        void *buffer = requestPage();
+        readFile(path,buffer);
+        int sov = 0;
+        for(int i = 0 ; i < 10 ; i++){
+            File *fl = (File*) &(getCurrentTaskInfo()->files[i]);
+            if(fl->available==0){
+                fl->available = 1;
+                fl->buffer = buffer;
+                fl->filesize = filesize;
+                fl->pointer = 0;
+                break;
+            }
+        }
+        ix->rax = sov;
+    }else if(ix->rax==8){
+        // seek option!
+        
+    }else if(ix->rax==12){
+        // we always accept extending memory whatoever
+        ix->rax = ix->rdi;
     }else if(ix->rax==60){
         ix->rip = (uint64_t)end_of_program;
     }else if(ix->rax==96){
@@ -103,6 +133,7 @@ void isr2handler(stack_registers *ix){
         k_printf("------------------------\n\n"); 
         for(;;);
     }
+    eot:
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }

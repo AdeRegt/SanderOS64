@@ -107,22 +107,22 @@ void set_memory_map_bit(uint64_t index,char value){
 }
 
 void *requestPage(){
-    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
+    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
         if(memorymap[i]==0){
             memorymap[i] = 1;
-            return (void *)(free_memory_min+(i * 0x1000));
+            return (void *)(free_memory_min+(i * PAGE_SIZE));
         }
     }
     k_printf("Out of memory!\n");for(;;);
 }
 
 void *requestBigPage(){
-    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/0x1000) ; i++){
+    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
         if(memorymap[i]==0){
-            if(((free_memory_min+(0x1000*i))&0xFFFFF)==0){
-                if(((free_memory_min+(0x1000*i))%PAGE_GAP_SIZE)==0){
+            if(((free_memory_min+(PAGE_SIZE*i))&0xFFFFF)==0){
+                if(((free_memory_min+(PAGE_SIZE*i))%PAGE_GAP_SIZE)==0){
                     memorymap[i] = 1;
-                    return (void *)(free_memory_min+(i * 0x1000));
+                    return (void *)(free_memory_min+(i * PAGE_SIZE));
                 }
             }
         }
@@ -133,7 +133,7 @@ void *requestBigPage(){
 void freePage(void* memory){
     uint64_t calculation = (uint64_t) memory;
     calculation -= free_memory_min;
-    calculation /= 0x1000;
+    calculation /= PAGE_SIZE;
     memorymap[calculation] = 0;
 }
 

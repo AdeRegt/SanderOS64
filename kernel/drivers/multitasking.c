@@ -21,10 +21,18 @@ int getPid(){
     return vl;
 }
 
+Task* getCurrentTaskInfo(){
+    return (Task*)&tasks[vl];
+}
+
 void new_program_starter(){
-    int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
-    int res = callProgram(0,0);
-    
+    // int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
+    char* args[2];
+    args[0] = "fasm";
+    args[1] = "test";
+    // int res = callProgram(2,(char**)&args);
+    void (*pstart)(int,char*[]) = ((__attribute__((sysv_abi)) void (*)(int,char*[]) ) EXTERNAL_PROGRAM_ADDRESS);
+    pstart(2,args);
     for(;;);
 }
 

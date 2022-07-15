@@ -28,10 +28,18 @@ typedef struct{
 }__attribute__((packed)) stack_registers;
 
 typedef struct{
+    uint8_t available;
+    uint64_t filesize;
+    void* buffer;
+    uint64_t pointer;
+}__attribute__((packed)) File;
+
+typedef struct{
     stack_registers sessionregs;
     volatile int innercounter;
     uint64_t cr3;
     uint64_t size;
+    File files[10];
 }__attribute__((packed)) Task;
 
 #define MAX_TASKS 10
@@ -40,3 +48,5 @@ void initialise_multitasking_driver();
 extern void multitaskingint();
 Task* getTasks();
 int addTask(void *task,void *cr3,uint64_t size);
+int getPid();
+Task* getCurrentTaskInfo();
