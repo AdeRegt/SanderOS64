@@ -113,7 +113,14 @@ void isr2handler(stack_registers *ix){
         ix->rax = sov;
     }else if(ix->rax==8){
         // seek option!
-        
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
+        if(ix->rdx==2){
+            fl->pointer = fl->filesize;
+            ix->rax = fl->pointer;
+        }else{
+            fl->pointer = ix->rsi;
+            ix->rax = fl->pointer;
+        }
     }else if(ix->rax==12){
         // we always accept extending memory whatoever
         ix->rax = ix->rdi;

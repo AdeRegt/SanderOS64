@@ -19,6 +19,7 @@
         "driver.h": "c",
         "multitasking.h": "c",
         "program.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "stdio.h": "c"
     }
 }
