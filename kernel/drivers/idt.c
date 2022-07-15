@@ -5,6 +5,7 @@
 #include "../include/multitasking.h"
 #include "../include/ps2.h"
 #include "../include/device.h"
+#include "../include/paging.h"
 
 IDTR idtr;
 
@@ -83,7 +84,11 @@ void isrhandler(stack_registers *ix){
 }
 
 void isr2handler(stack_registers *ix){
-    if(ix->rax==1){
+    if(ix->rax==0){
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
+        memcpy((void*)ix->rsi,(void*)(fl->buffer + fl->pointer),ix->rdx);
+        fl->pointer = fl->pointer + ix->rdx;
+    }else if(ix->rax==1){
         char* z = ((char*) (ix->rsi));
         for(uint64_t i = 0 ; i < ix->rdx ; i++){
             k_printf("%c",z[i]);
@@ -111,6 +116,10 @@ void isr2handler(stack_registers *ix){
             }
         }
         ix->rax = sov;
+    }else if(ix->rax==3){
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
+        fl->available = 0;
+        ix->rax = 0;
     }else if(ix->rax==8){
         // seek option!
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
