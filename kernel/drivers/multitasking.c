@@ -96,6 +96,8 @@ int addTask(void *task,void *cr3,uint64_t size){
     // tasks[cmt].sessionregs.ss = (uint64_t)requestPage();
     tasks[cmt].cr3 = (uint64_t)cr3;
     tasks[cmt].size = (uint64_t)size;
+    tasks[cmt].files[0].available = 1;
+    tasks[cmt].files[1].available = 1;
     cmt++;
     return cmt - 1;
 }

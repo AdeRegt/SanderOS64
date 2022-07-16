@@ -91,19 +91,27 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==1){
         char* z = ((char*) (ix->rsi));
         for(uint64_t i = 0 ; i < ix->rdx ; i++){
-            k_printf("%c",z[i]);
+            if(ix->rdi<2){
+                k_printf("%c",z[i]);
+            }else{
+                // act like everything is normal!
+            }
         }
     }else if(ix->rax==2){
         // fileopen option!
         char* path = (char*) ix->rdi;
-        uint64_t filesize = getFileSize(path);
-        if(filesize==0){
-            ix->rax = -1;
-            goto eot;
+        uint64_t filesize = 0;
+        void* buffer;
+        if(ix->rsi==0){
+            filesize = getFileSize(path);
+            if(filesize==0){
+                ix->rax = -1;
+                goto eot;
+            }
+            // filesize / PAGE_SIZE;
+            buffer = requestPage();
+            readFile(path,buffer);
         }
-        // filesize / PAGE_SIZE;
-        void *buffer = requestPage();
-        readFile(path,buffer);
         int sov = 0;
         for(int i = 0 ; i < 10 ; i++){
             File *fl = (File*) &(getCurrentTaskInfo()->files[i]);
@@ -112,6 +120,7 @@ void isr2handler(stack_registers *ix){
                 fl->buffer = buffer;
                 fl->filesize = filesize;
                 fl->pointer = 0;
+                sov = i;
                 break;
             }
         }
