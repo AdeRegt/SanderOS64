@@ -23,6 +23,7 @@
 #define ATA_DEV_BUSY 0x80
 #define ATA_DEV_DRQ 0x08
 #define ATA_CMD_READ_DMA_EX 0x25
+#define ATA_CMD_WRITE_DMA_EX 0x35
 
 #define HBA_PxIS_TFES (1 << 30)
 
@@ -52,6 +53,66 @@ uint8_t ahci_read_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, vo
 	cmdFIS->fisType = FIS_TYPE_REG_H2D;
 	cmdFIS->commandControl = 1; // command
 	cmdFIS->command = ATA_CMD_READ_DMA_EX;
+
+	cmdFIS->lba0 = (uint8_t)sectorL;
+	cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
+	cmdFIS->lba2 = (uint8_t)(sectorL >> 16);
+	cmdFIS->lba3 = (uint8_t)sectorH;
+	cmdFIS->lba4 = (uint8_t)(sectorH >> 8);
+	cmdFIS->lba4 = (uint8_t)(sectorH >> 16);
+
+	cmdFIS->deviceRegister = 1<<6; //LBA mode
+
+	cmdFIS->countLow = counter & 0xFF;
+	cmdFIS->countHigh = (counter >> 8) & 0xFF;
+
+	uint64_t spin = 0;
+
+	while ((hbaPort->taskFileData & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000){
+		spin ++;
+	}
+	if (spin == 1000000) {
+		return 0;
+	}
+
+	hbaPort->commandIssue = 1;
+
+	while (1){
+
+		if((hbaPort->commandIssue == 0)){
+			break;
+		}
+		if(hbaPort->interruptStatus & HBA_PxIS_TFES){
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
+uint8_t ahci_write_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, void* buffer){
+	uint32_t sectorL = (uint32_t) sector;
+	uint32_t sectorH = (uint32_t) (sector >> 32);
+
+	hbaPort->interruptStatus = (uint32_t)-1;
+	HBACommandHeader* cmdHeader = (HBACommandHeader*)(uint64_t)hbaPort->commandListBase;
+	cmdHeader->commandFISLength = sizeof(FIS_REG_H2D)/ sizeof(uint32_t);
+	cmdHeader->write = 0;
+	cmdHeader->prdtLength = 1;
+
+	HBACommandTable* commandTable = (HBACommandTable*)(uint64_t)(cmdHeader->commandTableBaseAddress);
+	memset(commandTable, 0, sizeof(HBACommandTable) + (cmdHeader->prdtLength-1)*sizeof(HBAPRDTEntry));
+
+	commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)buffer;
+	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((uint64_t)buffer >> 32);
+	commandTable->prdtEntry[0].byteCount = (counter<<9)-1;
+	commandTable->prdtEntry[0].interruptOnCompletion = 1;
+
+	FIS_REG_H2D* cmdFIS = (FIS_REG_H2D*)(&commandTable->commandFIS);
+
+	cmdFIS->fisType = FIS_TYPE_REG_H2D;
+	cmdFIS->commandControl = 1; // command
+	cmdFIS->command = ATA_CMD_WRITE_DMA_EX;
 
 	cmdFIS->lba0 = (uint8_t)sectorL;
 	cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
@@ -150,6 +211,10 @@ char ahci_ata_read(Blockdevice* dev, uint64_t sector, uint32_t counter, void* bu
 	return ahci_read_sector((HBAPort*)dev->attachment,sector,counter,buffer);
 }
 
+char ahci_ata_write(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer){
+	return ahci_write_sector((HBAPort*)dev->attachment,sector,counter,buffer);
+}
+
 void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 	k_printf("AHCI: ints at %x \n",ints);
 	setInterrupt(ints,ahci_interrupt);
@@ -179,7 +244,7 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 				char* buffer = (char*) requestPage();
 				char xu1 = ahci_read_sector(port,0,1,(void*)buffer);
 				if(xu1){
-					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, 0, 3, port);
+					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, ahci_ata_write, 3, port);
 					fat_detect_and_initialise(dev,buffer);
 				}
 			}else if(port->signature==SATA_SIG_ATAPI){

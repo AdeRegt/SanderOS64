@@ -37,10 +37,6 @@ void kernel_main(BootInfo *gi){
     initialise_drivers_from_pci();
     initialise_ps2_driver();
     initialise_tty();
-    char* argv[1];
-    argv[0] = "A:TEST";
-    int rt = exec("A:SANDEROS/CMD.BIN",argv);
-    k_printf("__core program returns with %d !\n",rt);
     k_printf("__end of kernel!\n");
     for(;;);
 }

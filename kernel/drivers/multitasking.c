@@ -76,20 +76,6 @@ void multitaskinghandler(stack_registers *ix){
 }
 
 int addTask(void *task,void *cr3,uint64_t size){
-
-    // // fill kernel units
-    // uint64_t from = (uint64_t)_KernelStart;
-    // for(uint64_t at = (uint64_t)_KernelStart ; at < (uint64_t)_KernelEnd+0x1000 ; at += 0x1000 ){
-    //     map_memory(cr3,(void*)at,(void*)at);
-    // }
-
-    // // fill graphics units
-    // uint64_t gba = (uint64_t) get_graphics_info()->BaseAddress;
-    // uint64_t bz = (uint64_t) get_graphics_info()->BufferSize;
-    // for(uint64_t at = 0 ; at < (uint64_t)(bz+0x1000) ; at += 0x1000 ){
-    //     map_memory(cr3,(void*)gba + at,gba + at);
-    // }
-    
     // fill the registry
     tasks[cmt].sessionregs.rip = (uint64_t)new_program_starter;
     tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();

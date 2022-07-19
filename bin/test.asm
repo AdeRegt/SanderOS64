@@ -1,4 +1,4 @@
-format ELF64
+format BIN at 0xC000000
 
 mov rax,0
 int 0x80

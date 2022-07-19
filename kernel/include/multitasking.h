@@ -32,6 +32,8 @@ typedef struct{
     uint64_t filesize;
     void* buffer;
     uint64_t pointer;
+    uint8_t* filename;
+    uint64_t flags;
 }__attribute__((packed)) File;
 
 typedef struct{

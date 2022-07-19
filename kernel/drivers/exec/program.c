@@ -8,7 +8,9 @@
 
 int use_paging = 1;
 
-int exec(uint8_t *path,char **argv){
+int exec(uint8_t *path,char *argv){
+
+    k_printf("Trying to execute %s with %s \n",path,argv);
 
     //
     // First load the image....
@@ -18,7 +20,7 @@ int exec(uint8_t *path,char **argv){
     
     char raw_program = readFile((uint8_t*)path,buffer);
     if(raw_program==0){
-        return 0;
+        return -1;
     }
 
     //
@@ -26,11 +28,11 @@ int exec(uint8_t *path,char **argv){
     uint64_t address = 0;
     if(is_elf(buffer)){
         if(use_paging){
-            return 0;
+            return -1;
         }
         address = elf_load_image(buffer);
         if(!address){
-            return 0;
+            return -1;
         }
     }else{
         if(use_paging){
@@ -43,6 +45,6 @@ int exec(uint8_t *path,char **argv){
     }
 
     // call!
-    int (*callProgram)(int argc,char** argv) = (void*)address;
+    int (*callProgram)(int argc,char* argv) = (void*)address;
     return callProgram(0,0);
 }

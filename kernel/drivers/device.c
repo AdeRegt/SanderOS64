@@ -14,7 +14,7 @@ Blockdevice* registerBlockDevice(uint64_t blocksize, void* readcommand, void* wr
     Blockdevice* dev = getFreeBlockDevice();
     dev->blocksize = blocksize;
     dev->readcommand = readcommand;
-    dev->writecommand = readcommand;
+    dev->writecommand = writecommand;
     dev->offset = offset;
     dev->attachment = attachment;
     return dev;
@@ -25,17 +25,23 @@ char device_read_raw_sector(Blockdevice* dev, uint64_t sector, uint32_t counter,
 	return foo(dev,dev->offset + sector,counter,buffer);
 }
 
+char device_write_raw_sector(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer){
+    unsigned char (*foo)(Blockdevice*, uint64_t, uint32_t, void*) = (void*)dev->writecommand;
+	return foo(dev,dev->offset + sector,counter,buffer);
+}
+
 Filesystem* getFreeFilesystem(){
     Filesystem* dev = (Filesystem*) &filesystems[filesystemmaxpointer++];
     return dev;
 }
 
-Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir,void *filesize){
+Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir,void *filesize,void *write){
     Filesystem* fs = getFreeFilesystem();
     fs->blockdevice = bd;
     fs->readfile = read;
     fs->dir = dir;
     fs->filesize = filesize;
+    fs->write = write;
     return fs;
 }
 
@@ -59,6 +65,18 @@ char readFile(char* path,void *buffer){
         path++;
         path++;
 	    return foo((Filesystem*)&fs,path,buffer);
+    }
+    return 0;
+}
+
+uint64_t writeFile(char* path,void *buffer,uint64_t size){
+    char driveletter = path[0] - 'A';
+    Filesystem fs = filesystems[driveletter];
+    if(fs.readfile){
+        uint64_t (*foo)(Filesystem*, char*, void*, uint64_t) = (void*)fs.write;
+        path++;
+        path++;
+	    return foo((Filesystem*)&fs,path,buffer,size);
     }
     return 0;
 }
