@@ -91,7 +91,7 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==1){
         char* z = ((char*) (ix->rsi));
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
-        if(ix->rdi<2){
+        if(ix->rdi<5){
             for(uint64_t i = 0 ; i < ix->rdx ; i++){
                 k_printf("%c",z[i]);
             }

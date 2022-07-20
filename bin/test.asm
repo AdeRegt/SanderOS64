@@ -1,6 +1,5 @@
-format BIN at 0xC000000
+format binary
+use64
 
-mov rax,0
-int 0x80
-
-hw db "Hello world!",0
+mov rax,60
+int 0x81

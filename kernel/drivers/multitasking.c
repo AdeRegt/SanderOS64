@@ -26,13 +26,9 @@ Task* getCurrentTaskInfo(){
 }
 
 void new_program_starter(){
-    // int (*callProgram)(int argc,char** argv) = (void*) EXTERNAL_PROGRAM_ADDRESS;
-    char* args[2];
-    args[0] = "fasm";
-    args[1] = "test";
-    // int res = callProgram(2,(char**)&args);
-    void (*pstart)(int,char*[]) = ((__attribute__((sysv_abi)) void (*)(int,char*[]) ) EXTERNAL_PROGRAM_ADDRESS);
-    pstart(2,args);
+    k_printf("About to start program with pid %d \n",getPid());
+    void (*pstart)() = ((__attribute__((sysv_abi)) void (*)() ) EXTERNAL_PROGRAM_ADDRESS);
+    pstart();
     for(;;);
 }
 
@@ -84,6 +80,9 @@ int addTask(void *task,void *cr3,uint64_t size){
     tasks[cmt].size = (uint64_t)size;
     tasks[cmt].files[0].available = 1;
     tasks[cmt].files[1].available = 1;
+    tasks[cmt].files[2].available = 1;
+    tasks[cmt].files[3].available = 1;
+    tasks[cmt].files[4].available = 1;
     cmt++;
     return cmt - 1;
 }

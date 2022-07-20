@@ -369,6 +369,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     }
 
     if(found_solution_for_this_part==0){
+        k_printf("Create new file...\n");
         for(int q = 0 ; q < 16 ; q++){
             if(u[q].attributes==0){
                 u[q].attributes = 0x20;
@@ -407,6 +408,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     u[index_of_new_or_changed_file].size = filesize;
 
     if(u[index_of_new_or_changed_file].cluster_low==0){
+        k_printf("Finding empty cluster...\n");
         uint64_t *chdv = (uint64_t*)requestPage();
         if(!device_read_raw_sector(fs->blockdevice,settings->first_fat_sector,1,(void*)chdv)){
             freePage(chdv);
@@ -415,7 +417,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
             return 0;
         }
 
-        for(int i = 0 ; i < (settings->bb->bytes_per_sector/sizeof(uint16_t)) ; i++){
+        for(uint16_t i = 100 ; i < (settings->bb->bytes_per_sector/sizeof(uint16_t)) ; i++){
             uint16_t vl = (uint16_t) chdv[i] & 0xFFFF;
             if(vl==0){
                 chdv[i] = 0xFFF8;

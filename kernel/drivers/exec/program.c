@@ -27,9 +27,9 @@ int exec(uint8_t *path,char *argv){
     // Then interpetate the engine....
     uint64_t address = 0;
     if(is_elf(buffer)){
-        if(use_paging){
-            return -1;
-        }
+        // if(use_paging){
+        //     return -1;
+        // }
         address = elf_load_image(buffer);
         if(!address){
             return -1;
