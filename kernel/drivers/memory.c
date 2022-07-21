@@ -36,9 +36,14 @@ void initialise_memory_driver(){
     max_memory = 0;
     free_memory = 0;
     used_memory = 0;
+    uint64_t maxaddr = 0;
     for (int i = 0; i < mMapEntries; i++){
         MemoryDescriptor* desc = (MemoryDescriptor*)((uint64_t)memory_info->mMap + (i * memory_info->mMapDescSize));
         uint64_t size = desc->NumberOfPages * 4096 ;
+        uint64_t msize = desc->PhysicalStart + size;
+        if(msize>maxaddr){
+            maxaddr = msize;
+        }
         max_memory += size;
         if(desc->Type==7){
             if( size>1000000 && desc->PhysicalStart!=0 && free_memory_min==0 ){
@@ -59,6 +64,7 @@ void initialise_memory_driver(){
     uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
     uint64_t kernelPages = (uint64_t)kernelSize / 4096 + 1;
     k_printf("The kernel has a size of %x which are %x kernelpages it starts at %x to %x \n",kernelSize,kernelPages,_KernelStart,_KernelEnd);
+    k_printf("Max addr of PC is %x \n",maxaddr);
 }
 
 void memset(void *start, unsigned char value, uint64_t num){

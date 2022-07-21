@@ -1,6 +1,4 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
-make: *** No rule to make target 'all'.  Stop.
-
 # GNU Make 4.2.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2016 Free Software Foundation, Inc.
@@ -8,7 +6,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jul 19 23:52:59 2022
+# Make data base, printed on Thu Jul 21 17:37:59 2022
 
 # Variables
 
@@ -24,8 +22,6 @@ DESKTOP_SESSION = lightdm-xsession
 XDG_SESSION_CLASS = user
 # environment
 XDG_SESSION_TYPE = x11
-# environment
-VSCODE_LOG_NATIVE = false
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # automatic
@@ -61,13 +57,9 @@ XDG_DATA_DIRS = /usr/share/mate:/usr/local/share/:/usr/share/
 # environment
 DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
 # environment
-VSCODE_VERBOSE_LOGGING = true
-# environment
 QT_SCALE_FACTOR = 1
 # environment
 CLUTTER_IM_MODULE = ibus
-# environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-01167bcc-72b5-4e0b-a72d-5a99f5524896.sock
 # environment
 VSCODE_CWD = /home/sander
 # environment
@@ -79,11 +71,9 @@ PATH = /usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1531,unix/snd1:/tmp/.ICE-unix/1531
+SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/6135,unix/snd1:/tmp/.ICE-unix/6135
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
-# environment
-VSCODE_LOG_STACK = false
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
@@ -97,7 +87,7 @@ XDG_SESSION_DESKTOP = lightdm-xsession
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 32090
+GIO_LAUNCHED_DESKTOP_FILE_PID = 8554
 # automatic
 %F = $(notdir $%)
 # environment
@@ -105,15 +95,13 @@ DISPLAY = :0
 # environment
 GTK_IM_MODULE = ibus
 # environment
-VSCODE_PIPE_LOGGING = true
-# environment
 PWD = /home/sander/Bureaublad/SanderOS64
 # default
 .LOADED := 
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 1579
+SSH_AGENT_PID = 6183
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -123,13 +111,13 @@ VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
 HOME = /home/sander
 # environment
-VSCODE_CODE_CACHE_PATH = /home/sander/.config/Code/CachedData/30d9c6cd9483b2cc586687151bcbcd635f373630
+VSCODE_CODE_CACHE_PATH = /home/sander/.config/Code/CachedData/3b889b090b5ad5793f524b5d1d39fda662b96a2a
 # environment
 LOGNAME = sander
 # environment
 SANDEROS_CROSS_LOCATION = /home/sander/opt/cross/bin
 # environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # environment
 VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
@@ -169,7 +157,7 @@ VBOX_GUI_DBG_AUTO_SHOW = true
 # environment
 XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-7b465053-1.68.1-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-7b465053-1.69.2-main.sock
 # makefile
 MAKEFLAGS = pqrR
 # environment
@@ -213,9 +201,9 @@ LANG = C
 # environment
 SANDEROS_MOUNT_POINT = /mnt/5DDC-4569
 # environment
-VSCODE_PID = 32090
+VSCODE_PID = 8554
 # variable set hash-table stats:
-# Load=101/1024=10%, Rehash=0, Collisions=8/123=7%
+# Load=96/1024=9%, Rehash=0, Collisions=8/118=7%
 
 # Pattern-specific Variable Values
 
@@ -281,6 +269,8 @@ GNUmakefile:
 # strcache performance: lookups = 26 / hit rate = 11%
 # hash-table stats:
 # Load=23/8192=0%, Rehash=0, Collisions=1/26=4%
-# Finished Make data base on Tue Jul 19 23:52:59 2022
+# Finished Make data base on Thu Jul 21 17:37:59 2022
 
  
+make: *** No rule to make target 'all'.  Stop.
+

@@ -68,6 +68,7 @@ void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
 void initialise_paging_driver(){
 
     pagemaplevel4 = requestPage();
+    memset(pagemaplevel4,0,sizeof(PageTable));
     for(uint64_t valve = 0 ; valve < (0xFFFFF000/PAGE_GAP_SIZE) ; valve++){
         map_memory(pagemaplevel4,(void*)(valve*PAGE_GAP_SIZE),(void*)(valve*PAGE_GAP_SIZE));
     }
