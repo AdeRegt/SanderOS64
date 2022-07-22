@@ -85,6 +85,7 @@ void isrhandler(stack_registers *ix){
 
 void isr2handler(stack_registers *ix){
     if(ix->rax==0){
+        // k_printf("isr2:request read\n");
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         memcpy((void*)ix->rsi,(void*)(fl->buffer + fl->pointer),ix->rdx);
         fl->pointer = fl->pointer + ix->rdx;
@@ -96,6 +97,7 @@ void isr2handler(stack_registers *ix){
                 k_printf("%c",z[i]);
             }
         }else{
+            // k_printf("isr2:request write\n");
             uint64_t oldsize = getFileSize(fl->filename);
             uint64_t newsize = oldsize + ix->rdx;
             void *tmpbuf = requestPage();
@@ -110,6 +112,7 @@ void isr2handler(stack_registers *ix){
             freePage(tmpbuf);
         }
     }else if(ix->rax==2){
+        // k_printf("isr2:request open\n");
         // fileopen option!
         char* path = (char*) ix->rdi;
         uint64_t filesize = 0;
@@ -140,10 +143,12 @@ void isr2handler(stack_registers *ix){
         }
         ix->rax = sov;
     }else if(ix->rax==3){
+        // k_printf("isr2:request close\n");
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         fl->available = 0;
         ix->rax = 0;
     }else if(ix->rax==8){
+        // k_printf("isr2:request seek\n");
         // seek option!
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         if(ix->rdx==2){
@@ -154,11 +159,14 @@ void isr2handler(stack_registers *ix){
             ix->rax = fl->pointer;
         }
     }else if(ix->rax==12){
+        // k_printf("isr2:request space\n");
         // we always accept extending memory whatoever
         ix->rax = ix->rdi;
     }else if(ix->rax==60){
+        // k_printf("isr2:and\n");
         ix->rip = (uint64_t)end_of_program;
     }else if(ix->rax==96){
+        // k_printf("isr2:request time\n");
         timeval* tv = (timeval*) ix->rdi;
         tv->tv_sec = 10000;
         tv->tv_usec = 10000;

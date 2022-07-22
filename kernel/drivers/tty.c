@@ -8,6 +8,8 @@
 void initialise_tty(){
     clear_screen(0xFFFFFFFF);
     k_printf("SanderOS64 Buildin Command Interpeter\n");
+    k_printf("Known programs: \n");
+    k_printf("%s \n\n",dir("A:PROGRAMS"));
     while(1){
         k_printf("> ");
         uint8_t *tw = scanLine(25);

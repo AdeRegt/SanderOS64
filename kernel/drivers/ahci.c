@@ -97,7 +97,7 @@ uint8_t ahci_write_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, v
 	hbaPort->interruptStatus = (uint32_t)-1;
 	HBACommandHeader* cmdHeader = (HBACommandHeader*)(uint64_t)hbaPort->commandListBase;
 	cmdHeader->commandFISLength = sizeof(FIS_REG_H2D)/ sizeof(uint32_t);
-	cmdHeader->write = 0;
+	cmdHeader->write = 1;
 	cmdHeader->prdtLength = 1;
 
 	HBACommandTable* commandTable = (HBACommandTable*)(uint64_t)(cmdHeader->commandTableBaseAddress);

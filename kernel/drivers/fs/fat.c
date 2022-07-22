@@ -279,6 +279,7 @@ char *fat_dir(Filesystem* fs,char* path){
 }
 
 uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t filesize){
+    k_printf("Command to write file...\n");
     FATFileSystemSettings* settings = (FATFileSystemSettings*) fs->argument;
     int count_of_slashes = 0;
     int stringcount = 0;
@@ -304,7 +305,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     char buffer[17];
     int found_solution_for_this_part = 0;
     int index_of_new_or_changed_file = 0;
-    int lastdirsect = 0;
+    uint32_t lastdirsect = 0;
     for(int segment_id = 0 ; segment_id < count_of_slashes ; segment_id++){
         memset(&buffer,0,17);
         int z = 0;
@@ -434,6 +435,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
         }
         freePage(chdv);
     }
+    k_printf("device: store new info to disk!\n");
 
     if(!device_write_raw_sector(fs->blockdevice,lastdirsect,1,(void*)u)){
         freePage(es);
@@ -448,6 +450,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     rawcalc -= 2;
     rawcalc *= settings->bb->sectors_per_cluster;
     rawcalc += settings->first_data_sector;
+    k_printf("device: writing the actual file...!\n");
 
     if(!device_write_raw_sector(fs->blockdevice,rawcalc ,(filesize/512)+1,(void*)bufferedcapacity)){
         freePage(es);
@@ -455,6 +458,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
         return 0;
     }
     freePage(es);
+    k_printf("Finished writing file\n");
 
     return filesize;
 }
