@@ -31,6 +31,14 @@ uint64_t getMaximumMemory(){
 extern uint64_t _KernelStart;
 extern uint64_t _KernelEnd;
 
+void *memconcat(void *base1,void *base2,uint64_t newsize,uint64_t size_base1){
+    char* nd = (char*) malloc(newsize);
+    memset(nd,0,newsize);
+    memcpy(nd,base1,size_base1);
+    memcpy(nd + newsize,base2,newsize - size_base1);
+    return nd;
+}
+
 void initialise_memory_driver(){
     uint64_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;

@@ -164,6 +164,8 @@ void isr2handler(stack_registers *ix){
         ix->rax = ix->rdi;
     }else if(ix->rax==60){
         // k_printf("isr2:and\n");
+        Task* ts = (Task*) (getTasks() + (sizeof(Task)*getPid()));
+        ts->task_running = 0;
         ix->rip = (uint64_t)end_of_program;
     }else if(ix->rax==96){
         // k_printf("isr2:request time\n");

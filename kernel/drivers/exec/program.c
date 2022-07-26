@@ -36,8 +36,7 @@ int exec(uint8_t *path,char *argv){
         }
     }else{
         if(use_paging){
-            addTask(buffer,buffer,fz);
-            return 0xCDCDCD;
+            return addTask(buffer,buffer,fz);
         }else{
             memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
             address = EXTERNAL_PROGRAM_ADDRESS;

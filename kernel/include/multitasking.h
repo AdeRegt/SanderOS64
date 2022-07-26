@@ -42,6 +42,7 @@ typedef struct{
     uint64_t cr3;
     uint64_t size;
     File files[10];
+    uint8_t task_running;
 }__attribute__((packed)) Task;
 
 #define MAX_TASKS 10
@@ -52,3 +53,4 @@ Task* getTasks();
 int addTask(void *task,void *cr3,uint64_t size);
 int getPid();
 Task* getCurrentTaskInfo();
+void waitForPid(int pid);

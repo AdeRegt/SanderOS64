@@ -21,6 +21,7 @@ typedef struct{
 void initialise_memory_driver();
 void memset(void *start, unsigned char value, uint64_t num);
 uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length);
+void *memconcat(void *base1,void *base2,uint64_t newsize,uint64_t size_base1);
 void *requestPage();
 void *requestBigPage();
 void freePage(void* memory);

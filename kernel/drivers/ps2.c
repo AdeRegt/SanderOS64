@@ -179,20 +179,40 @@ uint8_t getch(uint8_t wait){
     if(wait){
         while(last_pressed_key==0);
     }
-    k_printf("%c",last_pressed_key);
     uint8_t tmp = last_pressed_key;
     last_pressed_key = 0;
     return tmp;
 }
 
+extern unsigned long pointerX;
+extern unsigned long pointerY;
+
 uint8_t *scanLine(uint64_t size){
+    unsigned long px = pointerX;
+    unsigned long py = pointerY;
     uint8_t* tw = (uint8_t*) malloc(size);
     memset((void*)tw,0,size);
     for(uint64_t i = 0 ; i < (size-1) ; i++){
+        pointerX = px;
+        pointerY = py;
+        for(int x = 0 ; x < (size*8) ; x++){
+            for(int y = 0 ; y < 16 ; y++){
+                draw_pixel_at(pointerX + x,pointerY + y,0xFFFFFF);
+            }
+        }
+        k_printf("%s",tw);
         uint8_t u = getch(1);
         if(u=='\n'){
             break;
         }
+        if(u=='\b'){
+            tw[i] = 0x00;
+            i--;
+            tw[i] = 0x00;
+            i--;
+            continue;
+        }
+        k_printf("%c",u);
         tw[i] = u;
     }
     return tw;

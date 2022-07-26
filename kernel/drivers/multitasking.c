@@ -25,6 +25,15 @@ Task* getCurrentTaskInfo(){
     return (Task*)&tasks[vl];
 }
 
+void waitForPid(int pid){
+    while(1){
+        Task* ts = (Task*) (tasks + (sizeof(Task)*pid));
+        if(ts->task_running==0){
+            break;
+        }
+    }
+}
+
 void new_program_starter(){
     k_printf("About to start program with pid %d \n",getPid());
     void (*pstart)() = ((__attribute__((sysv_abi)) void (*)() ) EXTERNAL_PROGRAM_ADDRESS);
@@ -83,6 +92,7 @@ int addTask(void *task,void *cr3,uint64_t size){
     tasks[cmt].files[2].available = 1;
     tasks[cmt].files[3].available = 1;
     tasks[cmt].files[4].available = 1;
+    tasks[cmt].task_running = 1;
     cmt++;
     return cmt - 1;
 }
