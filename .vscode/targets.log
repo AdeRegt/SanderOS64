@@ -1,6 +1,4 @@
 make all --print-data-base --no-builtin-variables --no-builtin-rules --question
-make: *** No rule to make target 'all'.  Stop.
-
 # GNU Make 4.2.1
 # Built for x86_64-pc-linux-gnu
 # Copyright (C) 1988-2016 Free Software Foundation, Inc.
@@ -8,7 +6,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Jul 26 17:48:30 2022
+# Make data base, printed on Thu Aug  4 19:25:30 2022
 
 # Variables
 
@@ -73,7 +71,7 @@ PATH = /usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
 # environment
 GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
-SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1552,unix/snd1:/tmp/.ICE-unix/1552
+SESSION_MANAGER = local/snd1:@/tmp/.ICE-unix/1576,unix/snd1:/tmp/.ICE-unix/1576
 # environment
 XDG_RUNTIME_DIR = /run/user/1000
 # environment
@@ -89,7 +87,7 @@ XDG_SESSION_DESKTOP = lightdm-xsession
 # environment
 SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 6101
+GIO_LAUNCHED_DESKTOP_FILE_PID = 4788
 # automatic
 %F = $(notdir $%)
 # environment
@@ -103,7 +101,7 @@ PWD = /home/sander/Bureaublad/SanderOS64
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 1600
+SSH_AGENT_PID = 1624
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -139,7 +137,7 @@ QT_IM_MODULE = ibus
 # environment
 SHLVL = 0
 # environment
-XDG_SESSION_ID = 3
+XDG_SESSION_ID = 2
 # environment
 USER = sander
 # makefile
@@ -203,7 +201,7 @@ LANG = C
 # environment
 SANDEROS_MOUNT_POINT = /mnt/5DDC-4569
 # environment
-VSCODE_PID = 6101
+VSCODE_PID = 4788
 # variable set hash-table stats:
 # Load=96/1024=9%, Rehash=0, Collisions=8/118=7%
 
@@ -271,6 +269,8 @@ GNUmakefile:
 # strcache performance: lookups = 26 / hit rate = 11%
 # hash-table stats:
 # Load=23/8192=0%, Rehash=0, Collisions=1/26=4%
-# Finished Make data base on Tue Jul 26 17:48:30 2022
+# Finished Make data base on Thu Aug  4 19:25:30 2022
 
  
+make: *** No rule to make target 'all'.  Stop.
+

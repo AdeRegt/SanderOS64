@@ -19,6 +19,8 @@ $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-z
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/multitasking.c -o multitasking2.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/xhci.c -o xhci.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ps2.c -o ps2.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/rtl.c -o rtl.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ethernet.c -o ethernet.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/fat.c -o fat.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/mbr.c -o mbr.o
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/device.c -o device.o
@@ -28,7 +30,7 @@ $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-z
 $SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/program.c -o program.o
 
 echo "Linking O files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o tty.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o tty.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o ethernet.o rtl.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
 
 echo "Cleanup"
 rm *.o

@@ -2,8 +2,11 @@
 #include "../include/kernel.h"
 #include "../include/ports.h"
 #include "../include/ahci.h"
+#include "../include/xhci.h"
 #include "../include/exec/module.h"
 #include "../include/device.h"
+#include "../include/rtl.h"
+#include "../include/ethernet.h"
 
 unsigned short pciConfigReadWord (unsigned char bus, unsigned char slot, unsigned char func, unsigned char offset) {
     unsigned long address;
@@ -51,12 +54,18 @@ void initialise_drivers_from_pci(){
                     pi.slot = slot;
                     pi.function = function;
 					if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
-                        loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
+                        // loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
+                        unsigned long bar5 = getBARaddress(bus,slot,function,0x10) & 0xFFFFFFF0;
+                        unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+                        initialise_xhci_driver(bar5,usbint);
+                    }else if( classc==0x02 && sublca==0x00 && (device==0x8168||device==0x8139)&&vendor==0x10ec ){
+                        init_rtl(bus,slot,function);
                     }
                 }
             }
         }
     }
+    // initialise_ethernet();
 }
 
 void initialise_pci_driver(){
@@ -69,21 +78,11 @@ void initialise_pci_driver(){
 				if(vendor != 0xFFFF){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
-                    #ifdef BOOT_WITH_AHCI
-                        if(classc==0x01&&sublca==0x06){
-                            unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
-                            unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
-                            initialise_ahci_driver(bar5,usbint);
-                        }
-                    #endif 
-                    #ifndef BOOT_WITH_AHCI
-                        unsigned char subsub = (pciConfigReadWord(bus,slot,function,0x08)>>8)&0xFF;
-                        if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
-                            unsigned long bar5 = getBARaddress(bus,slot,function,0x10);
-                            unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
-                            initialise_xhci_driver(bar5,usbint);
-                        }
-                    #endif
+                    if(classc==0x01&&sublca==0x06){
+                        unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
+                        unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+                        initialise_ahci_driver(bar5,usbint);
+                    }
                 }
             }
         }
