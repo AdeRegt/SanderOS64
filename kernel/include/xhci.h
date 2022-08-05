@@ -1,6 +1,15 @@
 #pragma once
 #include <stdint.h>
 
+#define XHCI_TRB_TYPE_EVENT_TRANSFER_EVENT 32
+#define XHCI_TRB_TYPE_EVENT_COMMAND_COMPLETION_EVENT 33
+#define XHCI_TRB_TYPE_EVENT_PORT_STATUS_CHANGE_EVENT 34
+#define XHCI_TRB_TYPE_EVENT_BANDWIDTH_REQUEST_EVENT 35
+#define XHCI_TRB_TYPE_EVENT_DOORBELL_EVENT 36
+#define XHCI_TRB_TYPE_EVENT_HOST_CONTROLLER_EVENT 37
+#define XHCI_TRB_TYPE_EVENT_DEVICE_NOTIFICATION_EVENT 38
+#define XHCI_TRB_TYPE_EVENT_MFINDEX_WRAP_EVENT 39
+
 typedef struct {
     /**
      * @brief This field specifies the maximum number of Device
@@ -662,6 +671,47 @@ information.
 }__attribute__((packed)) XHCI_OPERATIONAL_REGISTER_CONFIG;
 
 typedef struct{
+     uint8_t CCS:1;
+     uint8_t PED:1;
+     uint8_t rsvd1:1;
+     uint8_t OCA:1;
+     uint8_t PR:1;
+     uint16_t PLS:4;
+     uint8_t PP:1;
+     uint16_t PortSpeed:4;
+     uint8_t PIC:2;
+     uint8_t LWS:1;
+     uint8_t CSC:1;
+     uint8_t PEC:1;
+     uint8_t WRC:1;
+     uint8_t OCC:1;
+     uint8_t PRC:1;
+     uint8_t PLC:1;
+     uint8_t CEC:1;
+     uint8_t CAS:1;
+     uint8_t WCE:1;
+     uint8_t WDE:1;
+     uint8_t WOE:1;
+     uint8_t rsvd2:2;
+     uint8_t dr:1;
+     uint8_t wpr:1;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_PORTSC;
+
+typedef struct{
+     uint8_t U1Timeout:8;
+     uint8_t U2Timeout:8;
+     uint8_t FLA:1;
+     uint32_t reserved:15;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_PORTPMSC;
+
+typedef struct{
+     XHCI_OPERATIONAL_PORT_PORTSC PORTSC;
+     XHCI_OPERATIONAL_PORT_PORTPMSC PORTPMSC;
+     uint32_t portli;
+     uint32_t porthlpmc;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_REGISTER;
+
+typedef struct{
     XHCI_OPERATIONAL_REGISTER_USBCMD USBCMD;
     XHCI_OPERATIONAL_REGISTER_USBSTS USBSTS;
     uint32_t PAGESIZE;
@@ -673,6 +723,155 @@ typedef struct{
     uint32_t DCBAAP_low;
     uint32_t DCBAAP_high;
     XHCI_OPERATIONAL_REGISTER_CONFIG CONFIG;
+    uint8_t RsvdZ3[0x3C4];
+    XHCI_OPERATIONAL_PORT_REGISTER ports[30];
 }__attribute__((packed)) XHCI_OPERATIONAL_REGISTER;
+
+typedef struct{
+    uint8_t IP:1;
+    uint8_t IE:1;
+    uint32_t rsvd:29;
+}__attribute__((packed)) XHCI_RUNTIME_REGISTER_IMAN;
+
+typedef struct{
+    uint16_t IMODI;
+    uint16_t IMODC;
+}__attribute__((packed)) XHCI_RUNTIME_REGISTER_IMOD;
+
+typedef struct{
+    XHCI_RUNTIME_REGISTER_IMAN iman;
+    XHCI_RUNTIME_REGISTER_IMOD imod;
+    uint32_t erstsz;
+    uint32_t reserved;
+    uint32_t erstba_lo;
+    uint32_t erstba_hi;
+    uint32_t erdp_lo;
+    uint32_t erdp_hi;
+}__attribute__((packed)) XHCIInterrupterRegisters;
+
+typedef struct{
+    uint32_t mfindex;
+    uint8_t reserved[0x1C];
+    XHCIInterrupterRegisters intregs[10];
+}__attribute__((packed)) XHCI_RUNTIME_REGISTERS;
+
+typedef struct{
+    uint64_t address;
+    uint32_t ringsegmentsize;
+    uint32_t rsvd;
+}__attribute__((packed)) XHCIEventRingSegmentTableEntry;
+
+
+typedef struct{
+    // TRB Pointer Hi and Lo. This field represents the 64-bit address of the TRB that generated this
+    // event or 64 bits of Event Data if the ED flag is ‘1’.
+    // If a TRB memory structure is referenced by this field (ED = ‘0’), then it shall be physical memory
+    // pointer aligned on a 16-byte boundary, i.e. bits 0 through 3 of the address are ‘0’.
+    uint64_t trb_pointer;
+    // TRB Transfer Length. This field shall reflect the residual number of bytes not transferred.
+    // For an OUT, this field shall indicate the value of the Length field of the Transfer TRB, minus the
+    // data bytes that were successfully transmitted. A successful OUT transfer shall return a Length of
+    // ‘0’.
+    // For an IN, this field shall indicate the value of the TRB Transfer Length field of the Transfer TRB,
+    // minus the data bytes that were successfully received. If the device terminates the receive
+    // transfer with a Short Packet, then this field shall indicate the difference between the expected
+    // transfer size (defined by the Transfer TRB) and the actual number of bytes received. If the
+    // receive transfer completed with an error, then this field shall indicate the difference between
+    // the expected transfer size and the number of bytes successfully received.
+    // If the Event Data flag is ‘0’ the legal range of values is 0 to 10000h. If the Event Data flag is ‘1’ or
+    // the Condition Code is Stopped - Short Packet, then this field shall be set to the value of the
+    // Event Data Transfer Length Accumulator (EDTLA). Refer to section 4.11.5.2 for a description of
+    // EDTLA.
+    uint32_t transfer_length: 24;
+    // Completion Code. This field encodes the completion status that can be identified by a TRB.
+    // Refer to section 6.4.5 for an enumerated list of possible error conditions.
+    uint32_t competion_code: 7;
+    
+    // Slot ID. The ID of the Device Slot that generated the event. This is value is used as an index in
+    // the Device Context Base Address Array to select the Device Context of the source device.
+    uint32_t slot_id: 7;
+    uint32_t reserved_3: 3;
+    // Endpoint ID. The ID of the Endpoint that generated the event. This value is used as an index in
+    // the Device Context to select the Endpoint Context associated with this event.
+    uint32_t endpoint_id: 5;
+    // TRB Type. This field identifies the type of the TRB. Refer to Table 6-91 for the definition of the
+    // Transfer Event TRB type ID.
+    uint32_t trb_type: 6;
+    uint32_t reserved_2: 7;
+    // Event Data (ED). When set to ‘1’, the event was generated by an Event Data TRB and the
+    // Parameter Component (TRB Pointer field) contains a 64-bit value provided by the Event Data
+    // TRB. If cleared to ‘0’, the Parameter Component (TRB Pointer field) contains a pointer to the TRB
+    // that generated this event. Refer to section 4.11.5.2 for more information.
+    uint32_t event_data: 1;
+    // RsvdZ.
+    uint32_t reserved_1: 1;
+    // Cycle bit (C). This bit is used to mark the Dequeue Pointer of an Event Ring.
+    uint32_t cycle_bit: 1;
+}__attribute__((packed))TransferEventTRB;
+
+typedef struct{
+    uint32_t reserved[3];
+    uint8_t cycle_bit:1;
+    uint16_t reserved1:9;
+    uint16_t trb_type:6;
+    uint16_t slot_type:5;
+    uint16_t reserved2:10;
+}__attribute__((packed))EnableSlotTRB;
+
+typedef struct{
+    uint32_t arg1;
+    uint32_t arg2;
+    uint32_t arg3;
+    uint32_t arg4;
+}__attribute__((packed)) TRB;
+
+typedef struct{
+    // Command TRB Pointer Hi and Lo. This field represents the high order bits of the 64-bit address
+    // of the Command TRB that generated this event. Note that this field is not valid for some
+    // Completion Code values. Refer to Table 6-90 for specific cases.
+    // The memory structure referenced by this physical memory pointer shall be aligned on a 16-byte
+    // address boundary.
+    uint64_t CommandTRBPointer;
+    // Command Completion Parameter. This field may optionally be set by a command. Refer to
+    // section 4.6.6.1 for specific usage. If a command does not utilize this field it shall be treated as
+    // RsvdZ.
+    uint32_t CommandCompletionParameter: 24;
+    // Completion Code. This field encodes the completion status of the command that generated the
+    // event. Refer to the respective command definition for a list of the possible Completion Codes
+    // associated with the command. Refer to section 6.4.5 for an enumerated list of possible error
+    // conditions.
+    uint32_t CompletionCode:8;
+    // This bit is used to mark the Dequeue Pointer of an Event Ring.
+    uint8_t Cyclebit:1;
+    uint16_t reserved1:9;
+    // TRB Type. This field identifies the type of the TRB. Refer to Table 6-91 for the definition of the
+    // Command Completion Event TRB type ID.
+    uint16_t TRBType:6;
+    // VF ID. The ID of the Virtual Function that generated the event. Note that this field is valid only if
+    // Virtual Functions are enabled. If they are not enabled this field shall be cleared to ‘0’.
+    uint16_t VFID:8;
+    // Slot ID. The Slot ID field shall be updated by the xHC to reflect the slot associated with the
+    // command that generated the event, with the following exceptions:
+    // - The Slot ID shall be cleared to ‘0’ for No Op, Set Latency Tolerance Value, Get Port Bandwidth,
+    // and Force Event Commands.
+    // - The Slot ID shall be set to the ID of the newly allocated Device Slot for the Enable Slot
+    // Command.
+    // - The value of Slot ID shall be vendor defined when generated by a vendor defined command.
+    // This value is used as an index in the Device Context Base Address Array to select the Device
+    // Context of the source device. If this Event is due to a Host Controller Command, then this field
+    // shall be cleared to ‘0’.
+    uint16_t SlotID:8;
+}__attribute__((packed)) CommandCompletionEventTRB;
+
+typedef struct{
+    uint32_t usbcmd;
+    uint32_t usbsts;
+    uint32_t pagesize;
+    uint8_t rsvdA[0x08];
+    uint32_t dnctrl;
+    uint64_t crcr;
+    uint8_t rsvdB[0x10];
+    uint64_t dcbaap;
+}__attribute__((packed)) XHCIOperationalRegisters;
 
 void initialise_xhci_driver(unsigned long bar,unsigned long usbint);
