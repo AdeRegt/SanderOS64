@@ -26,3 +26,4 @@ void memset(void *start, unsigned char value, unsigned long long num);
 
 unsigned long getBARaddress(int bus,int slot,int function,int barNO);
 void sleep(uint64_t time);
+void registerHIDDevice(void *getcpointer);

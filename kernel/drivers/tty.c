@@ -1,6 +1,5 @@
 #include "../include/tty.h"
 #include "../include/graphics.h"
-#include "../include/ps2.h"
 #include "../include/memory.h"
 #include "../include/device.h"
 #include "../include/exec/program.h"

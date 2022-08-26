@@ -1,36 +1,36 @@
 #/bin/bash
 echo "Assemble ASM files..."
-nasm drivers/gdt_setup.asm -f elf64 -o gdtsetup.o 
-nasm drivers/multitasking.asm -f elf64 -o multitasking.o 
-nasm drivers/isr.asm -f elf64 -o isr.o 
+nasm drivers/gdt_setup.asm -f elf64 -o gdtsetup.o || exit
+nasm drivers/multitasking.asm -f elf64 -o multitasking.o  || exit
+nasm drivers/isr.asm -f elf64 -o isr.o  || exit
 
 echo "Compiling C files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/graphics.c -o graphics.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/memory.c -o memory.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/gdt.c -o gdt.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mno-red-zone -mgeneral-regs-only -O0 -c drivers/idt.c -o idt.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/pci.c -D BOOT_WITH_AHCI -o pci.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/ports.c -o ports.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ahci.c -o ahci.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/timer.c -o timer.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/multitasking.c -o multitasking2.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/xhci.c -o xhci.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ps2.c -o ps2.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/rtl.c -o rtl.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ethernet.c -o ethernet.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/fat.c -o fat.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/mbr.c -o mbr.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/device.c -o device.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/tty.c -o tty.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/elf.c -o elf.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/module.c -o module.o
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/program.c -o program.o
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c kernel.c -o kernel.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/graphics.c -o graphics.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/memory.c -o memory.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/paging.c -o paging.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/psf.c -o psf.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/gdt.c -o gdt.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mno-red-zone -mgeneral-regs-only -O0 -c drivers/idt.c -o idt.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/pci.c -D BOOT_WITH_AHCI -o pci.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/ports.c -o ports.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ahci.c -o ahci.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/timer.c -o timer.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/multitasking.c -o multitasking2.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/xhci.c -o xhci.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/rtl.c -o rtl.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -mgeneral-regs-only -c drivers/ethernet.c -o ethernet.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/fat.c -o fat.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/fs/mbr.c -o mbr.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/device.c -o device.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/tty.c -o tty.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/elf.c -o elf.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/module.c -o module.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/program.c -o program.o || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c drivers/exec/debugger.c -o debugger.o || exit
 
 echo "Linking O files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o gdtsetup.o idt.o pci.o isr.o tty.o program.o ports.o ahci.o ps2.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o ethernet.o rtl.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker.ld kernel.o graphics.o memory.o paging.o psf.o gdt.o debugger.o gdtsetup.o idt.o pci.o isr.o tty.o program.o ports.o ahci.o module.o elf.o multitasking.o multitasking2.o device.o xhci.o mbr.o fat.o timer.o ethernet.o rtl.o -o ./../bin/sanderos/kernel.bin -nostdlib -lgcc || exit
 
 echo "Cleanup"
-rm *.o
+rm *.o  || exit

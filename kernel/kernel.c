@@ -6,7 +6,6 @@
 #include "include/timer.h"
 #include "include/device.h"
 #include "include/multitasking.h"
-#include "include/ps2.h"
 #include "include/tty.h"
 #include "include/exec/program.h"
 #include "include/exec/module.h"
@@ -35,7 +34,7 @@ void kernel_main(BootInfo *gi){
         for(;;);
     }
     initialise_drivers_from_pci();
-    initialise_ps2_driver();
+    loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
     initialise_tty();
     k_printf("__end of kernel!\n");
     for(;;);

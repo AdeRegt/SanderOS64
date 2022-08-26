@@ -1,4 +1,7 @@
 #include "../include/device.h"
+#include "../include/memory.h"
+#include "../include/graphics.h"
+#include "../include/exec/debugger.h"
 
 Blockdevice blockdevices[10];
 int blockdevicemaxpointer = 0;
@@ -91,4 +94,30 @@ uint64_t getFileSize(char* path){
 	    return foo((Filesystem*)&fs,path);
     }
     return 0;
+}
+
+uint8_t *scanLine(uint64_t maxsize){
+    uint8_t *result = (uint8_t*) malloc(maxsize);
+    memset(result,0,maxsize);
+    for(uint64_t i = 0 ; i < maxsize ; i++){
+        uint8_t r = getch(1);
+        if(r=='\n'){
+            break;
+        }
+        putc(r);
+        result[i] = r;
+    } 
+    return result;
+}
+
+void *getcpoint;
+
+uint8_t getch(uint8_t wait){
+    uint8_t (*foo)(uint8_t) = (void*)getcpoint;
+    return foo(wait);
+}
+
+void registerHIDDevice(void *getcpointer){
+    k_printf("Registering HID at %x \n",getcpointer);
+    getcpoint = getcpointer;
 }

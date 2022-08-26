@@ -761,7 +761,6 @@ typedef struct{
     uint32_t rsvd;
 }__attribute__((packed)) XHCIEventRingSegmentTableEntry;
 
-
 typedef struct{
     // TRB Pointer Hi and Lo. This field represents the 64-bit address of the TRB that generated this
     // event or 64 bits of Event Data if the ED flag is ‘1’.
@@ -819,6 +818,18 @@ typedef struct{
 }__attribute__((packed))EnableSlotTRB;
 
 typedef struct{
+    uint32_t address_low;
+    uint32_t address_hig;
+    uint32_t reserved1;
+    uint8_t c:1;
+    uint8_t reserved2;
+    uint8_t BSR:1;
+    uint8_t TRBType:6;
+    uint8_t reserved3;
+    uint8_t SlotID;
+}__attribute__((packed)) AddressDeviceCommandTRB;
+
+typedef struct{
     uint32_t arg1;
     uint32_t arg2;
     uint32_t arg3;
@@ -864,6 +875,17 @@ typedef struct{
 }__attribute__((packed)) CommandCompletionEventTRB;
 
 typedef struct{
+     uint32_t reserved1:24;
+     uint16_t PortID:8;
+     uint32_t reserved2:24;
+     uint16_t CompletionCode:8;
+     uint8_t C:1;
+     uint16_t reserved3:9;
+     uint8_t TRBType:6;
+     uint16_t reserved4;
+}__attribute__((packed)) PortStatusChangeEventTRB;
+
+typedef struct{
     uint32_t usbcmd;
     uint32_t usbsts;
     uint32_t pagesize;
@@ -873,5 +895,69 @@ typedef struct{
     uint8_t rsvdB[0x10];
     uint64_t dcbaap;
 }__attribute__((packed)) XHCIOperationalRegisters;
+
+typedef struct{
+     uint32_t D_row;
+     uint32_t A_row;
+     uint32_t reserved1;
+     uint32_t reserved2;
+     uint32_t reserved3;
+     uint32_t reserved4;
+     uint32_t reserved5;
+     uint8_t ConfigurationValue;
+     uint8_t InterfaceNumber;
+     uint8_t AlternateString;
+     uint8_t reserved6;
+}__attribute__((packed)) XHCI_INPUT_CONTROL_CONTEXT;
+
+typedef struct{
+     uint32_t RouteString:20;
+     uint8_t Speed:4;
+     uint8_t reserved1:1;
+     uint8_t MTT:1;
+     uint8_t Hub:1;
+     uint8_t ContextEntries:5;
+     uint32_t MaxExitLatency:16;
+     uint16_t RootHubPortNumber:8;
+     uint16_t NumberOfPorts:8;
+     uint8_t ParentHubSlotId;
+     uint8_t ParentPortNumber;
+     uint8_t TTT:2;
+     uint8_t reserved2:4;
+     uint16_t InterrupterTarget:10;
+     uint8_t USBDeviceAddress;
+     uint32_t reserved3:19;
+     uint8_t SlotState:5;
+     uint32_t reserved4;
+     uint32_t reserved5;
+     uint32_t reserved6;
+     uint32_t reserved7;
+}__attribute__((packed)) XHCI_SLOT_CONTEXT;
+
+typedef struct{
+     uint8_t EPState:3;
+     uint8_t reserved1:5;
+     uint8_t Mult:2;
+     uint8_t MaxPStreams:5;
+     uint8_t LSA:1;
+     uint8_t Interval;
+     uint8_t MaxESITPayloadHi;
+     uint8_t reserved2:1;
+     uint8_t CErr:2;
+     uint8_t EPType:3;
+     uint8_t reserved3:1;
+     uint8_t HID:1;
+     uint8_t MaxBurstSize;
+     uint16_t MaxPackageSize;
+     uint64_t DequeuePointer; 
+     uint16_t AverageTRBLength;
+     uint16_t MaxESITPayloadLow;
+}__attribute__((packed)) XHCI_ENDPOINT_CONTEXT;
+
+typedef struct{
+     XHCI_INPUT_CONTROL_CONTEXT icc;
+     XHCI_SLOT_CONTEXT slot;
+     XHCI_ENDPOINT_CONTEXT ec0;
+}__attribute__((packed)) XHCI_INPUT_CONTEXT;
 
 void initialise_xhci_driver(unsigned long bar,unsigned long usbint);
