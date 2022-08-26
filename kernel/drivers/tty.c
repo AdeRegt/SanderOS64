@@ -55,11 +55,11 @@ void initialise_tty(){
                 memcpy((void*)(((uint64_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
             }
             int rt = exec(pd,"TEST");
-            if(rt<1000){
+            if(rt==-1){
+                k_printf("Unable to run program!\n");
+            }else if(rt<1000){
                 k_printf("Program is running in the background\n");
                 waitForPid(rt);
-            }else if(rt==-1){
-                k_printf("Unable to run program!\n");
             }else{
                 k_printf("Program exited with %d \n",rt);
             }

@@ -15,6 +15,10 @@ int exec(uint8_t *path,char *argv){
     //
     // First load the image....
     uint64_t fz = getFileSize(path);
+    if(fz==0){
+        return -1;
+    }
+    k_printf("--> %d \n",fz);
 
     void* buffer = requestBigPage();
     

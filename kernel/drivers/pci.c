@@ -2,7 +2,6 @@
 #include "../include/kernel.h"
 #include "../include/ports.h"
 #include "../include/ahci.h"
-#include "../include/xhci.h"
 #include "../include/exec/module.h"
 #include "../include/device.h"
 #include "../include/rtl.h"
@@ -54,10 +53,9 @@ void initialise_drivers_from_pci(){
                     pi.slot = slot;
                     pi.function = function;
 					if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
-                        // loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
-                        unsigned long bar5 = getBARaddress(bus,slot,function,0x10) & 0xFFFFFFF0;
-                        unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
-                        initialise_xhci_driver(bar5,usbint);
+                        pi.bar1 = getBARaddress(bus,slot,function,0x10) & 0xFFFFFFF0;
+                        pi.inter = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+                        loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
                     }else if( classc==0x02 && sublca==0x00 && (device==0x8168||device==0x8139)&&vendor==0x10ec ){
                         init_rtl(bus,slot,function);
                     }

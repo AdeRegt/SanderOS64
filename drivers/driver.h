@@ -13,6 +13,8 @@ typedef struct{
     int bus;
     int slot;
     int function;
+    uint32_t bar1;
+    int inter;
 }__attribute__((packed)) PCIInfo;
 
 void outportb(uint16_t port, uint8_t value);

@@ -15,6 +15,9 @@ uint64_t fat_filesize(Filesystem* fs,char* path){
         if(path[i]==0){
             break;
         }
+        if(path[i]>='a'&&path[i]<='z'){
+            path[i] = path[i] + ('A'-'a');
+        }
         if(path[i]=='/'){
             count_of_slashes++;
         }
@@ -100,6 +103,9 @@ char fat_read(Filesystem* fs,char* path,void *bufferedcapacity){
     while(1){
         if(path[i]==0){
             break;
+        }
+        if(path[i]>='a'&&path[i]<='z'){
+            path[i] = path[i] + ('A'-'a');
         }
         if(path[i]=='/'){
             count_of_slashes++;
@@ -190,6 +196,9 @@ char *fat_dir(Filesystem* fs,char* path){
     while(1){
         if(path[i]==0){
             break;
+        }
+        if(path[i]>='a'&&path[i]<='z'){
+            path[i] = path[i] + ('A'-'a');
         }
         if(path[i]=='/'){
             count_of_slashes++;
@@ -290,6 +299,9 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     while(1){
         if(path[i]==0){
             break;
+        }
+        if(path[i]>='a'&&path[i]<='z'){
+            path[i] = path[i] + ('A'-'a');
         }
         if(path[i]=='/'){
             count_of_slashes++;

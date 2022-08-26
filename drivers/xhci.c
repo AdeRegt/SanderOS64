@@ -10,56 +10,750 @@
 #define XHCI_TRB_TYPE_EVENT_DEVICE_NOTIFICATION_EVENT 38
 #define XHCI_TRB_TYPE_EVENT_MFINDEX_WRAP_EVENT 39
 
-void initialise_xhci_driver(unsigned long addr,unsigned long interrupt);
+typedef struct {
+    /**
+     * @brief This field specifies the maximum number of Device
+Context Structures and Doorbell Array entries this host controller can support. Valid values are
+in the range of 1 to 255. The value of ‘0’ is reserved.
+     * 
+     */
+    uint16_t MaxSlots:8;
+    /**
+     * @brief This field specifies the number of Interrupters implemented
+on this host controller. Each Interrupter may be allocated to a MSI or MSI-X vector and controls
+its generation and moderation.
+The value of this field determines how many Interrupter Register Sets are addressable in the
+Runtime Register Space (refer to section 5.5). Valid values are in the range of 1h to 400h. A ‘0’ in
+this field is undefined.
+     * 
+     */
+    uint16_t MaxIntrs:11;
+    /**
+     * @brief Rsvd.
+     * 
+     */
+    uint16_t RSVD:5;
+    /**
+     * @brief This field specifies the maximum Port Number value, i.e. the
+highest numbered Port Register Set that are addressable in the Operational Register Space
+(refer to Table 5-18). Valid values are in the range of 1h to FFh.
+The value in this field shall reflect the maximum Port Number value assigned by an xHCI
+Supported Protocol Capability, described in section 7.2. Software shall refer to these capabilities
+to identify whether a specific Port Number is valid, and the protocol supported by the
+associated Port Register Set.
+     * 
+     */
+    uint16_t MaxPorts:8;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER_HCSPARAMS1;
+
+typedef struct {
+    /**
+     * @brief Default = implementation dependent. The value in
+this field indicates to system software the minimum distance (in time) that it is required to stay
+ahead of the host controller while adding TRBs, in order to have the host controller process
+them at the correct time. The value shall be specified in terms of number of
+frames/microframes.
+If bit [3] of IST is cleared to '0', software can add a TRB no later than IST[2:0] Microframes
+before that TRB is scheduled to be executed.
+If bit [3] of IST is set to '1', software can add a TRB no later than IST[2:0] Frames before that TRB
+is scheduled to be executed.
+Refer to Section 4.14.2 for details on how software uses this information for scheduling
+isochronous transfers.
+     * 
+     */
+    uint16_t IST:4;
+    /**
+     * @brief Default = implementation dependent. Valid values
+are 0 – 15. This field determines the maximum value supported the Event Ring Segment Table
+Base Size registers (5.5.2.3.1), where:
+The maximum number of Event Ring Segment Table entries = 2 ERST Max .
+e.g. if the ERST Max = 7, then the xHC Event Ring Segment Table(s) supports up to 128 entries,
+15 then 32K entries, etc.
+     * 
+     */
+    uint16_t ERSTMax:4;
+    /**
+     * @brief Rsvd.
+     * 
+     */
+    uint16_t Rsvd:13;
+    /**
+     * @brief Default = implementation dependent. This
+field indicates the high order 5 bits of the number of Scratchpad Buffers system software shall
+reserve for the xHC. Refer to section 4.20 for more information.
+     * 
+     */
+    uint16_t MaxScratchpadBufsHi:5;
+    /**
+     * @brief Default = implementation dependent. If Max Scratchpad Buffers is >
+‘0’ then this flag indicates whether the xHC uses the Scratchpad Buffers for saving state when
+executing Save and Restore State operations. If Max Scratchpad Buffers is = ‘0’ then this flag
+shall be ‘0’. Refer to section 4.23.2 for more information.
+A value of ‘1’ indicates that the xHC requires the integrity of the Scratchpad Buffer space to be
+maintained across power events.
+A value of ‘0’ indicates that the Scratchpad Buffer space may be freed and reallocated between
+power events.
+     * 
+     */
+    uint16_t SPR:1;
+    /**
+     * @brief Default = implementation dependent. Valid
+values for Max Scratchpad Buffers (Hi and Lo) are 0-1023. This field indicates the low order 5
+bits of the number of Scratchpad Buffers system software shall reserve for the xHC. Refer to
+section 4.20 for more information.
+     * 
+     */
+    uint16_t MaxScratchpadBufsLo:5;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER_HCSPARAMS2;
+
+typedef struct {
+    /**
+     * @brief Worst case latency to transition a root hub Port Link State (PLS) from
+U1 to U0. Applies to all root hub ports.
+     * 
+     */
+    uint16_t U1DeviceExitLatency:8;
+    uint16_t Rsvd:8;
+    /**
+     * @brief Worst case latency to transition from U2 to U0. Applies to all root hub
+ports.
+     * 
+     */
+    uint16_t U2DeviceExitLatency:16;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER_HCSPARAMS3;
+
+typedef struct {
+    /**
+     * @brief This flag documents the addressing range capability of
+this implementation. The value of this flag determines whether the xHC has implemented the
+high order 32 bits of 64 bit register and data structure pointer fields. Values for this flag have the
+following interpretation:
+Value
+0
+1
+Description
+32-bit address memory pointers implemented
+64-bit address memory pointers implemented
+If 32-bit address memory pointers are implemented, the xHC shall ignore the high order 32 bits
+of 64 bit data structure pointer fields, and system software shall ignore the high order 32 bits of
+64 bit xHC registers.
+     * 
+     */
+    uint8_t ac64:1;
+    /**
+     * @brief This flag identifies whether the xHC has implemented the
+Bandwidth Negotiation. Values for this flag have the following interpretation:
+Value
+0
+1
+Description
+BW Negotiation not implemented
+BW Negotiation implemented
+Refer to section 4.16 for more information on Bandwidth Negotiation.
+     * 
+     */
+    uint8_t bnc:1;
+    /**
+     * @brief If this bit is set to ‘1’, then the xHC uses 64 byte Context data structures. If
+this bit is cleared to ‘0’, then the xHC uses 32 byte Context data structures.
+Note: This flag does not apply to Stream Contexts.
+     * 
+     */
+    uint8_t csz:1;
+    /**
+     * @brief This flag indicates whether the host controller implementation
+includes port power control. A ‘1’ in this bit indicates the ports have port power switches. A ‘0’ in
+this bit indicates the port do not have port power switches. The value of this flag affects the
+functionality of the PP flag in each port status and control register (refer to Section 5.4.8).
+     * 
+     */
+    uint8_t ppc:1;
+    /**
+     * @brief This bit indicates whether the xHC root hub ports support port indicator
+control. When this bit is a ‘1’, the port status and control registers include a read/writeable field
+for controlling the state of the port indicator. Refer to Section 5.4.8 for definition of the Port
+Indicator Control field.
+     * 
+     */
+    uint8_t pind:1;
+    /**
+     * @brief This flag indicates whether the host controller implementation
+supports a Light Host Controller Reset. A ‘1’ in this bit indicates that Light Host Controller Reset is
+supported. A ‘0’ in this bit indicates that Light Host Controller Reset is not supported. The value
+of this flag affects the functionality of the Light Host Controller Reset (LHCRST) flag in the
+USBCMD register (refer to Section 5.4.1).
+     * 
+     */
+    uint8_t lhrc:1;
+    /**
+     * @brief This flag indicates whether the host controller
+implementation supports Latency Tolerance Messaging (LTM). A ‘1’ in this bit indicates that LTM
+is supported. A ‘0’ in this bit indicates that LTM is not supported. Refer to section 4.13.1 for more
+information on LTM.
+     * 
+     */
+    uint8_t ltc:1;
+    /**
+     * @brief This flag indicates whether the host controller
+implementation supports Secondary Stream IDs. A ‘1’ in this bit indicates that Secondary Stream
+ID decoding is not supported. A ‘0’ in this bit indicates that Secondary Stream ID decoding is
+supported. (refer to Sections 4.12.2 and 6.2.3).
+     * 
+     */
+    uint8_t nss:1;
+    /**
+     * @brief This flag indicates whether the host controller implementation
+Parses all Event Data TRBs while advancing to the next TD after a Short Packet, or it skips all but
+the first Event Data TRB. A ‘1’ in this bit indicates that all Event Data TRBs are parsed. A ‘0’ in this
+bit indicates that only the first Event Data TRB is parsed (refer to section 4.10.1.1).
+     * 
+     */
+    uint8_t pae:1;
+    /**
+     * @brief This flag indicates that the host controller
+implementation is capable of generating a Stopped - Short Packet Completion Code. Refer to
+section 4.6.9 for more information.
+     * 
+     */
+    uint8_t spc:1;
+    /**
+     * @brief This flag indicates that the host controller implementation
+Stream Context support a Stopped EDTLA field. Refer to sections 4.6.9, 4.12, and 6.4.4.1 for more
+information.
+Stopped EDTLA Capability support (i.e. SEC = '1') shall be mandatory for all xHCI 1.1 and xHCI 1.2
+compliant xHCs.
+     * 
+     */
+    uint8_t sec:1;
+    /**
+     * @brief This flag indicates that the host controller
+implementation is capable of matching the Frame ID of consecutive Isoch TDs. Refer to section
+4.11.2.5 for more information.
+     * 
+     */
+    uint8_t cfc:1;
+    /**
+     * @brief This fields identifies the maximum size
+Primary Stream Array that the xHC supports. The Primary Stream Array size = 2 MaxPSASize+1 . Valid
+MaxPSASize values are 0 to 15, where ‘0’ indicates that Streams are not supported.
+     * 
+     */
+    uint8_t maxpsasize:4;
+    /**
+     * @brief This field indicates the existence of a capabilities list.
+The value of this field indicates a relative offset, in 32-bit words, from Base to the beginning of
+the first extended capability.
+For example, using the offset of Base is 1000h and the xECP value of 0068h, we can calculated
+the following effective address of the first extended capability:
+1000h + (0068h << 2) -> 1000h + 01A0h -> 11A0h
+     * 
+     */
+    uint16_t xecp:15;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER_HCCPARAMS1;
 
 typedef struct{
-    uint8_t caplength;
-    uint8_t rsvd;
-    uint16_t hciversion;
-    uint32_t hcsparams1;
-    uint32_t hcsparams2;
-    uint32_t hcsparams3;
-    uint32_t hccparams1;
-    uint32_t dboff;
-    uint32_t rtsoff;
-    uint32_t hccparams2;
-}__attribute__((packed)) XHCICapabilityRegisters;
+    uint8_t U3C:1;
+    uint8_t CMC:1;
+    uint8_t FSC:1;
+    uint8_t CTC:1;
+    uint8_t LEC:1;
+    uint8_t CIC:1;
+    uint8_t ETC:1;
+    uint8_t ETC_TSC:1;
+    uint8_t GSC:1;
+    uint8_t VTC:1;
+    uint32_t res:22;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER_HCCPARAMS2;
 
 typedef struct{
-    uint32_t portsc;
-    uint32_t portpmsc;
-    uint32_t portli;
-    uint32_t porthlpmc;
-}__attribute__((packed)) XHCIPortRegister;
+    /**
+     * @brief This register is used as an offset to add to register base to find the beginning of
+the Operational Register Space.
+     * 
+     */
+    uint8_t CAPLENGTH;
+    /**
+     * @brief reserved
+     * 
+     */
+    uint8_t RSVD;
+    /**
+     * @brief This is a two-byte register containing a BCD encoding of the xHCI specification
+revision number supported by this host controller. The most significant byte of
+this register represents a major revision and the least significant byte contains
+the minor revision extensions. e.g. 0100h corresponds to xHCI version 1.0.0, or
+0110h corresponds to xHCI version 1.1.0, etc.
+     * 
+     */
+    uint16_t HCIVERSION;
+    /**
+     * @brief This register defines basic structural parameters supported by this xHC
+implementation: Number of Device Slots support, Interrupters, Root Hub ports,
+etc.
+     * 
+     */
+    XHCI_CAPABILITY_REGISTER_HCSPARAMS1 HCSPARAMS1;
+    XHCI_CAPABILITY_REGISTER_HCSPARAMS2 HCSPARAMS2;
+    XHCI_CAPABILITY_REGISTER_HCSPARAMS3 HCSPARAMS3;
+    XHCI_CAPABILITY_REGISTER_HCCPARAMS1 HCCPARAMS1;
+    uint32_t DBOFF;
+    uint32_t RTSOFF;
+    XHCI_CAPABILITY_REGISTER_HCCPARAMS2 HCCPARAMS2;
+}__attribute__((packed)) XHCI_CAPABILITY_REGISTER;
 
 typedef struct{
-    uint32_t usbcmd;
-    uint32_t usbsts;
-    uint32_t pagesize;
-    uint8_t rsvdA[0x08];
-    uint32_t dnctrl;
-    uint64_t crcr;
-    uint8_t rsvdB[0x10];
-    uint64_t dcbaap;
-    uint32_t config;
-    uint8_t rsvdC[0x3C4];
-    XHCIPortRegister ports[30];
-}__attribute__((packed)) XHCIOperationalRegisters;
+    /**
+ * @brief Default = ‘0’. ‘1’ = Run. ‘0’ = Stop. When set to a ‘1’, the xHC proceeds with
+execution of the schedule. The xHC continues execution as long as this bit is set to a ‘1’. When
+this bit is cleared to ‘0’, the xHC completes any current or queued commands or TDs, and any
+USB transactions associated with them, then halts.
+Refer to section 5.4.1.1 for more information on how R/S shall be managed.
+The xHC shall halt within 16 ms. after software clears the Run/Stop bit if the above conditions
+have been met.
+The HCHalted (HCH) bit in the USBSTS register indicates when the xHC has finished its pending
+pipelined transactions and has entered the stopped state. Software shall not write a ‘1’ to this
+flag unless the xHC is in the Halted state (i.e. HCH in the USBSTS register is ‘1’). Doing so may
+yield undefined results. Writing a ‘0’ to this flag when the xHC is in the Running state (i.e. HCH =
+‘0’) and any Event Rings are in the Event Ring Full state (refer to section 4.9.4) may result in lost
+events.
+ * 
+ */
+    uint8_t run_stop:1;
+    /**
+     * @brief Default = ‘0’. This control bit is used by software to reset
+the host controller. The effects of this bit on the xHC and the Root Hub registers are similar to a
+Chip Hardware Reset.
+When software writes a ‘1’ to this bit, the Host Controller resets its internal pipelines, timers,
+counters, state machines, etc. to their initial value. Any transaction currently in progress on the
+USB is immediately terminated. A USB reset shall not be driven on USB2 downstream ports,
+however a Hot or Warm Reset 79 shall be initiated on USB3 Root Hub downstream ports.
+PCI Configuration registers are not affected by this reset. All operational registers, including port
+registers and port state machines are set to their initial values. Software shall reinitialize the
+host controller as described in Section 4.2 in order to return the host controller to an
+operational state.
+This bit is cleared to ‘0’ by the Host Controller when the reset process is complete. Software
+cannot terminate the reset process early by writing a ‘0’ to this bit and shall not write any xHC
+Operational or Runtime registers until while HCRST is ‘1’. Note, the completion of the xHC reset
+process is not gated by the Root Hub port reset process.
+Software shall not set this bit to ‘1’ when the HCHalted (HCH) bit in the USBSTS register is a ‘0’.
+Attempting to reset an actively running host controller may result in undefined behavior.
+When this register is exposed by a Virtual Function (VF), this bit only resets the xHC instance
+presented by the selected VF. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t hcrst:1;
+    /**
+     * @brief Default = ‘0’. This bit provides system software with a means of
+enabling or disabling the host system interrupts generated by Interrupters. When this bit is a ‘1’,
+then Interrupter host system interrupt generation is allowed, e.g. the xHC shall issue an interrupt
+at the next interrupt threshold if the host system interrupt mechanism (e.g. MSI, MSI-X, etc.) is
+enabled. The interrupt is acknowledged by a host system interrupt specific mechanism.
+When this register is exposed by a Virtual Function (VF), this bit only enables the set of
+Interrupters assigned to the selected VF. Refer to section 7.7.2 for more information.
+     * 
+     */
+    uint8_t inte:1;
+    /**
+     * @brief Default = ‘0’. When this bit is a ‘1’, and the HSE bit in
+the USBSTS register is a ‘1’, the xHC shall assert out-of-band error signaling to the host. The
+signaling is acknowledged by software clearing the HSE bit. Refer to section 4.10.2.6 for more
+information.
+When this register is exposed by a Virtual Function (VF), the effect of the assertion of this bit on
+the Physical Function (PF0) is determined by the VMM. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t hsee:1;
+    /**
+     * @brief RsvdP.
+     * 
+     */
+    uint8_t rsvd1:3;
+    /**
+     * @brief Optional normative. Default = ‘0’. If the Light
+HC Reset Capability (LHRC) bit in the HCCPARAMS1 register is ‘1’, then this flag allows the driver
+to reset the xHC without affecting the state of the ports.
+A system software read of this bit as ‘0’ indicates the Light Host Controller Reset has completed
+and it is safe for software to re-initialize the xHC. A software read of this bit as a ‘1’ indicates the
+Light Host Controller Reset has not yet completed.
+If not implemented, a read of this flag shall always return a ‘0’.
+All registers in the Aux Power well shall maintain the values that had been asserted prior to the
+Light Host Controller Reset. Refer to section 4.23.1 for more information.
+When this register is exposed by a Virtual Function (VF), this bit only generates a Light Reset to
+the xHC instance presented by the selected VF, e.g. Disable the VFs’ device slots and set the
+associated VF Run bit to Stopped. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t lhcrst:1;
+    /**
+     * @brief Default = ‘0’. When written by software with ‘1’ and HCHalted
+(HCH) = ‘1’, then the xHC shall save any internal state (that may be restored by a subsequent
+Restore State operation) and if FSC = '1' any cached Slot, Endpoint, Stream, or other Context
+information (so that software may save it). When written by software with ‘1’ and HCHalted
+(HCH) = ‘0’, or written with ‘0’, no Save State operation shall be performed. This flag always
+returns ‘0’ when read. Refer to the Save State Status (SSS) flag in the USBSTS register for
+information on Save State completion. Refer to section 4.23.2 for more information on xHC
+Save/Restore operation. Note that undefined behavior may occur if a Save State operation is
+initiated while Restore State Status (RSS) = ‘1’.
+When this register is exposed by a Virtual Function (VF), this bit only controls saving the state of
+the xHC instance presented by the selected VF. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t css:1;
+    /**
+     * @brief Default = ‘0’. When set to ‘1’, and HCHalted (HCH) = ‘1’,
+then the xHC shall perform a Restore State operation and restore its internal state. When set to
+‘1’ and Run/Stop (R/S) = ‘1’ or HCHalted (HCH) = ‘0’, or when cleared to ‘0’, no Restore State
+operation shall be performed. This flag always returns ‘0’ when read. Refer to the Restore State
+Status (RSS) flag in the USBSTS register for information on Restore State completion. Refer to
+section 4.23.2 for more information. Note that undefined behavior may occur if a Restore State
+operation is initiated while Save State Status (SSS) = ‘1’.
+When this register is exposed by a Virtual Function (VF), this bit only controls restoring the state
+of the xHC instance presented by the selected VF. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t crs:1;
+    /**
+     * @brief Default = ‘0’. When set to ‘1’, the xHC shall generate a MFINDEX
+Wrap Event every time the MFINDEX register transitions from 03FFFh to 0. When cleared to ‘0’
+no MFINDEX Wrap Events are generated. Refer to section 4.14.2 for more information.
+When this register is exposed by a Virtual Function (VF), the generation of MFINDEX Wrap
+Events to VFs shall be emulated by the VMM.
+     * 
+     */
+    uint8_t ewe:1;
+    /**
+     * @brief Default = ‘0’. When set to ‘1’, the xHC may stop the
+MFINDEX counting action if all Root Hub ports are in the U3, Disconnected, Disabled, or
+Powered-off state. When cleared to ‘0’ the xHC may stop the MFINDEX counting action if all
+Root Hub ports are in the Disconnected, Disabled, Training, or Powered-off state. Refer to
+section 4.14.2 for more information.
+     * 
+     */
+    uint8_t eu3s:1;
+    uint8_t rsvd2:1;
+    /**
+     * @brief Default = '0'. When set to '1', a Max Exit Latency Too Large Capability
+Error may be returned by a Configure Endpoint Command. When cleared to '0', a Max Exit
+Latency Too Large Capability Error shall not be returned by a Configure Endpoint Command.
+This bit is Reserved if CMC = ‘0’. Refer to section 4.23.5.2.2 for more information.
+     * 
+     */
+    uint8_t cme:1;
+    /**
+     * @brief This flag indicates that the host controller implementation is
+enabled to support Transfer Burst Count (TBC) values greater that 4 in isoch TDs. When this bit
+is ‘1’, the Isoch TRB TD Size/TBC field presents the TBC value, and the TBC/RsvdZ field is RsvdZ.
+When this bit is ‘0’, the TDSize/TCB field presents the TD Size value, and the TBC/RsvdZ field
+presents the TBC value. This bit may be set only if ETC = ‘1’. Refer to section 4.11.2.3 for more
+information.
+     * 
+     */
+    uint8_t ete:1;
+    /**
+     * @brief This flag indicates that the host controller
+implementation is enabled to support ETC_TSC capability. When this is ‘1’, TRBSts field in the
+TRB updated to indicate if it is last transfer TRB in the TD. This bit may be set only if
+ETC_TSC=’1’. Refer to section 4.11.2.3 for more information.
+     * 
+     */
+    uint8_t tsc_en:1;
+    /**
+     * @brief Default = ‘0’. When set to ‘1’, XHCI HW will enable its VTIO
+capability and begin to use the information provided via that VTIO Registers to determine its
+DMA-ID. When cleared to ‘0’, XHCI HW will use the Primary DMA-ID for all accesses. This bit
+may be set only if VTC = ‘1’.
+     * 
+     */
+    uint8_t vtioe:1;
+    uint16_t rsvd3:15;
+}__attribute__((packed)) XHCI_OPERATIONAL_REGISTER_USBCMD;
 
 typedef struct{
-    uint32_t iman;
-    uint32_t imod;
+    /**
+     * @brief Default = ‘1’. This bit is a ‘0’ whenever the Run/Stop (R/S) bit is a ‘1’. The
+xHC sets this bit to ‘1’ after it has stopped executing as a result of the Run/Stop (R/S) bit being
+cleared to ‘0’, either by software or by the xHC hardware (e.g. internal error).
+If this bit is '1', then SOFs, microSOFs, or Isochronous Timestamp Packets (ITP) shall not be
+generated by the xHC, and any received Transaction Packet shall be dropped.
+When this register is exposed by a Virtual Function (VF), this bit only reflects the Halted state of
+the xHC instance presented by the selected VF. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t hch:1;
+    uint8_t rsvd1:1;
+    /**
+     * @brief Default = ‘0’. The xHC sets this bit to ‘1’ when a serious error
+is detected, either internal to the xHC or during a host system access involving the xHC module.
+(In a PCI system, conditions that set this bit to ‘1’ include PCI Parity error, PCI Master Abort, and
+PCI Target Abort.) When this error occurs, the xHC clears the Run/Stop (R/S) bit in the USBCMD
+register to prevent further execution of the scheduled TDs. If the HSEE bit in the USBCMD
+register is a ‘1’, the xHC shall also assert out-of-band error signaling to the host. Refer to section
+4.10.2.6 for more information.
+When this register is exposed by a Virtual Function (VF), the assertion of this bit affects all VFs
+and reflects the Host System Error state of the Physical Function (PF0). Refer to section 8 for
+more information.
+     * 
+     */
+    uint8_t hse:1;
+    /**
+     * @brief Default = ‘0’. The xHC sets this bit to ‘1’ when the Interrupt
+Pending (IP) bit of any Interrupter transitions from ‘0’ to ‘1’. Refer to section 7.1.2 for use.
+Software that uses EINT shall clear it prior to clearing any IP flags. A race condition may occur if
+software clears the IP flags then clears the EINT flag, and between the operations another IP ‘0’
+to '1' transition occurs. In this case the new IP transition shall be lost.
+When this register is exposed by a Virtual Function (VF), this bit is the logical 'OR' of the IP bits
+for the Interrupters assigned to the selected VF. And it shall be cleared to ‘0’ when all associated
+interrupter IP bits are cleared, i.e. all the VF’s Interrupter Event Ring(s) are empty. Refer to
+section 8 for more information.
+     * 
+     */
+    uint8_t eint:1;
+    /**
+     * @brief Default = ‘0’. The xHC sets this bit to a ‘1’ when any port has
+a change bit transition from a ‘0’ to a ‘1’.
+This bit is allowed to be maintained in the Aux Power well. Alternatively, it is also acceptable
+that on a D3 to D0 transition of the xHC, this bit is loaded with the OR of all of the PORTSC
+change bits. Refer to section 4.19.3.
+This bit provides system software an efficient means of determining if there has been Root Hub
+port activity. Refer to section 4.15.2.3 for more information.
+When this register is exposed by a Virtual Function (VF), the VMM determines the state of this
+bit as a function of the Root Hub Ports associated with the Device Slots assigned to the selected
+VF. Refer to section 8 for more information.
+     * 
+     */
+    uint8_t pcd:1;
+    uint8_t rsvd2:3;
+    /**
+     * @brief Default = ‘0’. When the Controller Save State (CSS) flag in the
+USBCMD register is written with ‘1’ this bit shall be set to ‘1’ and remain 1 while the xHC saves
+its internal state. When the Save State operation is complete, this bit shall be cleared to ‘0’.
+Refer to section 4.23.2 for more information.
+When this register is exposed by a Virtual Function (VF), the VMM determines the state of this
+bit as a function of the saving the state for the selected VF. Refer to section 8 for more
+information.
+     * 
+     */
+    uint8_t sss:1;
+    /**
+     * @brief Default = ‘0’. When the Controller Restore State (CRS) flag in
+the USBCMD register is written with ‘1’ this bit shall be set to ‘1’ and remain 1 while the xHC
+restores its internal state. When the Restore State operation is complete, this bit shall be
+cleared to ‘0’. Refer to section 4.23.2 for more information.
+When this register is exposed by a Virtual Function (VF), the VMM determines the state of this
+bit as a function of the restoring the state for the selected VF. Refer to section 8 for more
+information.
+     * 
+     */
+    uint8_t rss:1;
+    /**
+     * @brief Default = ‘0’. If an error occurs during a Save or Restore
+operation this bit shall be set to ‘1’. This bit shall be cleared to ‘0’ when a Save or Restore
+operation is initiated or when written with ‘1’. Refer to section 4.23.2 for more information.
+When this register is exposed by a Virtual Function (VF), the VMM determines the state of this
+bit as a function of the Save/Restore completion status for the selected VF. Refer to section 8
+for more information.
+     * 
+     */
+    uint8_t sre:1;
+    /**
+     * @brief Default = ‘1’. ‘0’ = Ready and ‘1’ = Not Ready. Software shall
+not write any Doorbell or Operational register of the xHC, other than the USBSTS register, until
+CNR = ‘0’. This flag is set by the xHC after a Chip Hardware Reset and cleared when the xHC is
+ready to begin accepting register writes. This flag shall remain cleared (‘0’) until the next Chip
+Hardware Reset.
+     * 
+     */
+    uint8_t cnr:1;
+    /**
+     * @brief Default = 0. 0’ = No internal xHC error conditions exist and ‘1’
+= Internal xHC error condition. This flag shall be set to indicate that an internal error condition
+has been detected which requires software to reset and reinitialize the xHC. Refer to section
+4.24.1 for more information.
+     * 
+     */
+    uint8_t hce:1;
+    uint32_t rsvd3:19;
+}__attribute__((packed)) XHCI_OPERATIONAL_REGISTER_USBSTS;
+
+typedef struct{
+     /**
+      * @brief This bit identifies the value of the xHC Consumer Cycle State (CCS)
+flag for the TRB referenced by the Command Ring Pointer. Refer to section 4.9.3 for more
+information.
+Writes to this flag are ignored if Command Ring Running (CRR) is ‘1’.
+If the CRCR is written while the Command Ring is stopped (CRR = ‘0’), then the value of this flag
+shall be used to fetch the first Command TRB the next time the Host Controller Doorbell register
+is written with the DB Reason field set to Host Controller Command.
+If the CRCR is not written while the Command Ring is stopped (CRR = ‘0’), then the Command
+Ring shall begin fetching Command TRBs using the current value of the internal Command Ring
+CCS flag.
+Reading this flag always returns ‘0’.
+      * 
+      */
+     uint8_t rcs:1;
+     /**
+      * @brief Default = ‘0’. Writing a ‘1’ to this bit shall stop the operation of the
+Command Ring after the completion of the currently executing command, and generate a
+Command Completion Event with the Completion Code set to Command Ring Stopped and the
+Command TRB Pointer set to the current value of the Command Ring Dequeue Pointer. Refer to
+section 4.6.1.1 for more information on stopping a command.
+The next write to the Host Controller Doorbell with DB Reason field set to Host Controller
+Command shall restart the Command Ring operation.
+Writes to this flag are ignored by the xHC if Command Ring Running (CRR) = ‘0’.
+Reading this bit shall always return ‘0’.
+      * 
+      */
+     uint8_t cs:1;
+     /**
+      * @brief Default = ‘0’. Writing a ‘1’ to this bit shall immediately terminate
+the currently executing command, stop the Command Ring, and generate a Command
+Completion Event with the Completion Code set to Command Ring Stopped. Refer to section
+4.6.1.2 for more information on aborting a command.
+The next write to the Host Controller Doorbell with DB Reason field set to Host Controller
+Command shall restart the Command Ring operation.
+Writes to this flag are ignored by the xHC if Command Ring Running (CRR) = ‘0’.
+Reading this bit always returns ‘0’.
+      * 
+      */
+     uint8_t ca:1;
+     /**
+      * @brief Default = 0. This flag is set to ‘1’ if the Run/Stop (R/S) bit is
+‘1’ and the Host Controller Doorbell register is written with the DB Reason field set to Host
+Controller Command. It is cleared to ‘0’ when the Command Ring is “stopped” after writing a ‘1’
+to the Command Stop (CS) or Command Abort (CA) flags, or if the R/S bit is cleared to ‘0’.
+      * 
+      */
+     uint8_t crr:1;
+     uint8_t rsvd1:2;
+     /**
+      * @brief Default = ‘0’. This field defines high order bits of the initial value
+of the 64-bit Command Ring Dequeue Pointer.
+Writes to this field are ignored when Command Ring Running (CRR) = ‘1’.
+If the CRCR is written while the Command Ring is stopped (CRR = ‘0’), the value of this field shall
+be used to fetch the first Command TRB the next time the Host Controller Doorbell register is
+written with the DB Reason field set to Host Controller Command.
+If the CRCR is not written while the Command Ring is stopped (CRR = ‘0’) then the Command
+Ring shall begin fetching Command TRBs at the current value of the internal xHC Command
+Ring Dequeue Pointer.
+Reading this field always returns ‘0’.
+      * 
+      */
+     uint32_t pointer:21;
+}__attribute__((packed)) XHCI_OPERATIONAL_REGISTER_CRCR;
+
+typedef struct{
+     /**
+      * @brief Default = ‘0’. This field specifies the maximum
+number of enabled Device Slots. Valid values are in the range of 0 to MaxSlots. Enabled Devices
+Slots are allocated contiguously. e.g. A value of 16 specifies that Device Slots 1 to 16 are active.
+A value of ‘0’ disables all Device Slots. A disabled Device Slot shall not respond to Doorbell
+Register references.
+This field shall not be modified by software if the xHC is running (Run/Stop (R/S) = ‘1’).
+      * 
+      */
+     uint8_t MaxSlotsEn:8;
+     /**
+      * @brief Default = '0'. When set to '1', the xHC shall assert the PLC flag ('1')
+when a Root Hub port transitions to the U3 State. Refer to section 4.15.1 for more information.
+      * 
+      */
+     uint8_t U3E:1;
+     /**
+      * @brief Default = '0'. When set to '1', the software shall
+initialize the Configuration Value, Interface Number, and Alternate Setting fields in the Input
+Control Context when it is associated with a Configure Endpoint Command. When this bit is '0',
+the extended Input Control Context fields are not supported. Refer to section 6.2.5.1 for more
+information.
+      * 
+      */
+     uint8_t CIE:1;
+     uint32_t rsvd:22;
+}__attribute__((packed)) XHCI_OPERATIONAL_REGISTER_CONFIG;
+
+typedef struct{
+     uint8_t CCS:1;
+     uint8_t PED:1;
+     uint8_t rsvd1:1;
+     uint8_t OCA:1;
+     uint8_t PR:1;
+     uint16_t PLS:4;
+     uint8_t PP:1;
+     uint16_t PortSpeed:4;
+     uint8_t PIC:2;
+     uint8_t LWS:1;
+     uint8_t CSC:1;
+     uint8_t PEC:1;
+     uint8_t WRC:1;
+     uint8_t OCC:1;
+     uint8_t PRC:1;
+     uint8_t PLC:1;
+     uint8_t CEC:1;
+     uint8_t CAS:1;
+     uint8_t WCE:1;
+     uint8_t WDE:1;
+     uint8_t WOE:1;
+     uint8_t rsvd2:2;
+     uint8_t dr:1;
+     uint8_t wpr:1;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_PORTSC;
+
+typedef struct{
+     uint8_t U1Timeout:8;
+     uint8_t U2Timeout:8;
+     uint8_t FLA:1;
+     uint32_t reserved:15;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_PORTPMSC;
+
+typedef struct{
+     XHCI_OPERATIONAL_PORT_PORTSC PORTSC;
+     XHCI_OPERATIONAL_PORT_PORTPMSC PORTPMSC;
+     uint32_t portli;
+     uint32_t porthlpmc;
+}__attribute__((packed)) XHCI_OPERATIONAL_PORT_REGISTER;
+
+typedef struct{
+    XHCI_OPERATIONAL_REGISTER_USBCMD USBCMD;
+    XHCI_OPERATIONAL_REGISTER_USBSTS USBSTS;
+    uint32_t PAGESIZE;
+    uint8_t RsvdZ1[0x8];
+    uint32_t DNCTRL;
+    uint32_t CRCR_low;
+    uint32_t CRCR_high;
+    uint8_t RsvdZ2[0x10];
+    uint32_t DCBAAP_low;
+    uint32_t DCBAAP_high;
+    XHCI_OPERATIONAL_REGISTER_CONFIG CONFIG;
+    uint8_t RsvdZ3[0x3C4];
+    XHCI_OPERATIONAL_PORT_REGISTER ports[30];
+}__attribute__((packed)) XHCI_OPERATIONAL_REGISTER;
+
+typedef struct{
+    uint8_t IP:1;
+    uint8_t IE:1;
+    uint32_t rsvd:29;
+}__attribute__((packed)) XHCI_RUNTIME_REGISTER_IMAN;
+
+typedef struct{
+    uint16_t IMODI;
+    uint16_t IMODC;
+}__attribute__((packed)) XHCI_RUNTIME_REGISTER_IMOD;
+
+typedef struct{
+    XHCI_RUNTIME_REGISTER_IMAN iman;
+    XHCI_RUNTIME_REGISTER_IMOD imod;
     uint32_t erstsz;
     uint32_t reserved;
-    uint64_t erstba;
-    uint64_t erdp;
+    uint32_t erstba_lo;
+    uint32_t erstba_hi;
+    uint32_t erdp_lo;
+    uint32_t erdp_hi;
 }__attribute__((packed)) XHCIInterrupterRegisters;
 
 typedef struct{
     uint32_t mfindex;
     uint8_t reserved[0x1C];
     XHCIInterrupterRegisters intregs[10];
-}__attribute__((packed)) XHCIRuntimeRegisters;
+}__attribute__((packed)) XHCI_RUNTIME_REGISTERS;
 
 typedef struct{
     uint64_t address;
@@ -91,86 +785,487 @@ typedef struct{
     // Completion Code. This field encodes the completion status that can be identified by a TRB.
     // Refer to section 6.4.5 for an enumerated list of possible error conditions.
     uint32_t competion_code: 7;
-    // Cycle bit (C). This bit is used to mark the Dequeue Pointer of an Event Ring.
-    uint8_t cycle_bit: 1;
-    // RsvdZ.
-    uint8_t reserved_1: 1;
+    
+    // Slot ID. The ID of the Device Slot that generated the event. This is value is used as an index in
+    // the Device Context Base Address Array to select the Device Context of the source device.
+    uint32_t slot_id: 7;
+    uint32_t reserved_3: 3;
+    // Endpoint ID. The ID of the Endpoint that generated the event. This value is used as an index in
+    // the Device Context to select the Endpoint Context associated with this event.
+    uint32_t endpoint_id: 5;
+    // TRB Type. This field identifies the type of the TRB. Refer to Table 6-91 for the definition of the
+    // Transfer Event TRB type ID.
+    uint32_t trb_type: 6;
+    uint32_t reserved_2: 7;
     // Event Data (ED). When set to ‘1’, the event was generated by an Event Data TRB and the
     // Parameter Component (TRB Pointer field) contains a 64-bit value provided by the Event Data
     // TRB. If cleared to ‘0’, the Parameter Component (TRB Pointer field) contains a pointer to the TRB
     // that generated this event. Refer to section 4.11.5.2 for more information.
-    uint8_t event_data: 1;
-    uint16_t reserved_2: 7;
-    // TRB Type. This field identifies the type of the TRB. Refer to Table 6-91 for the definition of the
-    // Transfer Event TRB type ID.
-    uint16_t trb_type: 6;
-    // Endpoint ID. The ID of the Endpoint that generated the event. This value is used as an index in
-    // the Device Context to select the Endpoint Context associated with this event.
-    uint16_t endpoint_id: 5;
-    uint8_t reserved_3: 3;
-    // Slot ID. The ID of the Device Slot that generated the event. This is value is used as an index in
-    // the Device Context Base Address Array to select the Device Context of the source device.
-    uint16_t slot_id: 7;
+    uint32_t event_data: 1;
+    // RsvdZ.
+    uint32_t reserved_1: 1;
+    // Cycle bit (C). This bit is used to mark the Dequeue Pointer of an Event Ring.
+    uint32_t cycle_bit: 1;
 }__attribute__((packed))TransferEventTRB;
 
-unsigned long baseaddr;
+typedef struct{
+    uint32_t reserved[3];
+    uint8_t cycle_bit:1;
+    uint16_t reserved1:9;
+    uint16_t trb_type:6;
+    uint16_t slot_type:5;
+    uint16_t reserved2:10;
+}__attribute__((packed))EnableSlotTRB;
 
-XHCICapabilityRegisters* capability_registers;
-XHCIOperationalRegisters* operational_registers;
-XHCIRuntimeRegisters* runtime_registers;
-unsigned long *dcbaap;
-void *command_ring_control;
-TransferEventTRB *event_ring_control;
+typedef struct{
+    uint32_t address_low;
+    uint32_t address_hig;
+    uint32_t reserved1;
+    uint8_t c:1;
+    uint8_t reserved2;
+    uint8_t BSR:1;
+    uint8_t TRBType:6;
+    uint8_t reserved3;
+    uint8_t SlotID;
+}__attribute__((packed)) AddressDeviceCommandTRB;
 
-__attribute__((interrupt)) void xhci_interrupt(interrupt_frame* frame){
-    k_printf("Interrupt: XHCI-interrupt with code %x \n",operational_registers->usbsts);
+typedef struct{
+    uint32_t arg1;
+    uint32_t arg2;
+    uint32_t arg3;
+    uint32_t arg4;
+}__attribute__((packed)) TRB;
+
+typedef struct{
+    // Command TRB Pointer Hi and Lo. This field represents the high order bits of the 64-bit address
+    // of the Command TRB that generated this event. Note that this field is not valid for some
+    // Completion Code values. Refer to Table 6-90 for specific cases.
+    // The memory structure referenced by this physical memory pointer shall be aligned on a 16-byte
+    // address boundary.
+    uint64_t CommandTRBPointer;
+    // Command Completion Parameter. This field may optionally be set by a command. Refer to
+    // section 4.6.6.1 for specific usage. If a command does not utilize this field it shall be treated as
+    // RsvdZ.
+    uint32_t CommandCompletionParameter: 24;
+    // Completion Code. This field encodes the completion status of the command that generated the
+    // event. Refer to the respective command definition for a list of the possible Completion Codes
+    // associated with the command. Refer to section 6.4.5 for an enumerated list of possible error
+    // conditions.
+    uint32_t CompletionCode:8;
+    // This bit is used to mark the Dequeue Pointer of an Event Ring.
+    uint8_t Cyclebit:1;
+    uint16_t reserved1:9;
+    // TRB Type. This field identifies the type of the TRB. Refer to Table 6-91 for the definition of the
+    // Command Completion Event TRB type ID.
+    uint16_t TRBType:6;
+    // VF ID. The ID of the Virtual Function that generated the event. Note that this field is valid only if
+    // Virtual Functions are enabled. If they are not enabled this field shall be cleared to ‘0’.
+    uint16_t VFID:8;
+    // Slot ID. The Slot ID field shall be updated by the xHC to reflect the slot associated with the
+    // command that generated the event, with the following exceptions:
+    // - The Slot ID shall be cleared to ‘0’ for No Op, Set Latency Tolerance Value, Get Port Bandwidth,
+    // and Force Event Commands.
+    // - The Slot ID shall be set to the ID of the newly allocated Device Slot for the Enable Slot
+    // Command.
+    // - The value of Slot ID shall be vendor defined when generated by a vendor defined command.
+    // This value is used as an index in the Device Context Base Address Array to select the Device
+    // Context of the source device. If this Event is due to a Host Controller Command, then this field
+    // shall be cleared to ‘0’.
+    uint16_t SlotID:8;
+}__attribute__((packed)) CommandCompletionEventTRB;
+
+typedef struct{
+     uint32_t reserved1:24;
+     uint16_t PortID:8;
+     uint32_t reserved2:24;
+     uint16_t CompletionCode:8;
+     uint8_t C:1;
+     uint16_t reserved3:9;
+     uint8_t TRBType:6;
+     uint16_t reserved4;
+}__attribute__((packed)) PortStatusChangeEventTRB;
+
+typedef struct{
+    uint32_t usbcmd;
+    uint32_t usbsts;
+    uint32_t pagesize;
+    uint8_t rsvdA[0x08];
+    uint32_t dnctrl;
+    uint64_t crcr;
+    uint8_t rsvdB[0x10];
+    uint64_t dcbaap;
+}__attribute__((packed)) XHCIOperationalRegisters;
+
+typedef struct{
+     uint32_t D_row;
+     uint32_t A_row;
+     uint32_t reserved1;
+     uint32_t reserved2;
+     uint32_t reserved3;
+     uint32_t reserved4;
+     uint32_t reserved5;
+     uint8_t ConfigurationValue;
+     uint8_t InterfaceNumber;
+     uint8_t AlternateString;
+     uint8_t reserved6;
+}__attribute__((packed)) XHCI_INPUT_CONTROL_CONTEXT;
+
+typedef struct{
+     uint32_t RouteString:20;
+     uint8_t Speed:4;
+     uint8_t reserved1:1;
+     uint8_t MTT:1;
+     uint8_t Hub:1;
+     uint8_t ContextEntries:5;
+     uint32_t MaxExitLatency:16;
+     uint16_t RootHubPortNumber:8;
+     uint16_t NumberOfPorts:8;
+     uint8_t ParentHubSlotId;
+     uint8_t ParentPortNumber;
+     uint8_t TTT:2;
+     uint8_t reserved2:4;
+     uint16_t InterrupterTarget:10;
+     uint8_t USBDeviceAddress;
+     uint32_t reserved3:19;
+     uint8_t SlotState:5;
+     uint32_t reserved4;
+     uint32_t reserved5;
+     uint32_t reserved6;
+     uint32_t reserved7;
+}__attribute__((packed)) XHCI_SLOT_CONTEXT;
+
+typedef struct{
+     uint8_t EPState:3;
+     uint8_t reserved1:5;
+     uint8_t Mult:2;
+     uint8_t MaxPStreams:5;
+     uint8_t LSA:1;
+     uint8_t Interval;
+     uint8_t MaxESITPayloadHi;
+     uint8_t reserved2:1;
+     uint8_t CErr:2;
+     uint8_t EPType:3;
+     uint8_t reserved3:1;
+     uint8_t HID:1;
+     uint8_t MaxBurstSize;
+     uint16_t MaxPackageSize;
+     uint64_t DequeuePointer; 
+     uint16_t AverageTRBLength;
+     uint16_t MaxESITPayloadLow;
+}__attribute__((packed)) XHCI_ENDPOINT_CONTEXT;
+
+typedef struct{
+     XHCI_INPUT_CONTROL_CONTEXT icc;
+     XHCI_SLOT_CONTEXT slot;
+     XHCI_ENDPOINT_CONTEXT ec0;
+}__attribute__((packed)) XHCI_INPUT_CONTEXT;
+
+void initialise_xhci_driver(unsigned long bar,unsigned long usbint);
+
+
+XHCI_CAPABILITY_REGISTER *capabilities;
+XHCI_OPERATIONAL_REGISTER *operations;
+XHCI_RUNTIME_REGISTERS *runtime;
+uint32_t *doorbells;
+uint32_t *dcbaap;
+
+void *eventring;
+void *commandring;
+
+uint8_t xhci_get_trb_result_of(TRB* erc){
+    return (erc->arg3>>24)&0xFF;
+}
+
+uint8_t xhci_get_trb_type_of(TRB* erc){
+    return (erc->arg4>>10)&0x3F;
+}
+
+uint32_t xhci_get_memory_dword(void* addr){
+    uint32_t *tv = (uint32_t*) addr;
+    return tv[0];
+}
+
+void xhci_set_memory_dword(void* addr,uint32_t value){
+    uint32_t *tv = (uint32_t*) addr;
+    tv[0] = value;
+}
+
+__attribute__((interrupt)) void irq_xhci(interrupt_frame* frame){
+
+    asm volatile("cli");
+
+    k_printf("xhci: interrupt detected!\n");
+
+    if(operations->USBSTS.eint){
+        k_printf("-> this is a event interrupt\n");
+        operations->USBSTS.eint = 1;
+    }else if(operations->USBSTS.pcd){
+        k_printf("-> this is a port interrupt\n");
+        operations->USBSTS.pcd = 1;
+    }else{
+        k_printf("-> this is a unknown interrupt: %x \n",operations->USBSTS);
+    }
+
+    XHCIInterrupterRegisters *r1 = (XHCIInterrupterRegisters*) (&runtime->intregs[0]);
+    r1->iman.IP = 1;
+    xhci_set_memory_dword((void*)&r1->erdp_lo,xhci_get_memory_dword((void*)&r1->erdp_lo)|8);
+
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
+
+    asm volatile("sti");
+}
+
+uint32_t command_ring_pointer = 0;
+
+void xhci_dump_event_ring(){
+    for(int i = 0 ; i < 5 ; i++){
+        TRB* erc = (TRB*) (eventring + (sizeof(TRB)*i));
+        uint8_t check = erc->arg4&1;
+        // if(check){
+            k_printf("%d: 1:%x 2:%x 3:%x 4:%x z:%d\n",i,erc->arg1,erc->arg2,erc->arg3,erc->arg4,check);
+        // } 
+    }
+}
+
+TRB* xhci_wait_for_event(TRB* origin){
+    while(1){
+        for(int i = 0 ; i < 16 ; i++){
+            TRB* erc = (TRB*) (eventring + (sizeof(TRB)*i));
+            if( ((uint32_t)(((uint64_t)origin)&0xFFFFFFFF))==erc->arg1 && erc->arg4&1 ){
+                return erc;
+            } 
+        }
+    }
+    return 0;
+}
+
+uint16_t xhci_get_get_port_number(){
+    EnableSlotTRB* est = (EnableSlotTRB*)(commandring + (sizeof(TRB) * command_ring_pointer++));
+    est->cycle_bit = 1;
+    est->trb_type = 9;
+    doorbells[0] = 0;
+    CommandCompletionEventTRB* completion_event = (CommandCompletionEventTRB*) xhci_wait_for_event((TRB*)est);
+    if(!completion_event){
+        xhci_dump_event_ring();
+        k_printf("xhci: no event found yet (timeout)!\n");
+        return 0;
+    }
+    if(completion_event->CompletionCode!=1){
+        return 0;
+    }
+    return completion_event->SlotID;
+}
+
+uint16_t xhci_port_get_address(int pid,uint8_t speed,uint16_t devicespeed,uint64_t addr,uint8_t bsr,uint8_t slotid){
+    XHCI_INPUT_CONTEXT* ipc = (XHCI_INPUT_CONTEXT*) requestPage();
+    memset(ipc,0,sizeof(XHCI_INPUT_CONTEXT));
+    ipc->icc.A_row = 3;
+
+    ipc->slot.RootHubPortNumber = pid + 1;
+    ipc->slot.ContextEntries = 1;
+    ipc->slot.Speed = speed;
+
+    ipc->ec0.EPType = 4;
+    ipc->ec0.CErr = 3;
+    ipc->ec0.MaxPackageSize = devicespeed;
+    ipc->ec0.DequeuePointer = ((uint64_t)addr) | 1;
+
+    k_printf("ga: basis:%x icc:%x slot:%x ec0:%x \n",ipc,&ipc->icc,&ipc->slot,&ipc->ec0);
+
+    AddressDeviceCommandTRB *est = (AddressDeviceCommandTRB*)(commandring + (sizeof(TRB) * command_ring_pointer++));
+    est->c = 1;
+    est->BSR = bsr;
+    est->TRBType = 11;
+    est->SlotID = slotid;
+    est->address_low = (uint32_t) ((uint64_t)ipc);
+
+    doorbells[(slotid*2)+0] = (uint32_t) ((uint64_t)ipc+64);
+    doorbells[(slotid*2)+1] = 0;
+
+    doorbells[0] = 0;
+    CommandCompletionEventTRB* completion_event = (CommandCompletionEventTRB*) xhci_wait_for_event((TRB*)est);
+    k_printf("result: %d \n",completion_event->CompletionCode);
+    return 0;
+}
+
+void xhci_install_port(XHCI_OPERATIONAL_PORT_REGISTER *port,int pid){
+    
+    k_printf("xhci_%d: Something is on this port cas:%d ccs:%d cec:%d csc:%d dr:%d lws:%d oca:%d occ:%d ped:%d pic:%d plc:%d pls:%d ps:%d pp:%d pr:%d prc:%d wce:%d wde:%d woe:%d wpr:%d wrc:%d ...\n",
+        pid,
+        port->PORTSC.CAS,
+        port->PORTSC.CCS,
+        port->PORTSC.CEC,
+        port->PORTSC.CSC,
+        port->PORTSC.dr,
+        port->PORTSC.LWS,
+        port->PORTSC.OCA,
+        port->PORTSC.OCC,
+        port->PORTSC.PED,
+        port->PORTSC.PIC,
+        port->PORTSC.PLC,
+        port->PORTSC.PLS,
+        port->PORTSC.PortSpeed,
+        port->PORTSC.PP,
+        port->PORTSC.PR,
+        port->PORTSC.PRC,
+        port->PORTSC.WCE,
+        port->PORTSC.WDE,
+        port->PORTSC.WOE,
+        port->PORTSC.wpr,
+        port->PORTSC.WRC
+    );
+
+    while(1){
+        uint32_t pi = xhci_get_memory_dword((void*)&port->PORTSC);
+        if(((pi>>5)&0b1111)!=7){
+            break;
+        }
+    }
+
+    void *localring = requestPage();
+    memset(localring,0,80 * sizeof(TRB) );
+
+    uint16_t portnumber = xhci_get_get_port_number();
+    k_printf("xhci_%d: Portnumber: %d Portspeed: %d \n",pid,portnumber,port->PORTSC.PortSpeed);
+    xhci_port_get_address(pid,port->PORTSC.PortSpeed,8,(uint64_t)localring,1,portnumber);
+}
+
+uint8_t xhci_test_command_ring(){
+    // no-op command
+    TRB* est = (TRB*)(commandring + (sizeof(TRB) * command_ring_pointer++));
+    est->arg4 = (23<<10) | 1;
+    ((volatile uint32_t*)&doorbells[0])[0] = 0;
+    TRB* res = xhci_wait_for_event(est);
+    if(!res){
+        k_printf("Command ring test failed! \n");
+        return 0;
+    }
+    if( xhci_get_trb_type_of(res)==XHCI_TRB_TYPE_EVENT_COMMAND_COMPLETION_EVENT &&xhci_get_trb_result_of(res)==1 ){
+        k_printf("xhci: command ring test succeed!\n");
+        return 1;
+    }
+    k_printf("Command ring test failed with trb type %d and resultcode %d \n",xhci_get_trb_type_of(res),xhci_get_trb_result_of(res));
+    return 0;
 }
 
 void driver_start(PCIInfo *pci){
-    unsigned long ba = getBARaddress(pci->bus,pci->slot,pci->function,0x10);
-    unsigned long ints = getBARaddress(pci->bus,pci->slot,pci->function,0x3C) & 0x000000FF;
+    unsigned long bar = pci->bar1;
+    unsigned long usbint = pci->inter;
 
-    baseaddr = ba & 0xFFFFFF00;
-    k_printf("xhci: the xhci memory registers are stored at %x with int %x function at %x \n",baseaddr,ints,xhci_interrupt);
-    // sayhi();
-    // setInterrupt(ints,xhci_interrupt);
-    capability_registers = (XHCICapabilityRegisters*) baseaddr;
-    operational_registers = (XHCIOperationalRegisters*)(baseaddr + capability_registers->caplength);
-    runtime_registers = (XHCIRuntimeRegisters*)(baseaddr + capability_registers->rtsoff);
+    k_printf("xhci: arived at XHCI driver, BAR=%x , INT=%d \n",bar,usbint);
+    setInterrupt(usbint,irq_xhci);
+    capabilities = (XHCI_CAPABILITY_REGISTER*) bar;
+    operations = (XHCI_OPERATIONAL_REGISTER*) ( bar + capabilities->CAPLENGTH );
+    runtime = (XHCI_RUNTIME_REGISTERS*) (bar + capabilities->RTSOFF);
+    doorbells = (uint32_t*)(bar + capabilities->DBOFF);
     
+    k_printf("xhci: max_int: %d max_ports: %d max_slots: %d \n",capabilities->HCSPARAMS1.MaxIntrs,capabilities->HCSPARAMS1.MaxPorts,capabilities->HCSPARAMS1.MaxSlots);
+    k_printf("xhci: ERSTMax: %d IST:%d MaxScratchpadBufs: %d %d SPR: %d \n",capabilities->HCSPARAMS2.ERSTMax,capabilities->HCSPARAMS2.IST,capabilities->HCSPARAMS2.MaxScratchpadBufsHi,capabilities->HCSPARAMS2.MaxScratchpadBufsLo,capabilities->HCSPARAMS2.SPR);
+    k_printf("xhci: ac64:%d bnc:%d cfc:%d csz:%d lhrc:%d ltc:%d maxpsasize:%d nss:%d pae:%d pind:%d ppc:%d sec:%d spc:%d xecp:%d \n",capabilities->HCCPARAMS1.ac64,capabilities->HCCPARAMS1.bnc,capabilities->HCCPARAMS1.cfc,capabilities->HCCPARAMS1.csz,capabilities->HCCPARAMS1.lhrc,capabilities->HCCPARAMS1.ltc,capabilities->HCCPARAMS1.maxpsasize,capabilities->HCCPARAMS1.nss,capabilities->HCCPARAMS1.pae,capabilities->HCCPARAMS1.pind,capabilities->HCCPARAMS1.ppc,capabilities->HCCPARAMS1.sec,capabilities->HCCPARAMS1.spc,capabilities->HCCPARAMS1.xecp);
+    k_printf("xhci: cic:%d cmc:%d ctc:%d etc:%d etc_tsc:%d fsc:%d gsc:%d lec:%d res:%d u3c:%d vtc:%d \n",capabilities->HCCPARAMS2.CIC,capabilities->HCCPARAMS2.CMC,capabilities->HCCPARAMS2.CTC,capabilities->HCCPARAMS2.ETC,capabilities->HCCPARAMS2.ETC_TSC,capabilities->HCCPARAMS2.FSC,capabilities->HCCPARAMS2.GSC,capabilities->HCCPARAMS2.LEC,capabilities->HCCPARAMS2.res,capabilities->HCCPARAMS2.U3C,capabilities->HCCPARAMS2.VTC);
+    k_printf("xhci: rs:%d inte:%d hsee:%d ewe:%d eu3s:%d cme:%d ete:%d tse:%d \n",operations->USBCMD.run_stop,operations->USBCMD.inte,operations->USBCMD.hsee,operations->USBCMD.ewe,operations->USBCMD.eu3s,operations->USBCMD.cme,operations->USBCMD.ete,operations->USBCMD.tsc_en);
+
+    // 
+    // are we running ?
+    if(operations->USBCMD.run_stop){
+        k_printf("xhci: We are still running! stop it!\n");
+        operations->USBCMD.run_stop = 0;
+        sleep(10);
+        while(1){
+            if(operations->USBSTS.hch==1){
+                break;
+            }
+        }
+    }
+
     //
-    // trigger reset 
+    // lets trigger a reset and see if we survive...
+    operations->USBCMD.hcrst = 1;
+    while(1){
+        sleep(10);
+        if(operations->USBCMD.hcrst==0){
+            break;
+        }
+    }
+    while(operations->USBSTS.cnr==1);
+    k_printf("xhci: finished the reset!\n");
 
-    operational_registers->usbcmd |= 2;
-    k_printf("xhci: reset controller\n");
-    // reset
-    while(operational_registers->usbcmd & 2);
+    // set max used ports
+    operations->CONFIG.MaxSlotsEn = capabilities->HCSPARAMS1.MaxSlots;
 
-    // set the portcount
-    operational_registers->config |= (capability_registers->hcsparams1>>24) & 0xFF;
+    // create eventring
+    eventring = requestPage();
+    memset(eventring,0,80*sizeof(TRB));
 
-    event_ring_control = (TransferEventTRB*) requestPage();
-    memset(event_ring_control,0,0x1000);
-    XHCIEventRingSegmentTableEntry* erse = (XHCIEventRingSegmentTableEntry*)requestPage();
-    erse->address = (uint64_t) event_ring_control;
-    erse->ringsegmentsize = 16;
-    runtime_registers->intregs[0].erstsz |= 1;
-    runtime_registers->intregs[0].erdp = (uint64_t) event_ring_control;
-    runtime_registers->intregs[0].erstba = (uint64_t) erse;
+    // create event ring handler
+    XHCIEventRingSegmentTableEntry *erste = (XHCIEventRingSegmentTableEntry*) requestPage();
+    memset(erste,0,sizeof(XHCIEventRingSegmentTableEntry));
+    erste->address = (uint32_t) ((uint64_t) eventring);
+    erste->ringsegmentsize = 16;
 
-    // set crcr
-    command_ring_control = requestPage();
-    memset(command_ring_control,0,0x1000);
-    operational_registers->crcr = ((uint64_t)command_ring_control) ;//| 1;
+    // setup event ring registers
+    XHCIInterrupterRegisters *r1 = (XHCIInterrupterRegisters*) (&runtime->intregs[0]);
+    r1->erstsz = 1;
+    r1->erdp_lo = (uint32_t) ((uint64_t) eventring);
+    r1->erdp_hi = 0;
+    r1->erstba_lo = (uint32_t) ((uint64_t) erste);
+    r1->erstba_hi = 0;
+    // r1->imod.IMODC = 0;
+    // r1->imod.IMODI = 4000;
 
-    // set bcbaap
-    dcbaap = (unsigned long*) requestPage();
-    memset(dcbaap,0,0x1000);
-    operational_registers->dcbaap = (uint64_t) dcbaap;
+    // enable interrupts
+    // operations->USBCMD.inte = 1;
+    // while(operations->USBSTS.cnr==1);
+    
+    // // enable wrap events
+    // operations->USBCMD.ewe = 1;
 
-    // run!
-    operational_registers->usbcmd |= 0b1;
-    k_printf("if we hit this point, everything is finished!\n");
+    // enable interrupter 1
+    r1->iman.IE = 1;
+    while(operations->USBSTS.cnr==1);
+
+    // create commandring
+    commandring = requestPage();
+    memset(commandring,0,80 * sizeof(TRB) );
+
+    // set commandring
+    operations->CRCR_low = ((uint32_t) ((uint64_t) commandring)) | 1;
+    operations->CRCR_high = 0;
+
+    // create dcbaap ring
+    dcbaap = (uint32_t*)requestPage();
+    memset(dcbaap,0,sizeof(uint32_t)*1000);
+
+    operations->DCBAAP_low = (uint32_t)((uint64_t)dcbaap);
+    operations->DCBAAP_high = 0;
+    // operations->DCBAAP_low = dcbaap_old_addrB;
+    // operations->DCBAAP_high = dcbaap_old_addrA;
+
+    k_printf("xhci: Start the system!\n");
+    while(operations->USBSTS.cnr==1);
+
+    operations->USBCMD.run_stop = 1;
+
+    // test everything
+    if(!xhci_test_command_ring()){
+        return;
+    }
+
+    // waiting untill we have a new port
+    while(1){
+        if(operations->USBSTS.pcd){
+            break;
+        }
+    }
+
+    for(uint8_t i = 0 ; i < operations->CONFIG.MaxSlotsEn ; i++){
+        XHCI_OPERATIONAL_PORT_REGISTER *port = (XHCI_OPERATIONAL_PORT_REGISTER*) (&operations->ports[i]);
+        if(port->PORTSC.CSC){
+            xhci_install_port(port,i);;
+        }
+    }
+
+    k_printf("All finished...\n");
+    for(;;);
 }

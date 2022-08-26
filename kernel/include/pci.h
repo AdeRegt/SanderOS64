@@ -7,6 +7,8 @@ typedef struct{
     int bus;
     int slot;
     int function;
+    uint32_t bar1;
+    int inter;
 }__attribute__((packed)) PCIInfo;
 
 void initialise_pci_driver();

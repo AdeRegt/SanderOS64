@@ -1,9 +1,5 @@
+#include "driver.h"
 
-
-void testing(char* a,...){
-    k_printf(a);
-}
-
-int driver_start(int argc,char** argv){
-    testing("hello world %d ",testing);
+int driver_start(PCIInfo *pi){
+    k_printf("BUS=%x FUNC=%x SLOT=%x \n",pi->bus,pi->function,pi->slot);
 }
