@@ -76,4 +76,6 @@ void driver_start(PCIInfo *pci){
 	
     registerHIDDevice(get2ch);
     setInterrupt(1,ps2_keyboard__interrupt);
+
+    last_pressed_key=0;
 }

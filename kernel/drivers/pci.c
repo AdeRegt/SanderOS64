@@ -4,7 +4,6 @@
 #include "../include/ahci.h"
 #include "../include/exec/module.h"
 #include "../include/device.h"
-#include "../include/rtl.h"
 #include "../include/ethernet.h"
 
 unsigned short pciConfigReadWord (unsigned char bus, unsigned char slot, unsigned char func, unsigned char offset) {
@@ -57,13 +56,12 @@ void initialise_drivers_from_pci(){
                         pi.inter = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
                         loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
                     }else if( classc==0x02 && sublca==0x00 && (device==0x8168||device==0x8139)&&vendor==0x10ec ){
-                        init_rtl(bus,slot,function);
+                        loadModule("A:SANDEROS/DRIVERS/RTL.SYS",(PCIInfo*)&pi);
                     }
                 }
             }
         }
     }
-    // initialise_ethernet();
 }
 
 void initialise_pci_driver(){

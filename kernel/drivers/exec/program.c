@@ -18,7 +18,6 @@ int exec(uint8_t *path,char *argv){
     if(fz==0){
         return -1;
     }
-    k_printf("--> %d \n",fz);
 
     void* buffer = requestBigPage();
     

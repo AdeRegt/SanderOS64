@@ -62,6 +62,14 @@ uint64_t elf_load_image(void *programmem){
                             symval = (uint64_t) inportb;
                         }else if(memcmp(symbolname,"outportb",strlen("outportb"))==0 ){
                             symval = (uint64_t) outportb;
+                        }else if(memcmp(symbolname,"inportw",strlen("inportw"))==0 ){
+                            symval = (uint64_t) inportw;
+                        }else if(memcmp(symbolname,"outportw",strlen("outportw"))==0 ){
+                            symval = (uint64_t) outportw;
+                        }else if(memcmp(symbolname,"inportl",strlen("inportl"))==0 ){
+                            symval = (uint64_t) inportl;
+                        }else if(memcmp(symbolname,"outportl",strlen("outportl"))==0 ){
+                            symval = (uint64_t) outportl;
                         }else if(memcmp(symbolname,"setInterrupt",strlen("setInterrupt"))==0 ){
                             symval = (uint64_t) setInterrupt;
                         }else if(memcmp(symbolname,"memset",strlen("memset"))==0 ){
@@ -70,6 +78,8 @@ uint64_t elf_load_image(void *programmem){
                             symval = (uint64_t) getBARaddress;
                         }else if(memcmp(symbolname,"sleep",strlen("sleep"))==0 ){
                             symval = (uint64_t) sleep;
+                        }else if(memcmp(symbolname,"requestPage",strlen("requestPage"))==0 ){
+                            symval = (uint64_t) requestPage;
                         }else if(memcmp(symbolname,"registerHIDDevice",strlen("registerHIDDevice"))==0 ){
                             symval = (uint64_t) registerHIDDevice;
                         }else{

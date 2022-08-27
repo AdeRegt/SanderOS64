@@ -17,15 +17,34 @@ typedef struct{
     int inter;
 }__attribute__((packed)) PCIInfo;
 
-void outportb(uint16_t port, uint8_t value);
-uint8_t inportb(uint16_t port);
+typedef struct{
+	uint32_t buffersize;
+	void* buffer;
+}PackageRecievedDescriptor;
 
-void k_printf(char* format,...);
+#define SIZE_OF_MAC 6
+#define SIZE_OF_IP 4
 
-void setInterrupt(int offset,void *fun);
+void outportb(uint16_t port, uint8_t value);                            // !
+uint8_t inportb(uint16_t port);                                         // !
+
+void outportw(uint16_t port, uint16_t value);                           // !
+uint16_t inportw(uint16_t port);                                        // !
+
+void outportl(uint16_t port, uint32_t value);                           // !
+uint32_t inportl(uint16_t port);                                        // !
+
+void k_printf(char* format,...);                                        // !
+
+void setInterrupt(int offset,void *fun);                                // !
 void *requestPage();
-void memset(void *start, unsigned char value, unsigned long long num);
+void memset(void *start, unsigned char value, unsigned long long num);  // !
 
-unsigned long getBARaddress(int bus,int slot,int function,int barNO);
-void sleep(uint64_t time);
-void registerHIDDevice(void *getcpointer);
+unsigned long getBARaddress(int bus,int slot,int function,int barNO);   // !
+void sleep(uint64_t time);                                              // !
+void registerHIDDevice(void *getcpointer);                              // !
+void *requestPage();
+
+void ethernet_set_link_status(unsigned long a);
+int ethernet_handle_package(PackageRecievedDescriptor desc);
+void register_ethernet_device(void *sendPackage,void *recievePackage,unsigned char mac[SIZE_OF_MAC]);

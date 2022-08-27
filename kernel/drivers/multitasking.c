@@ -26,8 +26,10 @@ Task* getCurrentTaskInfo(){
 }
 
 void waitForPid(int pid){
+    volatile Task* ts = (volatile Task*) (tasks + (sizeof(volatile Task)*pid));
+    ts->task_running=1;
     while(1){
-        Task* ts = (Task*) (tasks + (sizeof(Task)*pid));
+        ts = (volatile Task*) (tasks + (sizeof(volatile Task)*pid));
         if(ts->task_running==0){
             break;
         }

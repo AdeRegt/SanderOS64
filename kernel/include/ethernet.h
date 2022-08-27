@@ -156,7 +156,6 @@ struct DNSREQUESTHeader{
     unsigned short aditional_rr;
 } __attribute__ ((packed));
 
-void init_rtl(int bus,int slot,int function);
 void ethernet_detect(int bus,int slot,int function,int device,int vendor);
 void ethernet_set_link_status(unsigned long a);
 void register_ethernet_device(void *sendPackage,void *recievePackage,unsigned char mac[SIZE_OF_MAC]);
