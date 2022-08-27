@@ -16,3 +16,4 @@ void printString(char* message);
 void k_printf(char* format,...);
 void initialise_graphics_driver();
 void putc(char deze);
+unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha);

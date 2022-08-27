@@ -9,7 +9,7 @@ char wd[25];
 char pd[25];
 
 void initialise_tty(){
-    clear_screen(0xFFFFFFFF);
+    clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
     memset((void*)&wd,0,25);
     memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
