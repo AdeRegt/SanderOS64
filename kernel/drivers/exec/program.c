@@ -15,6 +15,9 @@ int exec(uint8_t *path,char *argv){
     //
     // First load the image....
     uint64_t fz = getFileSize(path);
+    if(fz==0){
+        return -1;
+    }
 
     void* buffer = requestBigPage();
     

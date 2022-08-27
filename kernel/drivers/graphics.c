@@ -19,6 +19,10 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
 unsigned long pointerX = 50;
 unsigned long pointerY = 50;
 
+unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha){
+    return (alpha<<23) | (red<<16) | (green<<8) | blue;
+}
+
 void clear_screen(unsigned int colour){
     unsigned int BBP = 4;
     for(unsigned int y = 0 ; y < graphics_info->Height ; y++){

@@ -3,6 +3,8 @@
 #define MEMORY_MAP_SIZE 1024
 #define PAGE_SIZE 0x1000
 
+typedef unsigned long long size_t;
+
 typedef struct {
     uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad
     uint32_t                          Pad;
@@ -21,6 +23,7 @@ typedef struct{
 void initialise_memory_driver();
 void memset(void *start, unsigned char value, uint64_t num);
 uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length);
+int memcmp(const void* aptr, const void* bptr, size_t n);
 void *memconcat(void *base1,void *base2,uint64_t newsize,uint64_t size_base1);
 void *requestPage();
 void *requestBigPage();

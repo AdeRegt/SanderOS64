@@ -20,6 +20,7 @@
         "multitasking.h": "c",
         "program.h": "c",
         "time.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "rtl.h": "c"
     }
 }

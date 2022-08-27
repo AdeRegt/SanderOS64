@@ -3,7 +3,6 @@
 #include "../include/memory.h" 
 #include "../include/ports.h" 
 #include "../include/multitasking.h"
-#include "../include/ps2.h"
 #include "../include/device.h"
 #include "../include/paging.h"
 

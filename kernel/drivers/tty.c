@@ -1,6 +1,5 @@
 #include "../include/tty.h"
 #include "../include/graphics.h"
-#include "../include/ps2.h"
 #include "../include/memory.h"
 #include "../include/device.h"
 #include "../include/exec/program.h"
@@ -10,7 +9,7 @@ char wd[25];
 char pd[25];
 
 void initialise_tty(){
-    clear_screen(0xFFFFFFFF);
+    clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
     memset((void*)&wd,0,25);
     memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
@@ -56,11 +55,11 @@ void initialise_tty(){
                 memcpy((void*)(((uint64_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
             }
             int rt = exec(pd,"TEST");
-            if(rt<1000){
+            if(rt==-1){
+                k_printf("Unable to run program!\n");
+            }else if(rt<1000){
                 k_printf("Program is running in the background\n");
                 waitForPid(rt);
-            }else if(rt==-1){
-                k_printf("Unable to run program!\n");
             }else{
                 k_printf("Program exited with %d \n",rt);
             }

@@ -39,6 +39,15 @@ void *memconcat(void *base1,void *base2,uint64_t newsize,uint64_t size_base1){
     return nd;
 }
 
+int memcmp(const void* aptr, const void* bptr, size_t n){
+	const unsigned char* a = aptr, *b = bptr;
+	for (size_t i = 0; i < n; i++){
+		if (a[i] < b[i]) return -1;
+		else if (a[i] > b[i]) return 1;
+	}
+	return 0;
+}
+
 void initialise_memory_driver(){
     uint64_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;

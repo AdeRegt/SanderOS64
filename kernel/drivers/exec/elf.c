@@ -1,4 +1,5 @@
 #include "../../include/exec/elf.h"
+#include "../../include/device.h"
 #include "../../include/graphics.h"
 #include "../../include/memory.h"
 #include "../../include/ports.h"
@@ -6,6 +7,7 @@
 #include "../../include/pci.h"
 #include "../../include/timer.h"
 #include "../../include/paging.h"
+#include "../../include/exec/debugger.h"
 
 uint8_t is_elf(void *programmem){
     Elf64_Ehdr* elfheader = (Elf64_Ehdr*) programmem;
@@ -54,27 +56,39 @@ uint64_t elf_load_image(void *programmem){
                     
                     if( symbol->st_info&0x10 ){
                         char* symbolname = (char*) (programmem + section_string->sh_offset + symbol->st_name);
-                        if(strcmp(symbolname,"k_printf",strlen("k_printf"))){
+                        if(memcmp(symbolname,"k_printf",strlen("k_printf"))==0 ){
                             symval = (uint64_t) k_printf;
-                        }else if(strcmp(symbolname,"importb",strlen("importb"))){
+                        }else if(memcmp(symbolname,"inportb",strlen("inportb"))==0 ){
                             symval = (uint64_t) inportb;
-                        }else if(strcmp(symbolname,"outportb",strlen("outportb"))){
+                        }else if(memcmp(symbolname,"outportb",strlen("outportb"))==0 ){
                             symval = (uint64_t) outportb;
-                        }else if(strcmp(symbolname,"setInterrupt",strlen("setInterrupt"))){
+                        }else if(memcmp(symbolname,"inportw",strlen("inportw"))==0 ){
+                            symval = (uint64_t) inportw;
+                        }else if(memcmp(symbolname,"outportw",strlen("outportw"))==0 ){
+                            symval = (uint64_t) outportw;
+                        }else if(memcmp(symbolname,"inportl",strlen("inportl"))==0 ){
+                            symval = (uint64_t) inportl;
+                        }else if(memcmp(symbolname,"outportl",strlen("outportl"))==0 ){
+                            symval = (uint64_t) outportl;
+                        }else if(memcmp(symbolname,"setInterrupt",strlen("setInterrupt"))==0 ){
                             symval = (uint64_t) setInterrupt;
-                        }else if(strcmp(symbolname,"memset",strlen("memset"))){
+                        }else if(memcmp(symbolname,"memset",strlen("memset"))==0 ){
                             symval = (uint64_t) memset;
-                        }else if(strcmp(symbolname,"getBARaddress",strlen("getBARaddress"))){
+                        }else if(memcmp(symbolname,"getBARaddress",strlen("getBARaddress"))==0 ){
                             symval = (uint64_t) getBARaddress;
-                        }else if(strcmp(symbolname,"sleep",strlen("sleep"))){
+                        }else if(memcmp(symbolname,"sleep",strlen("sleep"))==0 ){
                             symval = (uint64_t) sleep;
+                        }else if(memcmp(symbolname,"requestPage",strlen("requestPage"))==0 ){
+                            symval = (uint64_t) requestPage;
+                        }else if(memcmp(symbolname,"registerHIDDevice",strlen("registerHIDDevice"))==0 ){
+                            symval = (uint64_t) registerHIDDevice;
                         }else{
                             int fnd = 0;
                             for(Elf64_Xword d = 0 ; d < (section_symbol->sh_size/section_symbol->sh_entsize) ; d++){
                                 Elf64_Sym *symbol2 = (Elf64_Sym*) &((Elf64_Sym*)(programmem+section_symbol->sh_offset))[d];
                                 Elf64_Shdr *symbol_target2 = (Elf64_Shdr*) &((Elf64_Shdr*)(programmem + elfheader->e_shoff))[symbol2->st_shndx];
                                 char* symbolname2 = (char*) (programmem + section_string->sh_offset + symbol2->st_name);
-                                if(strcmp(symbolname2,symbolname,strlen(symbolname)) && symbol2->st_shndx ){
+                                if(memcmp(symbolname,symbolname2,strlen(symbolname2))==0 && symbol2->st_shndx ){
                                     symval = (uint64_t)(programmem + symbol_target2->sh_offset + symbol2->st_value);
                                     fnd = 1;
                                 }
@@ -100,9 +114,12 @@ uint64_t elf_load_image(void *programmem){
                         // R_X86_64_PC32 2 word32 S + A - P
                         // k_printf("R_X86_64_PC32 - ");
                         uint32_t *ref = (uint32_t *)((programmem + section_target->sh_offset + relocation->r_offset));
-                        uint32_t c = S + A - P;
+                        // uint32_t c = S + A - P;
+                        // *ref = c;
+                        uint32_t c = (uint32_t)((uint64_t)programmem + section_target->sh_offset + relocation->r_addend);
                         *ref = c;
-                        // k_printf("%d %d %d \n",relocation->r_addend,relocation->r_info,relocation->r_offset);
+                        // k_printf("S=%x A=%x P=%x \n",S,A,P);
+                        // k_printf("addend: %x info:%x offset:%x res:%x\n",relocation->r_addend,relocation->r_info,relocation->r_offset,c);
                     }else{
                         k_printf("unknown relocation type: %d \n",type);
                         return 0;
@@ -119,10 +136,12 @@ uint64_t elf_load_image(void *programmem){
             }
 
             if(section->sh_type==9){
-                k_printf("SHT_REL");for(;;);
+                k_printf("SHT_REL");
+                return 0;
             }
 
         }
+        
         // symbol lookup....
         for(Elf64_Xword i = 0 ; i < (section_symbol->sh_size/section_symbol->sh_entsize) ; i++){
             Elf64_Sym *symbol = (Elf64_Sym*) &((Elf64_Sym*)(programmem+section_symbol->sh_offset))[i];
@@ -130,10 +149,9 @@ uint64_t elf_load_image(void *programmem){
             char* symbolname = (char*) (programmem + section_string->sh_offset + symbol->st_name);
             if(strcmp(symbolname,"driver_start",strlen("driver_start"))){
                 elfheader->e_entry = (Elf64_Addr)(programmem + symbol_target->sh_offset + symbol->st_value);
+                // clear_screen(0xFFFFFF);
+                // debugger_interpetate_next_x_instructions((void*)elfheader->e_entry,48);
             }
-            // if(symbol->st_shndx==1){
-            //     k_printf("Symbol %s : %x\n",symbolname,(programmem + symbol_target->sh_offset + symbol->st_value));
-            // }
         }
     }else if( elfheader->e_type==2 ){
         Elf64_Phdr* phdrs = (Elf64_Phdr*) ( programmem + elfheader->e_phoff );
