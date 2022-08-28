@@ -1,3 +1,7 @@
+echo "GRUB"
+cd GRUB 
+./build.sh
+cd ..
 echo "UEFI"
 cd UEFI 
 make all
