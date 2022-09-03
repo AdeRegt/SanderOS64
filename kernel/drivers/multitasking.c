@@ -82,7 +82,7 @@ void multitaskinghandler(stack_registers *ix){
 	outportb(0x20,0x20);
 }
 
-int addTask(void *task,void *cr3,uint64_t size){
+int addTask(void *task,void *cr3,uint64_t size,char** args){
     // fill the registry
     tasks[cmt].sessionregs.rip = (uint64_t)new_program_starter;
     tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();
@@ -95,6 +95,7 @@ int addTask(void *task,void *cr3,uint64_t size){
     tasks[cmt].files[3].available = 1;
     tasks[cmt].files[4].available = 1;
     tasks[cmt].task_running = 1;
+    tasks[cmt].arguments = args;
     cmt++;
     return cmt - 1;
 }

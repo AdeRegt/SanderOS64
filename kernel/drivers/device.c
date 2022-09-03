@@ -49,6 +49,9 @@ Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir,void *filesi
 }
 
 char* dir(char* basepath){
+    if(basepath[0]>='a'&&basepath[0]<='z'){
+        basepath[0] += ('A' - 'a');
+    }
     char driveletter = basepath[0] - 'A';
     Filesystem fs = filesystems[driveletter];
     if(fs.dir){
@@ -61,6 +64,9 @@ char* dir(char* basepath){
 }
 
 char readFile(char* path,void *buffer){
+    if(path[0]>='a'&&path[0]<='z'){
+        path[0] += ('A' - 'a');
+    }
     char driveletter = path[0] - 'A';
     Filesystem fs = filesystems[driveletter];
     if(fs.readfile){
@@ -73,6 +79,9 @@ char readFile(char* path,void *buffer){
 }
 
 uint64_t writeFile(char* path,void *buffer,uint64_t size){
+    if(path[0]>='a'&&path[0]<='z'){
+        path[0] += ('A' - 'a');
+    }
     char driveletter = path[0] - 'A';
     Filesystem fs = filesystems[driveletter];
     if(fs.readfile){
@@ -85,6 +94,9 @@ uint64_t writeFile(char* path,void *buffer,uint64_t size){
 }
 
 uint64_t getFileSize(char* path){
+    if(path[0]>='a'&&path[0]<='z'){
+        path[0] += ('A' - 'a');
+    }
     char driveletter = path[0] - 'A';
     Filesystem fs = filesystems[driveletter];
     if(fs.filesize){
