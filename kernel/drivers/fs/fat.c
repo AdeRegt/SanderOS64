@@ -270,6 +270,10 @@ char *fat_dir(Filesystem* fs,char* path){
     int g = 0;
     for(int i = 0 ; i < 16 ; i++){
         if(u[i].attributes==0x20||u[i].attributes==0x10){
+            if(u[i].filename[0]==0xE5){ // it means the file is unused
+                continue;
+            }
+            
             if(g){
                 resultstring[resultstringpointer++] = ';';
             }
@@ -288,7 +292,6 @@ char *fat_dir(Filesystem* fs,char* path){
 }
 
 uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t filesize){
-    k_printf("Command to write file...\n");
     FATFileSystemSettings* settings = (FATFileSystemSettings*) fs->argument;
     int count_of_slashes = 0;
     int stringcount = 0;
@@ -382,7 +385,6 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     }
 
     if(found_solution_for_this_part==0){
-        k_printf("Create new file...\n");
         for(int q = 0 ; q < 16 ; q++){
             if(u[q].attributes==0){
                 u[q].attributes = 0x20;
@@ -421,7 +423,6 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     u[index_of_new_or_changed_file].size = filesize;
 
     if(u[index_of_new_or_changed_file].cluster_low==0){
-        k_printf("Finding empty cluster...\n");
         uint64_t *chdv = (uint64_t*)requestPage();
         if(!device_read_raw_sector(fs->blockdevice,settings->first_fat_sector,1,(void*)chdv)){
             freePage(chdv);
@@ -447,7 +448,6 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
         }
         freePage(chdv);
     }
-    k_printf("device: store new info to disk!\n");
 
     if(!device_write_raw_sector(fs->blockdevice,lastdirsect,1,(void*)u)){
         freePage(es);
@@ -462,7 +462,6 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     rawcalc -= 2;
     rawcalc *= settings->bb->sectors_per_cluster;
     rawcalc += settings->first_data_sector;
-    k_printf("device: writing the actual file...!\n");
 
     if(!device_write_raw_sector(fs->blockdevice,rawcalc ,(filesize/512)+1,(void*)bufferedcapacity)){
         freePage(es);
@@ -470,7 +469,6 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
         return 0;
     }
     freePage(es);
-    k_printf("Finished writing file\n");
 
     return filesize;
 }

@@ -43,6 +43,7 @@ typedef struct{
     uint64_t size;
     File files[10];
     uint8_t task_running;
+    char** arguments;
 }__attribute__((packed)) Task;
 
 #define MAX_TASKS 10
@@ -50,7 +51,7 @@ typedef struct{
 void initialise_multitasking_driver();
 extern void multitaskingint();
 Task* getTasks();
-int addTask(void *task,void *cr3,uint64_t size);
+int addTask(void *task,void *cr3,uint64_t size,char** args);
 int getPid();
 Task* getCurrentTaskInfo();
 void waitForPid(int pid);

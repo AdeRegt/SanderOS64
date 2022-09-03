@@ -6,10 +6,10 @@ A 64bit OS
 * Boot via GRUB
 * Load kernel from AHCI :white_check_mark:
 * Read filesystem from AHCI :white_check_mark:
-* Write filesystem from AHCI
-* Load drivers
+* Write filesystem from AHCI :white_check_mark:
+* Load drivers :white_check_mark:
 * Edit text files
-* Use FASM to assemble programs
+* Use FASM to assemble programs :white_check_mark:
 * Send messages to IRC client
 
 ## Installation

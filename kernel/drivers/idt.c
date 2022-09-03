@@ -174,6 +174,13 @@ void isr2handler(stack_registers *ix){
         ix->rax = 0;
     }else if(ix->rax==400){
         ix->rax = (uint64_t) malloc(ix->rdx);
+    }else if(ix->rax==401){
+        if(ix->rcx>0&&ix->rcx<10){
+            char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
+            ((uint32_t*)ix->rdi)[0] = (uint32_t)((uint64_t)us);
+        }else{
+            ((uint32_t*)ix->rdi)[0] = 0;
+        }
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

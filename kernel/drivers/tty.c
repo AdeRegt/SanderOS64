@@ -5,13 +5,13 @@
 #include "../include/exec/program.h"
 #include "../include/multitasking.h"
 
-char wd[25];
-char pd[25];
+char wd[50];
+char pd[50];
 
 void initialise_tty(){
     clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
-    memset((void*)&wd,0,25);
+    memset((void*)&wd,0,50);
     memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
 
     k_printf("SanderOS64 Buildin Command Interpeter\n");
@@ -24,7 +24,7 @@ void initialise_tty(){
     k_printf("\n");
     while(1){
         k_printf("%s > ",wd);
-        uint8_t *tw = scanLine(25);
+        uint8_t *tw = scanLine(50);
         k_printf("\n");
         if(strcmp(tw,"exit",4)){
             break;
@@ -33,7 +33,7 @@ void initialise_tty(){
         }else if(strcmp(tw,"cd",2)){
             char *strpath = (char*) (tw+3);
             if(strpath[1]==':'){
-                memset((void*)&wd,0,25);
+                memset((void*)&wd,0,50);
                 memcpy((void*)&wd,strpath,strlen(strpath));
             }else{
                 if(strlen((char*)&wd)>2){
@@ -42,7 +42,7 @@ void initialise_tty(){
                 memcpy((void*)(((uint64_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
             }
         }else{
-            memset((void*)&pd,0,25);
+            memset((void*)&pd,0,50);
             if(tw[1]==':'){
                 memcpy((void*)&pd,tw,strlen(tw));
             }else{
@@ -54,7 +54,15 @@ void initialise_tty(){
                 }
                 memcpy((void*)(((uint64_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
             }
-            int rt = exec(pd,"TEST");
+            char* pd2 = 0;
+            for(int z = 0 ; z < strlen(pd) ; z++){
+                if(pd[z]==' '){
+                    pd2 = (char*)(pd+z+1);
+                    pd[z] = 0;
+                    break;
+                }
+            }
+            int rt = exec(pd,pd2);
             if(rt==-1){
                 k_printf("Unable to run program!\n");
             }else if(rt<1000){
