@@ -24,6 +24,7 @@ unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned c
 }
 
 void clear_screen(unsigned int colour){
+    asm volatile("cli");
     unsigned int BBP = 4;
     for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
         for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
@@ -32,10 +33,11 @@ void clear_screen(unsigned int colour){
     }
     pointerX = 50;
     pointerY = 50;
+    asm volatile("sti");
 }
 
 void putc(char deze){
-    if(pointerY>graphics_info->Height){
+    if(pointerY>(graphics_info->Height-50)){
         clear_screen(0xFFFFFFFF);
         pointerX = 50;
         pointerY = 50;
