@@ -4,5 +4,6 @@ copy-in ./bin/sanderos/fonts/default.psf /sanderos/fonts
 copy-in ./bin/sanderos/drivers/ps2key.sys /sanderos/drivers
 copy-in ./bin/sanderos/drivers/xhci.sys /sanderos/drivers
 copy-in ./bin/sanderos/drivers/test.sys /sanderos/drivers
+copy-in ./bin/sanderos/drivers/rtl.sys /sanderos/drivers
 copy-in ./bin/programs/fasm.bin /programs
 copy-in ./bin/test.asm /
