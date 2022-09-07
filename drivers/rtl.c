@@ -4,6 +4,7 @@
 #define SIZE_OF_IP 4
 //
 // FROM: https://wiki.osdev.org/RTL8169
+// Technical specification: http://realtek.info/pdf/rtl8139d.pdf
 // This is a entry in the queue of the recieve and transmit descriptor queue
 #define OWN 0x80000000
 #define EOR 0x40000000
@@ -38,15 +39,15 @@ uint32_t package_send_ack = 0;
 
 
 __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
-	k_printf("RTL81: Interrupt detected\n");
+	k_printf("[RTL81] Interrupt detected\n");
 	unsigned short status = inportw(bar1 + 0x3E);
 	if(status&0x20){
-		k_printf("RTL81: Link change detected!\n");
+		k_printf("[RTL81] Link change detected!\n");
 		ethernet_set_link_status(1);
 		status |= 0x20;
 	}
 	if(status&0x01){
-		k_printf("RTL81: Package recieved!\n");
+		k_printf("[RTL81] Package recieved!\n");
 		PackageRecievedDescriptor prd;
 		for(int z = 0 ; z < 100 ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
@@ -60,7 +61,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 		status |= 0x01;
 	}
 	if(status&0x04){
-		k_printf("RTL81: Package send!\n");
+		k_printf("[RTL81] Package send!\n");
 		((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0] = 1;
 		status |= 0x04;
 	}
@@ -68,7 +69,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 	
 	status = inportw(bar1 + 0x3E);
 	if(status!=0x00){
-		k_printf("RTL81: Unresolved interrupt: %x \n",status);
+		k_printf("[RTL81] Unresolved interrupt: %x \n",status);
 	}
 	
 	outportb(0xA0,0x20);
@@ -84,7 +85,7 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 	oa:
 	desz = ((volatile struct Descriptor*)(Tx_Descriptors+(sizeof(struct Descriptor)*tx_pointer)));
 	if(desz->command!=0x80000064){ // a check if we somehow lost the count
-		k_printf("RTL81: Unexpected default value: %x \n",desz->command);
+		k_printf("[RTL81] Unexpected default value: %x \n",desz->command);
 	}
 	desz->buffer = ms3;
 	desz->vlan = ms2;
@@ -108,7 +109,8 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 
 PackageRecievedDescriptor rtl_recievePackage(){
 	PackageRecievedDescriptor prd;
-	while(1){
+	uint64_t time = 0;
+	while(time<0x500000){
 		int i = -1;
 		for(int z = 0 ; z < 100 ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
@@ -122,27 +124,28 @@ PackageRecievedDescriptor rtl_recievePackage(){
 		if(i!=-1){
 			break;
 		}
+		time++;
 	}
 	return prd;
 }
 
 void rtl_test(){
 	PackageRecievedDescriptor res = rtl_recievePackage();
-	k_printf("RTL81: Testpackage recieved. Length=%x \n",res.buffersize);
+	k_printf("[RTL81] Testpackage recieved. Length=%x \n",res.buffersize);
 	
 	PackageRecievedDescriptor resx;
 	resx.buffersize = res.buffersize;
 	resx.buffer = res.buffer;
 	rtl_sendPackage(resx);
-	k_printf("RTL81: Package send\n");
+	k_printf("[RTL81] Package send\n");
 }
 
 int driver_start(PCIInfo *pi){
-    k_printf("RTL81: Driver loaded\n");
+    k_printf("[RTL81] Driver loaded\n");
 	bar1 = getBARaddress(pi->bus,pi->slot,pi->function,0x10) & 0xFFFFFFFE;
-	k_printf("RTL81: BAR=%x \n",bar1);
+	k_printf("[RTL81] BAR=%x \n",bar1);
 	
-	k_printf("RTL81: Set interrupter\n");
+	k_printf("[RTL81] Set interrupter\n");
 	unsigned long usbint = getBARaddress(pi->bus,pi->slot,pi->function,0x3C) & 0x000000FF;
 	setInterrupt(usbint,irq_rtl8169);
 
@@ -151,10 +154,11 @@ int driver_start(PCIInfo *pi){
 	
 	//
 	// trigger reset
-	k_printf("RTL81: Resetting driver \n");
+	k_printf("[RTL81] Resetting driver \n");
 	outportb(bar1 + 0x37, 0x10);
+	sleep(5);
 	while(inportb(bar1 + 0x37) & 0x10){}
-	k_printf("RTL81: Driver reset succesfully \n");
+	k_printf("[RTL81] Driver reset succesfully \n");
 	
 	//
 	// get mac address
@@ -162,7 +166,7 @@ int driver_start(PCIInfo *pi){
 	for(int i = 0 ; i < SIZE_OF_MAC ; i++){
 		macaddress[i] = inportb(bar1+i);
 	}
-	k_printf("RTL81: MAC-address %x %x %x %x %x %x \n",macaddress[0],macaddress[1],macaddress[2],macaddress[3],macaddress[4],macaddress[5]);
+	k_printf("[RTL81] MAC-address %x %x %x %x %x %x \n",macaddress[0],macaddress[1],macaddress[2],macaddress[3],macaddress[4],macaddress[5]);
 
 	requestPage();
 	Rx_Descriptors = (struct Descriptor*)requestPage();
@@ -172,7 +176,7 @@ int driver_start(PCIInfo *pi){
 	
 	//
 	// setup rx descriptor
-	k_printf("RTL81: Setup RX descriptor\n");
+	k_printf("[RTL81] Setup RX descriptor\n");
 	for(unsigned long i = 0; i < num_of_rx_descriptors; i++){
 		unsigned long rx_buffer_len = 100;
 		void *packet_buffer_address = requestPage();
@@ -199,5 +203,5 @@ int driver_start(PCIInfo *pi){
 	outportb(bar1 + 0x50, 0x00); /* Lock config registers */
 	
 	register_ethernet_device(rtl_sendPackage,rtl_recievePackage,macaddress);
-	k_printf("RTL81: Setup finished\n");
+	k_printf("[RTL81] Setup finished\n");
 }

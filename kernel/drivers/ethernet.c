@@ -22,7 +22,7 @@ unsigned long switch_endian32(unsigned long num) {
 //         // Johan his E1000 driver comes here
 //         init_e1000(bus,slot,function);
 //     }else{
-//         printf("ETH: Unknown ethernet device: device: %x vendor: %x \n",device,vendor);
+//         printf("[ETH] Unknown ethernet device: device: %x vendor: %x \n",device,vendor);
 //     }
 // }
 
@@ -111,7 +111,7 @@ unsigned char* getMACFromIp(unsigned char* ip){
             }
         }
     }
-    k_printf("ETH: %d.%d.%d.%d is at %x:%x:%x:%x:%x:%x \n",ip[0],ip[1],ip[2],ip[3],ah->source_mac[0],ah->source_mac[1],ah->source_mac[2],ah->source_mac[3],ah->source_mac[4],ah->source_mac[5]);
+    k_printf("[ETH] %d.%d.%d.%d is at %x:%x:%x:%x:%x:%x \n",ip[0],ip[1],ip[2],ip[3],ah->source_mac[0],ah->source_mac[1],ah->source_mac[2],ah->source_mac[3],ah->source_mac[4],ah->source_mac[5]);
     return ah->source_mac;
 }
 
@@ -314,7 +314,7 @@ unsigned char* getIpAddressFromDHCPServer(){
             }
         }
     }
-    k_printf("ETH: Got offer\n");
+    k_printf("[ETH] Got offer\n");
     struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) prd.buffer;
     unsigned char* offeredip = (unsigned char*) &hd->dhcp_offered_machine;
     int a = 0;
@@ -389,14 +389,14 @@ unsigned char* getIpAddressFromDHCPServer(){
             }
         } 
     }
-    k_printf("ETH: Got Approval\n");
+    k_printf("[ETH] Got Approval\n");
 
     return offeredip;
 }
 
 volatile unsigned short dnstid = 0xe0e0;
 unsigned char* getIPFromName(char* name){
-    k_printf("ETH: Looking for IP of %s \n",name);
+    k_printf("[ETH] Looking for IP of %s \n",name);
     int str = strlen(name);
     int ourheadersize = sizeof(struct DNSREQUESTHeader)+str+2+4;
     struct DNSREQUESTHeader *dnsreqheader = (struct DNSREQUESTHeader*) malloc(ourheadersize);
@@ -439,7 +439,7 @@ unsigned char* getIPFromName(char* name){
     while(1){
         ep = getEthernetPackage();
         if(ep.buffer==0){
-            k_printf("ETH: IP of %s cannot be found \n",name);
+            k_printf("[ETH] IP of %s cannot be found \n",name);
             return targetip;
         }
         de = (struct DNSREQUESTHeader*) ep.buffer;
@@ -454,7 +454,7 @@ unsigned char* getIPFromName(char* name){
         targetip[2] = ((unsigned char*)de + (ep.buffersize-2))[0];
         targetip[3] = ((unsigned char*)de + (ep.buffersize-1))[0];
     }
-    k_printf("ETH: IP of %s is %d.%d.%d.%d \n",name,targetip[0],targetip[1],targetip[2],targetip[3]);
+    k_printf("[ETH] IP of %s is %d.%d.%d.%d \n",name,targetip[0],targetip[1],targetip[2],targetip[3]);
     return targetip; 
 }
 
@@ -491,7 +491,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
     if(eh->type==ETHERNET_TYPE_ARP){
         struct ARPHeader *ah = (struct ARPHeader*) desc.buffer;
         if( ah->operation==0x0100 && memcmp((char*) ah->dest_ip,(char*) &our_ip, SIZE_OF_IP)==0 ){
-            k_printf("ETH: ARP recieved with our IP\n");
+            k_printf("[ETH] ARP recieved with our IP\n");
 
             struct ARPHeader* arpie = (struct ARPHeader*)malloc(sizeof(struct ARPHeader));
             unsigned char everyone[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -521,7 +521,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         struct IPv4Header* ip = (struct IPv4Header*) eh;
         if(ip->protocol==IPV4_TYPE_UDP){
             struct UDPHeader* udp = (struct UDPHeader*) eh;
-            k_printf("ETH: UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
+            k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
             if(udp->destination_port==switch_endian16(50618)){
                 // TFTP, automatic ACK
                 struct TFTPAcknowledgeHeader* tftp_old = (struct TFTPAcknowledgeHeader*)eh;
@@ -543,10 +543,10 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             unsigned short fx = switch_endian16(tcp->flags);
-            k_printf("ETH: TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
+            k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
             if(((switch_endian16(tcp->flags) & TCP_PUS)||(switch_endian16(tcp->flags) & TCP_SYN)||(switch_endian16(tcp->flags) & TCP_FIN)) && (switch_endian16(tcp->flags) & TCP_ACK)){
                 // TCP auto accept ACK SYN
-                k_printf("ETH: TCP package handled\n");
+                k_printf("[ETH] TCP package handled\n");
                 unsigned long from = tcp->header.dest_addr; 
                 unsigned long to = tcp->header.source_addr; 
                 unsigned short from_port = switch_endian16(tcp->destination_port); 
@@ -575,24 +575,24 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                     unsigned long addr = ((uint64_t)desc.buffer) + sizeof(struct TCPHeader);
                     unsigned long count = desc.buffersize-sizeof(struct TCPHeader);
                     unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
-                    k_printf("ETH: TCP message reieved: size=%x string=%s \n",count,(unsigned char*)addr);
+                    k_printf("[ETH] TCP message reieved: size=%x string=%s \n",count,(unsigned char*)addr);
                     if(func){
-                        k_printf("ETH: function handler is about to get called\n");
+                        k_printf("[ETH] function handler is about to get called\n");
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(addr,count);
                     }else{
-                        k_printf("ETH: No function handler for this tcpservice!\n");
+                        k_printf("[ETH] No function handler for this tcpservice!\n");
                     }
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
-                    k_printf("ETH: Stream is finished!\n");
+                    k_printf("[ETH] Stream is finished!\n");
                 }
             }
             return 1;
         }else if(ip->protocol==IPV4_TYPE_ICMP){
             struct ICMPHeader *icmp = (struct ICMPHeader*) ip;
             if(icmp->type==8){
-                k_printf("ETH: ICMP ping request found!\n");
+                k_printf("[ETH] ICMP ping request found!\n");
 
                 int prefsiz = desc.buffersize - sizeof(struct ICMPHeader);
                 struct ICMPHeader *newicmp = (struct ICMPHeader*) malloc(sizeof(struct ICMPHeader) + prefsiz );
@@ -633,33 +633,33 @@ void exsend(unsigned long addr,unsigned long count){
 }
 
 void initialise_ethernet(){
-    k_printf("ETH: Ethernet module reached!\n");
+    k_printf("[ETH] Ethernet module reached!\n");
     EthernetDevice ed = getDefaultEthernetDevice();
     if(ed.is_enabled){
-        k_printf("ETH: There is a ethernet device present on the system!\n");
-        k_printf("ETH: Asking DHCP server for our address....\n");
+        k_printf("[ETH] There is a ethernet device present on the system!\n");
+        k_printf("[ETH] Asking DHCP server for our address....\n");
 
         unsigned char *dhcpid = getIpAddressFromDHCPServer();
         if(dhcpid){
             fillIP((unsigned char*)&our_ip,dhcpid);
-            k_printf("ETH: DHCP is present\n");
+            k_printf("[ETH] DHCP is present\n");
         }else{
-            k_printf("ETH: No DHCP server present here, using static address\n");
+            k_printf("[ETH] No DHCP server present here, using static address\n");
             unsigned char dinges[SIZE_OF_IP] = {192,168,178,15};   
             fillIP((unsigned char*)&our_ip,(unsigned char*)&dinges);
         }
 
-        k_printf("ETH: Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
-        k_printf("ETH: Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
-        k_printf("ETH: DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
-        k_printf("ETH: DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
-        for(;;);
+        k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
+        k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
+        k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
+        k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
+        // for(;;);
 
         // if(dns_ip[0]){
         //     unsigned char* srve = getIPFromName("tftp.local");
         //     if(srve[0]){
-        //         printf("ETH: TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
-        //         debugf("ETH: TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
+        //         printf("[ETH] TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
+        //         debugf("[ETH] TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
         //         unsigned char ipfs[SIZE_OF_IP];
         //         ipfs[0] = dhcp_ip[0];
         //         ipfs[1] = dhcp_ip[1];
