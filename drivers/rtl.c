@@ -4,6 +4,7 @@
 #define SIZE_OF_IP 4
 //
 // FROM: https://wiki.osdev.org/RTL8169
+// Technical specification: http://realtek.info/pdf/rtl8139d.pdf
 // This is a entry in the queue of the recieve and transmit descriptor queue
 #define OWN 0x80000000
 #define EOR 0x40000000
@@ -108,7 +109,8 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 
 PackageRecievedDescriptor rtl_recievePackage(){
 	PackageRecievedDescriptor prd;
-	while(1){
+	uint64_t time = 0;
+	while(time<0x500000){
 		int i = -1;
 		for(int z = 0 ; z < 100 ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
@@ -122,6 +124,7 @@ PackageRecievedDescriptor rtl_recievePackage(){
 		if(i!=-1){
 			break;
 		}
+		time++;
 	}
 	return prd;
 }
@@ -153,6 +156,7 @@ int driver_start(PCIInfo *pi){
 	// trigger reset
 	k_printf("[RTL81] Resetting driver \n");
 	outportb(bar1 + 0x37, 0x10);
+	sleep(5);
 	while(inportb(bar1 + 0x37) & 0x10){}
 	k_printf("[RTL81] Driver reset succesfully \n");
 	

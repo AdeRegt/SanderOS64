@@ -7,6 +7,7 @@
 #include "../../include/pci.h"
 #include "../../include/timer.h"
 #include "../../include/paging.h"
+#include "../../include/ethernet.h"
 #include "../../include/exec/debugger.h"
 
 uint8_t is_elf(void *programmem){
@@ -82,6 +83,12 @@ uint64_t elf_load_image(void *programmem){
                             symval = (uint64_t) requestPage;
                         }else if(memcmp(symbolname,"registerHIDDevice",strlen("registerHIDDevice"))==0 ){
                             symval = (uint64_t) registerHIDDevice;
+                        }else if(memcmp(symbolname,"ethernet_set_link_status",strlen("ethernet_set_link_status"))==0 ){
+                            symval = (uint64_t) ethernet_set_link_status;
+                        }else if(memcmp(symbolname,"ethernet_handle_package",strlen("ethernet_handle_package"))==0 ){
+                            symval = (uint64_t) ethernet_handle_package;
+                        }else if(memcmp(symbolname,"register_ethernet_device",strlen("register_ethernet_device"))==0 ){
+                            symval = (uint64_t) register_ethernet_device;
                         }else{
                             int fnd = 0;
                             for(Elf64_Xword d = 0 ; d < (section_symbol->sh_size/section_symbol->sh_entsize) ; d++){
