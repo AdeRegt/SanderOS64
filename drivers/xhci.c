@@ -390,6 +390,14 @@ void xhci_write_usbsts_register(uint32_t value){
     xhci_write_32_register(xhci_bar + capabilities->CAPLENGTH + XHCI_OPERATIONAL_USBSTS,value);
 }
 
+uint32_t xhci_read_portsc_register(int port){
+    return xhci_read_32_register(xhci_bar + capabilities->CAPLENGTH + (0x400 + (0x10 * (port-1))));
+}
+
+void xhci_write_portsc_register(int port,uint32_t value){
+    xhci_write_32_register(xhci_bar + capabilities->CAPLENGTH + (0x400 + (0x10 * (port-1))),value);
+}
+
 uint8_t xhci_usbcmd_is_running(){
     return xhci_read_usbcmd_register() & 1;
 }
@@ -460,18 +468,12 @@ void driver_start(PCIInfo *pci){
     xhci_start_controller();
 
     k_printf("Everything is still running rn....\n");
-    while(1){
-     if(xhci_read_usbsts_register()&0x10){
-          break;
-     }
-    }
-    k_printf("Something is set...\n");
-    uint32_t* toot = (uint32_t*) rts->address;
-    for (uint32_t i = 0; i < 10; i++)
-    {
-     k_printf("%x ",toot[i]);
-    }
     
+    sleep(100);
+
+    for(int i = 0 ; i < 10 ; i++){
+        k_printf("PORT %x \n",xhci_read_portsc_register(i));
+    }
 
 	for(;;);
 }
