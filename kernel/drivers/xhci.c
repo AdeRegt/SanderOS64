@@ -348,18 +348,23 @@ typedef struct{
 }__attribute__((packed)) CommandCompletionEventTRB;
 
 #define XHCI_OPERATIONAL_USBCMD 0x00
+#define XHCI_OPERATIONAL_USBSTS 0x04
+#define XHCI_OPERATIONAL_DNCTRL 0x14
+#define XHCI_OPERATIONAL_CRCR 0x18
+#define XHCI_OPERATIONAL_DCBAAP 0x30
 #define XHCI_OPERATIONAL_CONFIG 0x38
 #define XHCI_RUNTIME_ERSTS 0x28
 #define XHCI_RUNTIME_ERDP 0x38
 #define XHCI_RUNTIME_ERSTBA 0x30
-#define XHCI_OPERATIONAL_CRCR 0x18
-#define XHCI_OPERATIONAL_DCBAAP 0x30
-#define XHCI_OPERATIONAL_USBSTS 0x04
+
+#define XHCI_SIZE_EVENT_RING 16
+#define XHCI_SIZE_TRB 8
 
 void *xhci_bar;
 XHCI_CAPABILITY_REGISTER* capabilities;
 XHCIEventRingSegmentTableEntry *rts;
 void *xhci_command_ring;
+void *xhci_event_ring;
 int xhci_command_ring_pointer = 0;
 
 uint32_t xhci_read_32_register(void* where){
@@ -368,6 +373,14 @@ uint32_t xhci_read_32_register(void* where){
 
 void xhci_write_32_register(void* where,uint32_t value){
     ((uint32_t*)where)[0] = value;
+}
+
+uint32_t xhci_read_dnctrl_register(){
+    return xhci_read_32_register(xhci_bar + capabilities->CAPLENGTH + XHCI_OPERATIONAL_DNCTRL);
+}
+
+void xhci_write_dnctrl_register(uint32_t value){
+    xhci_write_32_register(xhci_bar + capabilities->CAPLENGTH + XHCI_OPERATIONAL_DNCTRL,value);
 }
 
 uint32_t xhci_read_usbcmd_register(){
@@ -458,7 +471,7 @@ void xhci_stop_controller(){
 
 void xhci_start_controller(){
     uint32_t usbcmd = xhci_read_usbcmd_register();
-    usbcmd |= 1;
+    usbcmd = 1;
     xhci_write_usbcmd_register(usbcmd);
 }
 
@@ -484,11 +497,20 @@ void xhci_ring_doorbell(int index,int value){
 void *xhci_ring_and_wait(void* trb,int index,int value){
     xhci_ring_doorbell(index,value);
     sleep(10);
-    return (void*) (uint64_t)(xhci_read_erdp_register()-8);
+    while(1){
+        for(int i = 0 ; i < XHCI_SIZE_EVENT_RING ; i++){
+            uint32_t* tv = (uint32_t*) xhci_event_ring + (i*XHCI_SIZE_TRB);
+            if(tv[0]==(uint32_t)((uint64_t) trb)){
+                return (void*)tv;
+            }
+        }
+    }
+    return 0;
 }
 
 void* xhci_get_next_free_command(){
-    void *res = (xhci_command_ring + (xhci_command_ring_pointer*8));
+    void *res = (xhci_command_ring + (xhci_command_ring_pointer*XHCI_SIZE_TRB));
+    xhci_command_ring_pointer++;
     xhci_command_ring_pointer++;
     return res;
 }
@@ -506,9 +528,26 @@ int xhci_noop_command_ring(){
     }
 }
 
+int xhci_request_device_id(){
+    NoOperationCommandTRB *noopcmd = (NoOperationCommandTRB*) xhci_get_next_free_command();
+    noopcmd->CycleBit = 1;
+    noopcmd->TRBType = 9;
+
+    CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
+    if(result){
+        return result->CompletionCode;
+    }else{
+        return 0;
+    }
+}
+
 void xhci_install_port(int portnumber){
     uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
     k_printf("xhci-%d: This port deserves our attention and it has the status of %x \n",portnumber,initial_portsc_status);
+    k_printf("xhci-%d: PLS: %d \n",portnumber,(initial_portsc_status>>5)&0xF);
+
+    int device_id = xhci_request_device_id();
+    k_printf("xhci-%d: This port recieved a device id of %d \n",portnumber,device_id);
 }
 
 void xhci_probe_ports(){
@@ -520,17 +559,20 @@ void xhci_probe_ports(){
     }
 }
 
-void xhci_driver_start(PCIInfo *pci){
+void xhci_driver_start(uint32_t bar1,uint32_t inter){
 	k_printf("xhci: Entering xhci driver....\n");
-    setInterrupt(pci->inter,xhci_int);
-    k_printf("xhci: Bus: %x \n",pci->bar1);
+    setInterrupt(inter,xhci_int);
 
-    xhci_bar = (void*) (uint64_t) ((uint32_t)(pci->bar1 & 0xFFFFFFF0));
+    xhci_bar = (void*) (uint64_t) ((uint32_t)(bar1 & 0xFFFFFFF0));
     capabilities = (XHCI_CAPABILITY_REGISTER*) xhci_bar;
+
+    k_printf("xhci: Bus: %x \n",xhci_bar);
+    k_printf("xhci: status before reset.... USBCMD: %x USBSTS: %x DNCNTRL: %x \n",xhci_read_usbcmd_register(),xhci_read_usbsts_register(),xhci_read_dnctrl_register());
 
     xhci_stop_controller();
     xhci_reset_controller();
     k_printf("xhci: Finished reset, according to the system, we have %d ports available\n",capabilities->HCSPARAMS1.MaxPorts);
+    xhci_write_usbcmd_register(0);
 
     uint32_t configres = xhci_read_config_register();
     configres |= capabilities->HCSPARAMS1.MaxPorts;
@@ -539,20 +581,25 @@ void xhci_driver_start(PCIInfo *pci){
     ersts &= 1;
     xhci_write_ersts_register(ersts);
 
+    xhci_event_ring = requestPage();
+
     rts = (XHCIEventRingSegmentTableEntry*) requestPage();
-    rts->ringsegmentsize = 16;
-    rts->address = (uint64_t)requestPage();
+    rts->ringsegmentsize = XHCI_SIZE_EVENT_RING;
+    rts->address = (uint64_t) xhci_event_ring;
     xhci_command_ring = requestPage();
     void *dcbaap = requestPage();
 
-    memset((void*)rts->address,0,0x1000);
+    memset((void*)xhci_event_ring,0,0x1000);
     memset(xhci_command_ring,0,0x1000);
-    memset(dcbaap,0,0x500);
+    memset(dcbaap,0,0x1000);
 
-    xhci_write_erdp_register((uint32_t)rts->address);
+    xhci_write_erdp_register((uint32_t)((uint64_t)xhci_event_ring));
     xhci_write_erstba_register((uint32_t)((uint64_t)rts));
-    xhci_write_crcr_register(((uint32_t)((uint64_t)xhci_command_ring))|1);
+    xhci_write_crcr_register(((uint32_t)((uint64_t)xhci_command_ring)) | 1);
     xhci_write_dcbaap_register((uint32_t)((uint64_t)dcbaap));
+
+    xhci_write_dnctrl_register(0xFFFF);
+
     unsigned long* bse = (unsigned long*)requestPage();
     for(unsigned int i = 0 ; i < 1 ; i++){
 		unsigned long spbl = (unsigned long)requestPage();
@@ -564,6 +611,8 @@ void xhci_driver_start(PCIInfo *pci){
 
     int noop = xhci_noop_command_ring();
     if(noop==1){
+        k_printf("xhci: NOOP succeed with 1 !\n");
+        k_printf("xhci: status before probing ports.... USBCMD: %x USBSTS: %x \n",xhci_read_usbcmd_register(),xhci_read_usbsts_register());
         xhci_probe_ports();
     }else{
         k_printf("xhci: NOOP failed with %d !\n",noop);
