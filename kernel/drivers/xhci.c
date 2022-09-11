@@ -1,4 +1,4 @@
-#include "driver.h"
+#include "../../drivers/driver.h"
 
 typedef struct {
     /**
@@ -297,6 +297,56 @@ typedef struct{
     uint32_t rsvd;
 }__attribute__((packed)) XHCIEventRingSegmentTableEntry;
 
+typedef struct{
+    uint64_t DataBufferPointerHiandLo;
+    uint32_t TRBTransferLength:17;
+    uint16_t TDSize:5;
+    uint16_t InterrupterTarget:10;
+    uint16_t Cyclebit:1;
+    uint16_t EvaluateNextTRB:1;
+    uint16_t InterruptonShortPacket:1;
+    uint16_t NoSnoop:1;
+    uint16_t Chainbit:1;
+    uint16_t InterruptOnCompletion:1;
+    uint16_t ImmediateData:1;
+    uint16_t RsvdZ1:2;
+    uint16_t BlockEventInterrupt:1;
+    uint16_t TRBType:6;
+    uint16_t RsvdZ2:16;
+}__attribute__((packed))DefaultTRB;
+
+typedef struct{
+     uint32_t reserved1:24;
+     uint16_t PortID:8;
+     uint32_t reserved2:24;
+     uint16_t CompletionCode:8;
+     uint8_t C:1;
+     uint16_t reserved3:9;
+     uint8_t TRBType:6;
+     uint16_t reserved4;
+}__attribute__((packed)) PortStatusChangeEventTRB;
+
+typedef struct{
+     uint32_t rsvrd1;
+     uint32_t rsvrd2;
+     uint32_t rsvrd3;
+     uint8_t CycleBit:1;
+     uint16_t RsvdZ1:9;
+     uint16_t TRBType:6;
+     uint16_t RsvdZ2:16;
+}__attribute__((packed)) NoOperationCommandTRB;
+
+typedef struct{
+     uint64_t address;
+     uint32_t CommandCompletionParameter:24;
+     uint16_t CompletionCode:8;
+     uint8_t C:1;
+     uint16_t reserved3:9;
+     uint8_t TRBType:6;
+     uint32_t VFID:8;
+     uint32_t SlotID:8;
+}__attribute__((packed)) CommandCompletionEventTRB;
+
 #define XHCI_OPERATIONAL_USBCMD 0x00
 #define XHCI_OPERATIONAL_CONFIG 0x38
 #define XHCI_RUNTIME_ERSTS 0x28
@@ -306,15 +356,11 @@ typedef struct{
 #define XHCI_OPERATIONAL_DCBAAP 0x30
 #define XHCI_OPERATIONAL_USBSTS 0x04
 
-__attribute__((interrupt)) void xhci_int(interrupt_frame* frame){
-    k_printf("XHCI: Interrupt\n");
-    outportb(0x20,0x20);
-}
-
 void *xhci_bar;
 XHCI_CAPABILITY_REGISTER* capabilities;
 XHCIEventRingSegmentTableEntry *rts;
 void *xhci_command_ring;
+int xhci_command_ring_pointer = 0;
 
 uint32_t xhci_read_32_register(void* where){
     return ((uint32_t*)where)[0];
@@ -424,38 +470,87 @@ void xhci_reset_controller(){
     while(xhci_read_usbcmd_register()&2);
 }
 
-void driver_start(PCIInfo *pci){
-	k_printf("XHCI: Entering xhci driver....\n");
+__attribute__((interrupt)) void xhci_int(interrupt_frame* frame){
+    k_printf("xhci: Interrupt\n");
+
+	outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
+void xhci_ring_doorbell(int index,int value){
+    ((uint32_t*)(xhci_bar + capabilities->DBOFF))[index] = value;
+}
+
+void *xhci_ring_and_wait(void* trb,int index,int value){
+    xhci_ring_doorbell(index,value);
+    sleep(10);
+    return (void*) (uint64_t)(xhci_read_erdp_register()-8);
+}
+
+void* xhci_get_next_free_command(){
+    void *res = (xhci_command_ring + (xhci_command_ring_pointer*8));
+    xhci_command_ring_pointer++;
+    return res;
+}
+
+int xhci_noop_command_ring(){
+    NoOperationCommandTRB *noopcmd = (NoOperationCommandTRB*) xhci_get_next_free_command();
+    noopcmd->CycleBit = 1;
+    noopcmd->TRBType = 23;
+
+    CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
+    if(result){
+        return result->CompletionCode;
+    }else{
+        return 0xCD;
+    }
+}
+
+void xhci_install_port(int portnumber){
+    uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
+    k_printf("xhci-%d: This port deserves our attention and it has the status of %x \n",portnumber,initial_portsc_status);
+}
+
+void xhci_probe_ports(){
+    for(int i = 1 ; i < capabilities->HCSPARAMS1.MaxPorts ; i++){
+        uint32_t cps = xhci_read_portsc_register(i);
+        if((cps&3)==3){
+            xhci_install_port(i);
+        }
+    }
+}
+
+void xhci_driver_start(PCIInfo *pci){
+	k_printf("xhci: Entering xhci driver....\n");
     setInterrupt(pci->inter,xhci_int);
-    k_printf("XHCI: Bus: %x \n",pci->bar1);
+    k_printf("xhci: Bus: %x \n",pci->bar1);
 
     xhci_bar = (void*) (uint64_t) ((uint32_t)(pci->bar1 & 0xFFFFFFF0));
     capabilities = (XHCI_CAPABILITY_REGISTER*) xhci_bar;
 
     xhci_stop_controller();
     xhci_reset_controller();
-    k_printf("xhci: Finished reset 1\n");
+    k_printf("xhci: Finished reset, according to the system, we have %d ports available\n",capabilities->HCSPARAMS1.MaxPorts);
 
-    // enable 16 ports
     uint32_t configres = xhci_read_config_register();
-    configres |= 16;
+    configres |= capabilities->HCSPARAMS1.MaxPorts;
     xhci_write_config_register(configres);
     uint32_t ersts = xhci_read_ersts_register();
     ersts &= 1;
     xhci_write_ersts_register(ersts);
 
-    XHCIEventRingSegmentTableEntry *rts = (XHCIEventRingSegmentTableEntry*) requestPage();
+    rts = (XHCIEventRingSegmentTableEntry*) requestPage();
     rts->ringsegmentsize = 16;
     rts->address = (uint64_t)requestPage();
     xhci_command_ring = requestPage();
     void *dcbaap = requestPage();
 
-    memset((void*)rts->address,0,0x100);
-    memset(xhci_command_ring,0,0x100);
-    memset(dcbaap,0,0x100);
+    memset((void*)rts->address,0,0x1000);
+    memset(xhci_command_ring,0,0x1000);
+    memset(dcbaap,0,0x500);
 
     xhci_write_erdp_register((uint32_t)rts->address);
-    xhci_write_erstba_register((uint32_t)rts->address);
+    xhci_write_erstba_register((uint32_t)((uint64_t)rts));
     xhci_write_crcr_register(((uint32_t)((uint64_t)xhci_command_ring))|1);
     xhci_write_dcbaap_register((uint32_t)((uint64_t)dcbaap));
     unsigned long* bse = (unsigned long*)requestPage();
@@ -467,13 +562,13 @@ void driver_start(PCIInfo *pci){
     ((uint32_t*)dcbaap)[1] 	= 0;
     xhci_start_controller();
 
-    k_printf("Everything is still running rn....\n");
-    
-    sleep(100);
-
-    for(int i = 0 ; i < 10 ; i++){
-        k_printf("PORT %x \n",xhci_read_portsc_register(i));
+    int noop = xhci_noop_command_ring();
+    if(noop==1){
+        xhci_probe_ports();
+    }else{
+        k_printf("xhci: NOOP failed with %d !\n",noop);
     }
 
-	for(;;);
+    k_printf("Thatsit\n");
+    for(;;);
 }
