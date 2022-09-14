@@ -337,6 +337,17 @@ typedef struct{
 }__attribute__((packed)) NoOperationCommandTRB;
 
 typedef struct{
+     uint32_t rsvrd1;
+     uint32_t rsvrd2;
+     uint32_t rsvrd3;
+     uint8_t CycleBit:1;
+     uint16_t RsvdZ1:9;
+     uint16_t TRBType:6;
+     uint16_t SlotType:5;
+     uint16_t RsvdZ2:11;
+}__attribute__((packed)) EnableSlotCommandTRB;
+
+typedef struct{
      uint64_t address;
      uint32_t CommandCompletionParameter:24;
      uint16_t CompletionCode:8;
@@ -471,7 +482,8 @@ void xhci_stop_controller(){
 
 void xhci_start_controller(){
     uint32_t usbcmd = xhci_read_usbcmd_register();
-    usbcmd = 1;
+    usbcmd |= 1;
+    k_printf("xhci: starting the controller...\n");
     xhci_write_usbcmd_register(usbcmd);
 }
 
@@ -495,16 +507,28 @@ void xhci_ring_doorbell(int index,int value){
 }
 
 void *xhci_ring_and_wait(void* trb,int index,int value){
+    k_printf("xhci: Waiting for response for %x ",trb);
     xhci_ring_doorbell(index,value);
-    sleep(10);
+    k_printf(":");
+    sleep(20);
+    int timeout = 10;
     while(1){
-        for(int i = 0 ; i < XHCI_SIZE_EVENT_RING ; i++){
-            uint32_t* tv = (uint32_t*) xhci_event_ring + (i*XHCI_SIZE_TRB);
-            if(tv[0]==(uint32_t)((uint64_t) trb)){
-                return (void*)tv;
+        k_printf(".");
+        uint32_t* tv = (uint32_t*) xhci_event_ring;
+        for(int i = 0 ; i < XHCI_SIZE_EVENT_RING*4 ; i++){
+            if(tv[i]==(uint32_t)((uint64_t) trb)){
+                k_printf("\n");
+                return (void*)&tv[i];
             }
         }
+        sleep(10);
+        timeout--;
+        if(timeout==0){
+            break;
+        }
     }
+    k_printf("FAILED: timeout\n");
+    for(int i = 0 ; i < 10 ; i++){k_printf("%x %x %x %x | ",((uint32_t*)xhci_event_ring)[(i*4)+0],((uint32_t*)xhci_event_ring)[(i*4)+1],((uint32_t*)xhci_event_ring)[(i*4)+2],((uint32_t*)xhci_event_ring)[(i*4)+3]);}for(;;);
     return 0;
 }
 
@@ -529,37 +553,31 @@ int xhci_noop_command_ring(){
 }
 
 int xhci_request_device_id(){
-    NoOperationCommandTRB *noopcmd = (NoOperationCommandTRB*) xhci_get_next_free_command();
+    EnableSlotCommandTRB *noopcmd = (EnableSlotCommandTRB*) xhci_get_next_free_command();
     noopcmd->CycleBit = 1;
     noopcmd->TRBType = 9;
+    // noopcmd->SlotType = 3;
 
     CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
     if(result){
-        return result->CompletionCode;
-    }else{
-        return 0;
-    }
-}
-
-void xhci_install_port(int portnumber){
-    uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
-    k_printf("xhci-%d: This port deserves our attention and it has the status of %x \n",portnumber,initial_portsc_status);
-    k_printf("xhci-%d: PLS: %d \n",portnumber,(initial_portsc_status>>5)&0xF);
-
-    int device_id = xhci_request_device_id();
-    k_printf("xhci-%d: This port recieved a device id of %d \n",portnumber,device_id);
-}
-
-void xhci_probe_ports(){
-    for(int i = 1 ; i < capabilities->HCSPARAMS1.MaxPorts ; i++){
-        uint32_t cps = xhci_read_portsc_register(i);
-        if((cps&3)==3){
-            xhci_install_port(i);
+        if(result->CompletionCode==1){
+            k_printf("%x %x %x %x | ",((uint32_t*)result)[0],((uint32_t*)result)[1],((uint32_t*)result)[2],((uint32_t*)result)[3]);
+            k_printf("xhci: returning slottype: %d trbtype: %d completioncode: %d \n",result->SlotID,result->TRBType,result->CompletionCode);
+            return result->SlotID;
+        }else{
+            k_printf("xhci: unexpected completion code: %d \n",result->CompletionCode);
+            return -2;
         }
+    }else{
+        k_printf("xhci: cannot find type\n");
+        return -1;
     }
 }
 
-void xhci_driver_start(uint32_t bar1,uint32_t inter){
+
+void xhci_driver_start(int bus,int slot,int function){
+    int inter = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
+    uint32_t bar1 = getBARaddress(bus,slot,function,0x10);
 	k_printf("xhci: Entering xhci driver....\n");
     setInterrupt(inter,xhci_int);
 
@@ -569,6 +587,8 @@ void xhci_driver_start(uint32_t bar1,uint32_t inter){
     k_printf("xhci: Bus: %x \n",xhci_bar);
     k_printf("xhci: status before reset.... USBCMD: %x USBSTS: %x DNCNTRL: %x \n",xhci_read_usbcmd_register(),xhci_read_usbsts_register(),xhci_read_dnctrl_register());
 
+    uint32_t olddcbaapvalue = xhci_read_dcbaap_register();
+
     xhci_stop_controller();
     xhci_reset_controller();
     k_printf("xhci: Finished reset, according to the system, we have %d ports available\n",capabilities->HCSPARAMS1.MaxPorts);
@@ -577,9 +597,8 @@ void xhci_driver_start(uint32_t bar1,uint32_t inter){
     uint32_t configres = xhci_read_config_register();
     configres |= capabilities->HCSPARAMS1.MaxPorts;
     xhci_write_config_register(configres);
-    uint32_t ersts = xhci_read_ersts_register();
-    ersts &= 1;
-    xhci_write_ersts_register(ersts);
+
+    xhci_write_ersts_register(10);
 
     xhci_event_ring = requestPage();
 
@@ -589,9 +608,9 @@ void xhci_driver_start(uint32_t bar1,uint32_t inter){
     xhci_command_ring = requestPage();
     void *dcbaap = requestPage();
 
-    memset((void*)xhci_event_ring,0,0x1000);
-    memset(xhci_command_ring,0,0x1000);
-    memset(dcbaap,0,0x1000);
+    memset((void*)xhci_event_ring,0,0x100);
+    memset(xhci_command_ring,0,0x100);
+    memset(dcbaap,0,0x100);
 
     xhci_write_erdp_register((uint32_t)((uint64_t)xhci_event_ring));
     xhci_write_erstba_register((uint32_t)((uint64_t)rts));
@@ -600,20 +619,30 @@ void xhci_driver_start(uint32_t bar1,uint32_t inter){
 
     xhci_write_dnctrl_register(0xFFFF);
 
-    unsigned long* bse = (unsigned long*)requestPage();
-    for(unsigned int i = 0 ; i < 1 ; i++){
-		unsigned long spbl = (unsigned long)requestPage();
-		bse[i] = spbl;
-    }
-    ((uint32_t*)dcbaap)[0] 	= (unsigned long)bse;
-    ((uint32_t*)dcbaap)[1] 	= 0;
+    xhci_write_dcbaap_register(olddcbaapvalue);
+
     xhci_start_controller();
 
     int noop = xhci_noop_command_ring();
     if(noop==1){
         k_printf("xhci: NOOP succeed with 1 !\n");
-        k_printf("xhci: status before probing ports.... USBCMD: %x USBSTS: %x \n",xhci_read_usbcmd_register(),xhci_read_usbsts_register());
-        xhci_probe_ports();
+        for(int portnumber = 1 ; portnumber < capabilities->HCSPARAMS1.MaxPorts ; portnumber++){
+            uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
+            if((initial_portsc_status&3)==3){
+                k_printf("xhci-%d: This port deserves our attention and it has the status of %x \n",portnumber,initial_portsc_status);
+                if((initial_portsc_status>>5)&0xF!=0){
+                    continue;
+                }
+
+                int device_id = xhci_request_device_id();
+                if(device_id<1){
+                    k_printf("xhci-%d: Unable to get a device-id!\n",portnumber);
+                    continue;
+                }
+                k_printf("xhci-%d: This port recieved a device id of %d \n",portnumber,device_id);
+
+            }
+        }
     }else{
         k_printf("xhci: NOOP failed with %d !\n",noop);
     }

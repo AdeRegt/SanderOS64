@@ -80,10 +80,8 @@ void initialise_pci_driver(){
                         unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
                         initialise_ahci_driver(bar5,usbint);
                         continue;
-                    }
-
-                    if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
-                        xhci_driver_start(getBARaddress(bus,slot,function,0x10),getBARaddress(bus,slot,function,0x3C) & 0x000000FF);
+                    }else if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
+                        xhci_driver_start(bus,slot,function);
                     }
                     
                 }

@@ -30,6 +30,6 @@ if [[ $* == *--emulate* ]]; then
     echo "Update VHD"
     guestfish --rw -a hdd.vhd -m /dev/sda1:./ -f diskcmd.nsh || exit
     echo "Emulate"
-    qemu-system-x86_64 -drive id=disk,file=hdd.vhd,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -device nec-usb-xhci,id=xhci -m 256m -cpu qemu64 -drive if=pflash,format=raw,unit=0,file="../OVMF.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="../OVMF.fd" -net none
+    qemu-system-x86_64 -drive id=disk,file=hdd.vhd,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0  -trace enable=usb*  -device qemu-xhci,id=ehci -drive if=none,id=usbstick,file=../imagefile.img -device usb-storage,bus=ehci.0,drive=usbstick -m 256m -cpu qemu64 -drive if=pflash,format=raw,unit=0,file="../OVMF.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="../OVMF.fd" -net none
 fi
 echo "Finished!"
