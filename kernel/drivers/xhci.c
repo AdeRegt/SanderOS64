@@ -298,6 +298,76 @@ typedef struct{
 }__attribute__((packed)) XHCIEventRingSegmentTableEntry;
 
 typedef struct{
+    uint32_t Dregisters;
+    uint32_t Aregisters;
+    uint32_t reservedA;
+    uint32_t reservedB;
+    uint32_t reservedC;
+    uint32_t reservedD;
+    uint32_t reservedE;
+    uint8_t ConfigurationValue;
+    uint8_t InterfaceNumber;
+    uint8_t AlternateSetting;
+    uint8_t reservedF;
+}__attribute__((packed)) XHCIInputControlContext;
+
+typedef struct{
+    uint32_t RouteString:20;
+    uint8_t Speed:4;
+    uint8_t reservedA:1;
+    uint8_t MTT:1;
+    uint8_t Hub:1;
+    uint8_t ContextEntries:5;
+
+    uint16_t MaxExitLatency;
+    uint8_t RootHubPortNumber;
+    uint8_t NumberOfPorts;
+
+    uint8_t ParentHubSlotID;
+    uint8_t ParentPortNumber;
+    uint8_t TTT:2;
+    uint8_t reservedB:4;
+    uint16_t InterrupterTarget:10;
+
+    uint8_t USBDeviceAddress;
+    uint32_t reservedC:19;
+    uint8_t SlotState:5;
+}__attribute__((packed)) XHCISlotContext;
+
+typedef struct {
+    uint8_t EndpointState:3;
+    uint8_t reservedA:5;
+    uint8_t Mult:2;
+    uint8_t MaxPStreams:5;
+    uint8_t LSA:1;
+    uint8_t Interval;
+    uint8_t MaxESITPayloadHigh;
+
+    uint8_t reservedB:1;
+    uint8_t Cerr:2;
+    uint8_t EPType:3;
+    uint8_t reservedC:1;
+    uint8_t HID:1;
+    uint8_t MaxBurstSize;
+    uint16_t MaxPacketSize;
+
+    uint8_t DequeueCycleState:1;
+    uint8_t reservedD:3;
+    uint64_t TRDequeuePointer:59;
+
+    uint16_t AverageTRBLength;
+    uint16_t MaxESITPayloadLow; 
+}__attribute__((packed)) XHCIEndpointContext;
+
+typedef struct{
+    XHCIInputControlContext icc;
+    uint8_t paddingA[32];
+    XHCISlotContext slotcontext;
+    uint8_t paddingB[0x30];
+    XHCIEndpointContext epc;
+}__attribute__((packed)) XHCIInputContextBuffer;
+
+typedef struct{
     uint64_t DataBufferPointerHiandLo;
     uint32_t TRBTransferLength:17;
     uint16_t TDSize:5;
@@ -346,6 +416,17 @@ typedef struct{
      uint16_t SlotType:5;
      uint16_t RsvdZ2:11;
 }__attribute__((packed)) EnableSlotCommandTRB;
+
+typedef struct{
+     uint64_t InputContextPointer;
+     uint32_t rsvrd2;
+     uint8_t CycleBit:1;
+     uint16_t RsvdZ1:8;
+     uint8_t BSR:1;
+     uint16_t TRBType:6;
+     uint8_t RsvdZ2;
+     uint8_t SlotID;
+}__attribute__((packed)) SetAddressCommandTRB;
 
 typedef struct{
      uint64_t address;
@@ -426,6 +507,7 @@ void xhci_write_erdp_register(uint32_t value){
     xhci_write_32_register(xhci_bar + capabilities->RTSOFF + XHCI_RUNTIME_ERDP,value);
     xhci_write_32_register(xhci_bar + capabilities->RTSOFF + XHCI_RUNTIME_ERDP + sizeof(uint32_t),0);
 }
+
 uint32_t xhci_read_erstba_register(){
     return xhci_read_32_register(xhci_bar + capabilities->RTSOFF + XHCI_RUNTIME_ERSTBA);
 }
@@ -511,7 +593,7 @@ void *xhci_ring_and_wait(void* trb,int index,int value){
     xhci_ring_doorbell(index,value);
     k_printf(":");
     sleep(20);
-    int timeout = 10;
+    int timeout = 20;
     while(1){
         k_printf(".");
         uint32_t* tv = (uint32_t*) xhci_event_ring;
@@ -561,8 +643,6 @@ int xhci_request_device_id(){
     CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
     if(result){
         if(result->CompletionCode==1){
-            k_printf("%x %x %x %x | ",((uint32_t*)result)[0],((uint32_t*)result)[1],((uint32_t*)result)[2],((uint32_t*)result)[3]);
-            k_printf("xhci: returning slottype: %d trbtype: %d completioncode: %d \n",result->SlotID,result->TRBType,result->CompletionCode);
             return result->SlotID;
         }else{
             k_printf("xhci: unexpected completion code: %d \n",result->CompletionCode);
@@ -574,6 +654,127 @@ int xhci_request_device_id(){
     }
 }
 
+int xhci_set_address(void* pointer,uint8_t slotid){
+    SetAddressCommandTRB *noopcmd = (SetAddressCommandTRB*) xhci_get_next_free_command();
+    noopcmd->CycleBit = 1;
+    noopcmd->TRBType = 11;
+    noopcmd->InputContextPointer = (uint64_t)pointer;
+    noopcmd->SlotID = slotid;
+    noopcmd->BSR = 0;
+
+    CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
+    return result->CompletionCode;
+}
+
+char* xhci_get_portspeed_string(uint8_t portspeed){
+    if(portspeed==1){
+        return "full-speed 12mb/s usb2.0";
+    }
+    if(portspeed==2){
+        return "low-speed 1.5mb/s usb2.0";
+    }
+    if(portspeed==3){
+        return "high-speed 480mb/s usb2.0";
+    }
+    if(portspeed==4){
+        return "super-speed 6gb/s usb3.0";
+    }
+    return "Illegal value";
+}
+
+char* xhci_get_status_code_string(int statuscode){
+    if(statuscode==0){
+        return "invalid";
+    }
+    if(statuscode==1){
+        return "Success";
+    }
+    if(statuscode==2){
+        return "Data Buffer Error";
+    }
+    if(statuscode==3){
+        return "Babble Detected Error";
+    }
+    if(statuscode==4){
+        return "USB Transaction Error";
+    }
+    if(statuscode==5){
+        return "TRB Error";
+    }
+    if(statuscode==6){
+        return "Stall Error";
+    }
+    if(statuscode==7){
+        return "Resource Error";
+    }
+    if(statuscode==8){
+        return "Bandwidth Error";
+    }
+    if(statuscode==9){
+        return "No Slots Available Error";
+    }
+    if(statuscode==10){
+        return "Invalid Stream Type Error";
+    }
+    if(statuscode==11){
+        return "Slot Not Enabled Error";
+    }
+    if(statuscode==12){
+        return "Endpoint Not Enabled Error";
+    }
+    if(statuscode==13){
+        return "Short Packet";
+    }
+    if(statuscode==14){
+        return "Ring Underrun";
+    }
+    if(statuscode==15){
+        return "Ring Overrun";
+    }
+    if(statuscode==16){
+        return "VF Event Ring Full Error";
+    }
+    if(statuscode==17){
+        return "Parameter Error";
+    }
+    if(statuscode==18){
+        return "Bandwidth Overrun Error";
+    }
+    if(statuscode==19){
+        return "Context State Error";
+    }
+    if(statuscode==20){
+        return "No Ping Response Error";
+    }
+    if(statuscode==21){
+        return "Event Ring Full Error";
+    }
+    if(statuscode==22){
+        return "Incompatible Device Error";
+    }
+    if(statuscode==23){
+        return "Missed Service Error";
+    }
+    if(statuscode==24){
+        return "Command Ring Stopped";
+    }
+    if(statuscode==25){
+        return "Command Aborted";
+    }
+    if(statuscode==26){
+        return "Stopped";
+    }
+    if(statuscode==27){
+        return "Stopped - Length Invalid";
+    }
+    if(statuscode==28){
+        return "Stopped - Short Packet";
+    }
+    if(statuscode==29){
+        return "Max Exit Latency Too Large Error";
+    }
+    return "unknown status code";
+}
 
 void xhci_driver_start(int bus,int slot,int function){
     int inter = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
@@ -606,19 +807,20 @@ void xhci_driver_start(int bus,int slot,int function){
     rts->ringsegmentsize = XHCI_SIZE_EVENT_RING;
     rts->address = (uint64_t) xhci_event_ring;
     xhci_command_ring = requestPage();
-    void *dcbaap = requestPage();
 
     memset((void*)xhci_event_ring,0,0x100);
     memset(xhci_command_ring,0,0x100);
-    memset(dcbaap,0,0x100);
 
     xhci_write_erdp_register((uint32_t)((uint64_t)xhci_event_ring));
     xhci_write_erstba_register((uint32_t)((uint64_t)rts));
     xhci_write_crcr_register(((uint32_t)((uint64_t)xhci_command_ring)) | 1);
-    xhci_write_dcbaap_register((uint32_t)((uint64_t)dcbaap));
 
     xhci_write_dnctrl_register(0xFFFF);
 
+    void* dcbaap = (void*)((uint64_t)olddcbaapvalue);
+    for(int i = 1 ; i < 100 ; i++){
+        ((uint64_t*)dcbaap)[i] = 0;
+    }
     xhci_write_dcbaap_register(olddcbaapvalue);
 
     xhci_start_controller();
@@ -628,12 +830,16 @@ void xhci_driver_start(int bus,int slot,int function){
         k_printf("xhci: NOOP succeed with 1 !\n");
         for(int portnumber = 1 ; portnumber < capabilities->HCSPARAMS1.MaxPorts ; portnumber++){
             uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
+            uint8_t portspeed = (initial_portsc_status>>10) & 0xF;
             if((initial_portsc_status&3)==3){
-                k_printf("xhci-%d: This port deserves our attention and it has the status of %x \n",portnumber,initial_portsc_status);
+                k_printf("xhci-%d: This port deserves our attention and it has the status of %x and a portspeed of %s \n",portnumber,initial_portsc_status,xhci_get_portspeed_string(portspeed));
                 if((initial_portsc_status>>5)&0xF!=0){
                     continue;
                 }
 
+                // it seems that USB3.0 devices only get to this point
+
+                // first we need a device-id
                 int device_id = xhci_request_device_id();
                 if(device_id<1){
                     k_printf("xhci-%d: Unable to get a device-id!\n",portnumber);
@@ -641,6 +847,27 @@ void xhci_driver_start(int bus,int slot,int function){
                 }
                 k_printf("xhci-%d: This port recieved a device id of %d \n",portnumber,device_id);
 
+                void* local_ring = requestPage();
+
+                // after this, we need an address
+                XHCIInputContextBuffer *ic = (XHCIInputContextBuffer*) requestPage();
+                memset(ic,0,sizeof(XHCIInputContextBuffer));
+                ic->icc.Aregisters = 3;
+
+                ic->slotcontext.RootHubPortNumber = portnumber;
+                ic->slotcontext.ContextEntries = 1;
+                ic->slotcontext.Speed = portspeed;
+
+                ic->epc.EPType = 4;
+                ic->epc.Cerr = 3;
+                ic->epc.MaxPacketSize = 512;
+                ic->epc.TRDequeuePointer = (uint32_t)((uint64_t)local_ring)>>4;
+                ic->epc.DequeueCycleState = 1;
+
+                ((uint64_t*)dcbaap)[device_id] = (uint64_t)&ic->slotcontext;
+
+                int sacc = xhci_set_address(ic,device_id);
+                k_printf("xhci: setaddress completion code: %s \n",xhci_get_status_code_string(sacc));
             }
         }
     }else{
