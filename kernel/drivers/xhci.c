@@ -365,6 +365,7 @@ typedef struct{
     XHCISlotContext slotcontext;
     uint8_t paddingB[0x30];
     XHCIEndpointContext epc;
+    XHCIEndpointContext epx[15];
 }__attribute__((packed)) XHCIInputContextBuffer;
 
 typedef struct{
@@ -817,11 +818,13 @@ void xhci_driver_start(int bus,int slot,int function){
 
     xhci_write_dnctrl_register(0xFFFF);
 
-    void* dcbaap = (void*)((uint64_t)olddcbaapvalue);
-    for(int i = 1 ; i < 100 ; i++){
-        ((uint64_t*)dcbaap)[i] = 0;
+    void *dcbaap = (void*) requestPage();
+    memset(dcbaap,0,0xa00);
+    for(int i = 0 ; i < sizeof(uint64_t) ; i++){
+        uint8_t ov = ((uint8_t*)((uint64_t)olddcbaapvalue))[i];
+        ((uint8_t*)dcbaap)[i] = ov;
     }
-    xhci_write_dcbaap_register(olddcbaapvalue);
+    xhci_write_dcbaap_register((uint32_t)((uint64_t)dcbaap));
 
     xhci_start_controller();
 
@@ -856,15 +859,17 @@ void xhci_driver_start(int bus,int slot,int function){
 
                 ic->slotcontext.RootHubPortNumber = portnumber;
                 ic->slotcontext.ContextEntries = 1;
-                ic->slotcontext.Speed = portspeed;
+                // ic->slotcontext.Speed = portspeed;
 
                 ic->epc.EPType = 4;
                 ic->epc.Cerr = 3;
                 ic->epc.MaxPacketSize = 512;
-                ic->epc.TRDequeuePointer = (uint32_t)((uint64_t)local_ring)>>4;
+                ic->epc.TRDequeuePointer = ((uint64_t)local_ring)>>4;
                 ic->epc.DequeueCycleState = 1;
 
-                ((uint64_t*)dcbaap)[device_id] = (uint64_t)&ic->slotcontext;
+                XHCISlotContext *outputcontext = (XHCISlotContext*) requestPage();
+                memset(outputcontext,0,sizeof(XHCISlotContext));
+                ((uint64_t*)dcbaap)[device_id] = (uint64_t)outputcontext;
 
                 int sacc = xhci_set_address(ic,device_id);
                 k_printf("xhci: setaddress completion code: %s \n",xhci_get_status_code_string(sacc));
