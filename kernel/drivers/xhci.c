@@ -361,9 +361,9 @@ typedef struct {
 
 typedef struct{
     XHCIInputControlContext icc;
-    uint8_t paddingA[32];
+    // uint8_t paddingA[32];
     XHCISlotContext slotcontext;
-    uint8_t paddingB[0x30];
+    uint8_t paddingB[0x10];
     XHCIEndpointContext epc;
     XHCIEndpointContext epx[15];
 }__attribute__((packed)) XHCIInputContextBuffer;
@@ -856,6 +856,7 @@ void xhci_driver_start(int bus,int slot,int function){
                 XHCIInputContextBuffer *ic = (XHCIInputContextBuffer*) requestPage();
                 memset(ic,0,sizeof(XHCIInputContextBuffer));
                 ic->icc.Aregisters = 3;
+                k_printf("dbg: icc=%x sc=%x epc=%x \n",(uint64_t)&ic->icc,(uint64_t)&ic->slotcontext,(uint64_t)&ic->epc);
 
                 ic->slotcontext.RootHubPortNumber = portnumber;
                 ic->slotcontext.ContextEntries = 1;

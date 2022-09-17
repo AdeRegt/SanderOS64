@@ -14,9 +14,19 @@
             }
         },
         {
-            "label": "Build kernel and emulate",
+            "label": "Build kernel and emulate via qemu",
             "type": "shell",
-            "command": "./build --emulate",
+            "command": "./build --build-vhd --emulate-qemu",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build kernel and emulate via bochs",
+            "type": "shell",
+            "command": "./build  --build-vhd --build-img --emulate-bochs",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
