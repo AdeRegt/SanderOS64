@@ -11,6 +11,7 @@ typedef struct {
 	unsigned int Width;
 	unsigned int Height;
 	unsigned int PixelsPerScanLine;
+    unsigned char strategy;
 } Framebuffer;
 
 typedef struct {
@@ -81,6 +82,7 @@ Framebuffer* InitializeGOP(){
 	framebuffer.Width = gop->Mode->Info->HorizontalResolution;
 	framebuffer.Height = gop->Mode->Info->VerticalResolution;
 	framebuffer.PixelsPerScanLine = gop->Mode->Info->PixelsPerScanLine;
+	framebuffer.strategy = 1;
 
 	return &framebuffer;
 	

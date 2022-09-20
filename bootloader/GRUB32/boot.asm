@@ -3,10 +3,12 @@
 ; Declare constants for the multiboot header.
 MBALIGN  equ  1 << 0            ; align loaded modules on page boundaries
 MEMINFO  equ  1 << 1            ; provide memory map
+VIDINFO  equ  1 << 2            ; provide video map
 FLAGS    equ  MBALIGN | MEMINFO ; this is the Multiboot 'flag' field
+; FLAGS    equ  MBALIGN | MEMINFO | VIDINFO ; this is the Multiboot 'flag' field
 MAGIC    equ  0x1BADB002        ; 'magic number' lets bootloader find the header
-CHECKSUM equ -(MAGIC + FLAGS)   ; checksum of above, to prove we are multiboot
- 
+CHECKSUM equ -(MAGIC + FLAGS)   ; checksum of above, to prove we are multiboot.long 0, 0, 0, 0, 0
+
 ; Declare a multiboot header that marks the program as a kernel. These are magic
 ; values that are documented in the multiboot standard. The bootloader will
 ; search for this signature in the first 8 KiB of the kernel file, aligned at a
@@ -17,6 +19,9 @@ align 4
 	dd MAGIC
 	dd FLAGS
 	dd CHECKSUM
+    ; dd 0, 0, 0, 0, 0
+    ; dd 0
+    ; dd 0x320, 0x258, 4
  
 ; The multiboot standard does not define the value of the stack pointer register
 ; (esp) and it is up to the kernel to provide a stack. This allocates room for a
@@ -211,15 +216,16 @@ GDT:
 [BITS 64]
 
 extern epoint
+extern bootinfo
 
 Realm64:
     cli                           ; Clear the interrupt flag.
-    mov ax, GDT.Data            ; Set the A-register to the data descriptor.
+    mov ax, GDT.Data              ; Set the A-register to the data descriptor.
     mov ds, ax                    ; Set the data segment to the A-register.
     mov es, ax                    ; Set the extra segment to the A-register.
     mov fs, ax                    ; Set the F-segment to the A-register.
     mov gs, ax                    ; Set the G-segment to the A-register.
     mov ss, ax                    ; Set the stack segment to the A-register.
     
-    
+    mov rdi,bootinfo
     call qword [epoint]

@@ -176,6 +176,74 @@ enum vga_color {
 	VGA_COLOR_LIGHT_BROWN = 14,
 	VGA_COLOR_WHITE = 15,
 };
+
+typedef struct {
+	uint64_t BaseAddress;
+	size_t BufferSize;
+	unsigned int Width;
+	unsigned int Height;
+	unsigned int PixelsPerScanLine;
+    uint8_t strategy;
+} GraphicsInfo;
+
+typedef struct {
+	unsigned char magic[2];
+	unsigned char mode;
+	unsigned char charsize;
+} PSF1_Header;
+
+typedef struct {
+	PSF1_Header* psf1_Header;
+	void* glyphBuffer;
+} PSF1_Font;
+
+typedef struct {
+    uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad
+    uint32_t                          Pad;
+    uint64_t                          PhysicalStart;  // Field size is 64 bits
+    uint64_t                          VirtualStart;   // Field size is 64 bits
+    uint64_t                          NumberOfPages;  // Field size is 64 bits
+    uint64_t                          Attribute;      // Field size is 64 bits
+} MemoryDescriptor;
+
+typedef struct{
+    MemoryDescriptor* mMap;
+	uint64_t mMapSize;
+	uint64_t mMapDescSize;
+}MemoryInfo;
+
+GraphicsInfo graphicsinfo;
+
+
+typedef struct{
+
+	/**
+	 * @brief Graphicsinfo from the current device, like screensize, bytes per pixel, etc
+	 * 
+	 */
+	GraphicsInfo* graphics_info;
+
+	/**
+	 * @brief Fontfile that is used by the bootloader
+	 * 
+	 */
+	PSF1_Font* font;
+
+	/**
+	 * @brief Memoryinfo with memorymap of the free memory which is present
+	 * 
+	 */
+	MemoryInfo* memory_info;
+
+	/**
+	 * @brief Information table of which devices are present on this system
+	 * 
+	 */
+	void *rsdp;
+} BootInfo;
+
+BootInfo bootinfo;
+
  
 static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) 
 {
@@ -371,4 +439,15 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
             }
         }
     }
+
+    bootinfo.font = 0;
+    bootinfo.memory_info = 0;
+    bootinfo.rsdp = 0;
+    bootinfo.graphics_info = (GraphicsInfo*)&graphicsinfo;
+    bootinfo.graphics_info->BaseAddress = 0xB8000;
+    bootinfo.graphics_info->BufferSize = 3145728;
+    bootinfo.graphics_info->Height = 25;
+    bootinfo.graphics_info->Width = 80;
+    bootinfo.graphics_info->PixelsPerScanLine = 160;
+    bootinfo.graphics_info->strategy = 2;
 }
