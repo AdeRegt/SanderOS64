@@ -179,7 +179,7 @@ enum vga_color {
 
 typedef struct {
 	uint64_t BaseAddress;
-	size_t BufferSize;
+	uint64_t BufferSize;
 	unsigned int Width;
 	unsigned int Height;
 	unsigned int PixelsPerScanLine;
@@ -199,20 +199,23 @@ typedef struct {
 
 typedef struct {
     uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad
-    uint32_t                          Pad;
+    uint32_t                          Pad1;
     uint64_t                          PhysicalStart;  // Field size is 64 bits
     uint64_t                          VirtualStart;   // Field size is 64 bits
     uint64_t                          NumberOfPages;  // Field size is 64 bits
     uint64_t                          Attribute;      // Field size is 64 bits
+    uint8_t                           Pad2[8];
 } MemoryDescriptor;
 
 typedef struct{
-    MemoryDescriptor* mMap;
+    uint64_t mMap;
 	uint64_t mMapSize;
 	uint64_t mMapDescSize;
 }MemoryInfo;
 
 GraphicsInfo graphicsinfo;
+MemoryInfo memoryinfo;
+MemoryDescriptor memdesclist[15];
 
 
 typedef struct{
@@ -221,26 +224,39 @@ typedef struct{
 	 * @brief Graphicsinfo from the current device, like screensize, bytes per pixel, etc
 	 * 
 	 */
-	GraphicsInfo* graphics_info;
+	uint64_t graphics_info;
 
 	/**
 	 * @brief Fontfile that is used by the bootloader
 	 * 
 	 */
-	PSF1_Font* font;
+	uint64_t font;
 
 	/**
 	 * @brief Memoryinfo with memorymap of the free memory which is present
 	 * 
 	 */
-	MemoryInfo* memory_info;
+	uint64_t memory_info;
 
 	/**
 	 * @brief Information table of which devices are present on this system
 	 * 
 	 */
-	void *rsdp;
+	uint64_t *rsdp;
 } BootInfo;
+
+typedef struct 
+{
+    uint32_t size;
+    uint64_t addr;
+    uint64_t len;
+    #define MULTIBOOT_MEMORY_AVAILABLE              1
+    #define MULTIBOOT_MEMORY_RESERVED               2
+    #define MULTIBOOT_MEMORY_ACPI_RECLAIMABLE       3
+    #define MULTIBOOT_MEMORY_NVS                    4
+    #define MULTIBOOT_MEMORY_BADRAM                 5
+    uint32_t type;
+}__attribute__((packed)) multiboot_mmap_entry;
 
 BootInfo bootinfo;
 
@@ -407,6 +423,8 @@ void printf(char* format,...){
 }
 
 uint64_t epoint;
+
+extern void *_BootEnd;
  
 void kernel_main(GRUBMultiboot *grub, uint32_t magic) 
 {
@@ -440,14 +458,33 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
         }
     }
 
-    bootinfo.font = 0;
-    bootinfo.memory_info = 0;
+    // printf("mmap length: %d mmap addr: %x \n",grub->mmap_length,grub->mmap_addr);for(;;);
+    memdesclist[0].Type = 7;
+    memdesclist[0].NumberOfPages = 300;
+    memdesclist[0].PhysicalStart = (uint64_t)((uint32_t)_BootEnd);
+
+    memdesclist[1].Type = 7;
+    memdesclist[1].NumberOfPages = 300;
+    memdesclist[1].PhysicalStart = ((uint64_t)((uint32_t)_BootEnd)) + ( memdesclist[0].NumberOfPages * 4096 );
+
+    bootinfo.memory_info = (uint64_t)((uint32_t)&memoryinfo);
+    memoryinfo.mMapDescSize = sizeof(MemoryDescriptor);
+    memoryinfo.mMapSize = 15 * memoryinfo.mMapDescSize;
+    memoryinfo.mMap = (uint64_t)((uint32_t)&memdesclist);
+
+    bootinfo.graphics_info = (uint64_t)((uint32_t)&graphicsinfo);
+    graphicsinfo.BaseAddress = 0xB8000;
+    graphicsinfo.BufferSize = 3145728;
+    graphicsinfo.Height = 24;
+    graphicsinfo.Width = 160;
+    graphicsinfo.PixelsPerScanLine = 160;
+    graphicsinfo.strategy = 2;
+
     bootinfo.rsdp = 0;
-    bootinfo.graphics_info = (GraphicsInfo*)&graphicsinfo;
-    bootinfo.graphics_info->BaseAddress = 0xB8000;
-    bootinfo.graphics_info->BufferSize = 3145728;
-    bootinfo.graphics_info->Height = 25;
-    bootinfo.graphics_info->Width = 80;
-    bootinfo.graphics_info->PixelsPerScanLine = 160;
-    bootinfo.graphics_info->strategy = 2;
+
+    bootinfo.font = 0;
+
+    printf("Memory upper %x lower %x \n",grub->mem_upper,grub->mem_lower);
+    // printf("Memory map size: %x sizeof(MemoryDescriptor)=%d  \n",grub->vbe_interface_off,sizeof(MemoryDescriptor));
+    // for(;;);
 }

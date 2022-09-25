@@ -19,9 +19,9 @@ align 4
 	dd MAGIC
 	dd FLAGS
 	dd CHECKSUM
-    ; dd 0, 0, 0, 0, 0
-    ; dd 0
-    ; dd 0x320, 0x258, 4
+    dd 0, 0, 0, 0, 0
+    dd 0
+    dd 1280,1024, 32
  
 ; The multiboot standard does not define the value of the stack pointer register
 ; (esp) and it is up to the kernel to provide a stack. This allocates room for a

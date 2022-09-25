@@ -49,10 +49,13 @@ int memcmp(const void* aptr, const void* bptr, size_t n){
 }
 
 void initialise_memory_driver(){
+    k_printf("memory: mMapSize:%d mMapDescSize:%d entries:%d\n",memory_info->mMapSize , memory_info->mMapDescSize,memory_info->mMapSize / memory_info->mMapDescSize);
     uint64_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;
     free_memory = 0;
     used_memory = 0;
+    free_memory_min = 0;
+    empty_memory_min = 0;
     uint64_t maxaddr = 0;
     for (int i = 0; i < mMapEntries; i++){
         MemoryDescriptor* desc = (MemoryDescriptor*)((uint64_t)memory_info->mMap + (i * memory_info->mMapDescSize));
@@ -62,6 +65,7 @@ void initialise_memory_driver(){
             maxaddr = msize;
         }
         max_memory += size;
+        // k_printf("type: %d mem:%x \n",desc->Type,desc->PhysicalStart);
         if(desc->Type==7){
             if( size>1000000 && desc->PhysicalStart!=0 && free_memory_min==0 ){
                 free_memory += size;
@@ -77,6 +81,7 @@ void initialise_memory_driver(){
     }
     k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
     k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
+    // for(;;);
 
     uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
     uint64_t kernelPages = (uint64_t)kernelSize / 4096 + 1;
