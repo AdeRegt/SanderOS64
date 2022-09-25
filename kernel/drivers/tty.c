@@ -5,13 +5,13 @@
 #include "../include/exec/program.h"
 #include "../include/multitasking.h"
 
-char wd[50];
-char pd[50];
+char wd[FILENAME_MAX];
+char pd[FILENAME_MAX];
 
 void initialise_tty(){
     clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
-    memset((void*)&wd,0,50);
+    memset((void*)&wd,0,FILENAME_MAX);
     memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
 
     k_printf("SanderOS64 Buildin Command Interpeter\n");
@@ -26,11 +26,11 @@ void initialise_tty(){
         k_printf("%s > ",wd);
         uint8_t *tw = scanLine(50);
         k_printf("\n");
-        if(strcmp(tw,"exit",4)){
+        if(memcmp(tw,"exit",4)==0){
             break;
-        }else if(strcmp(tw,"dir",3)){
+        }else if(memcmp(tw,"dir",3)==0){
             k_printf("%s\n",dir(wd));
-        }else if(strcmp(tw,"cd",2)){
+        }else if(memcmp(tw,"cd ",3)==0){
             char *strpath = (char*) (tw+3);
             if(strpath[1]==':'){
                 memset((void*)&wd,0,50);

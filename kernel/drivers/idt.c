@@ -69,7 +69,7 @@ void isrhandler(stack_registers *ix){
     }else if(ix->rax==3){
         if(ix->rbx){
             char* u = (char*) ix->rcx;
-            u[0] = '!';
+            u[0] = getch(1);
         }
     }else if(ix->rax==4){
         // k_printf("rbx: %d | rcx: %d | rdx: %d \n",ix->rbx,ix->rcx,ix->rdx);
@@ -111,7 +111,7 @@ void isr2handler(stack_registers *ix){
             freePage(tmpbuf);
         }
     }else if(ix->rax==2){
-        // k_printf("isr2:request open\n");
+        // k_printf("isr2:request open rsi=%x \n",ix->rsi);
         // fileopen option!
         char* path = (char*) ix->rdi;
         uint64_t filesize = 0;
@@ -147,7 +147,7 @@ void isr2handler(stack_registers *ix){
         fl->available = 0;
         ix->rax = 0;
     }else if(ix->rax==8){
-        // k_printf("isr2:request seek\n");
+        // k_printf("isr2:request seek rdi:%x rdx:%x \n",ix->rdi,ix->rdx);
         // seek option!
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         if(ix->rdx==2){
@@ -181,6 +181,17 @@ void isr2handler(stack_registers *ix){
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
         }
+    }else if(ix->rax==402){
+        // k_printf("isr2: rbx:%x rcx:%x rdx:%x \n",ix->rbx,ix->rcx,ix->rdx);
+        draw_pixel_at(ix->rbx,ix->rcx,ix->rdx);
+    }else if(ix->rax==403){
+        char* u = (char*) ix->rbx;
+        u[0] = 0;
+        u[0] = getch(0);
+    }else if(ix->rax==404){
+        char* u = (char*) ix->rbx;
+        u[0] = 0;
+        u[0] = getch(1);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);
