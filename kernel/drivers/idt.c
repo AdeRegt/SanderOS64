@@ -184,6 +184,14 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==402){
         // k_printf("isr2: rbx:%x rcx:%x rdx:%x \n",ix->rbx,ix->rcx,ix->rdx);
         draw_pixel_at(ix->rbx,ix->rcx,ix->rdx);
+    }else if(ix->rax==403){
+        char* u = (char*) ix->rbx;
+        u[0] = 0;
+        u[0] = getch(0);
+    }else if(ix->rax==404){
+        char* u = (char*) ix->rbx;
+        u[0] = 0;
+        u[0] = getch(1);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);
