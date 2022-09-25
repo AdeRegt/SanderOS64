@@ -111,7 +111,7 @@ void isr2handler(stack_registers *ix){
             freePage(tmpbuf);
         }
     }else if(ix->rax==2){
-        // k_printf("isr2:request open\n");
+        // k_printf("isr2:request open rsi=%x \n",ix->rsi);
         // fileopen option!
         char* path = (char*) ix->rdi;
         uint64_t filesize = 0;
@@ -147,7 +147,7 @@ void isr2handler(stack_registers *ix){
         fl->available = 0;
         ix->rax = 0;
     }else if(ix->rax==8){
-        // k_printf("isr2:request seek\n");
+        // k_printf("isr2:request seek rdi:%x rdx:%x \n",ix->rdi,ix->rdx);
         // seek option!
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         if(ix->rdx==2){

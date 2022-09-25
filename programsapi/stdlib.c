@@ -179,23 +179,40 @@ void* memcpy( void *dest, const void *src, uint64_t count ){
 }
 
 int fclose( FILE *stream ){
-    hang("fclose");
+    int modus = 3;
+    uint64_t res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) );
+    return res;
 }
 
 uint64_t fread( void *buffer, uint64_t size, uint64_t count, FILE *stream ){
-    hang("fread");
+    int modus = 0;
+    uint64_t res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) , "S" (buffer) , "d" (count) );
+    return res;
 }
 
 int fseek( FILE *stream, long offset, int origin ){
-    hang("fseek");
+    int modus = 8;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "D" (stream) , "d" (origin) , "S" (offset) );
+    return res;
 }
 
 long ftell( FILE *stream ){
     hang("ftell");
+    // int modus = 8;
+    // int res = 0;
+    // __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (stream) , "D" (origin) );
+    // return res;
 }
 
 FILE *fopen( const char *filename, const char *mode ){
-    hang("fopen");
+    int modus = 2;
+    int enos = 0;
+    void* res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (filename) , "S" (enos) );
+    return res;
 }
 
 void* malloc( uint64_t size ){
