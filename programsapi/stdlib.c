@@ -253,3 +253,104 @@ unsigned char wait_for_character(){
 	__asm__ __volatile__( "int $0x81" :  : "a"(mode) , "b" (res) );
     return res[0];
 }
+
+int strcmp(const char *str1, const char *str2){
+    int res = 0;
+    while(1){
+        if(str1[res]==0&&str2[res]==0){
+            break;
+        }
+        if(str1[res]==0||str2[res]==0){
+            return 1;
+        }
+        if(str1[res]!=str2[res]){
+            return 1;
+        }
+        res++;
+    }
+    return 0;
+}
+
+void __assert_fail(const char * assertion, const char * file, unsigned int line, const char * function){
+    hang(assertion);
+}
+
+void calloc(){
+    hang("calloc");
+}
+
+void strncpy(){
+    hang("strncpy");
+}
+
+void ungetc(){
+    hang("ungetc");
+}
+
+void realpath(){
+    hang("realpath");
+}
+
+void putchar(){
+    hang("putchar");
+}
+
+int sprintf(char *str, const char *format, ...){
+    hang("sprintf");
+}
+
+void fprintf(){
+    hang("fprintf");
+}
+
+void stderr(){
+    hang("stderr");
+}
+
+void vfprintf(){
+    hang("vfprintf");
+}
+
+void realloc(){
+    hang("realloc");
+}
+
+void vsnprintf(){
+    hang("vsnprintf");
+}
+
+void strcpy(){
+    hang("strcpy");
+}
+
+void vsprintf(){
+    hang("vsprintf");
+}
+
+void fputc(){
+    hang("fputc");
+}
+
+void stdout(){
+    hang("stdout");
+}
+
+void tolower(){
+    hang("tolower");
+}
+
+void strtol(){
+    hang("strtol");
+}
+
+void atoll(){
+    hang("atoll");
+}
+
+void __ctype_b_loc(){
+    hang("__ctype_b_loc");
+}
+
+int system (const char* command){
+    hang("system");
+}

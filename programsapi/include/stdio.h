@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #define FILENAME_MAX 50
+#define PATH_MAX 50
 #define SEEK_SET 1
 #define SEEK_END 2
 
@@ -13,3 +14,4 @@ int fclose( FILE *stream );
 long ftell( FILE *stream );
 int fseek( FILE *stream, long offset, int origin );
 FILE *fopen( const char *filename, const char *mode );
+int sprintf(char *str, const char *format, ...);

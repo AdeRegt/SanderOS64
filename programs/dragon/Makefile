@@ -1,8 +1,8 @@
-INCLUDES= -I ./ -I ./helpers -I ../../../programsapi/include
+INCLUDES= -I ./ -I ./helpers -I ../../../programsapi/include -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 OBJECTS= ./build/misc.o ./build/lexer.o  ./build/lex_process.o ./build/token.o ./build/expressionable.o ./build/parser.o ./build/validator.o ./build/symresolver.o ./build/scope.o ./build/resolver.o ./build/rdefault.o ./build/helper.o ./build/codegen.o ./build/helpers/vector.o ./build/helpers/buffer.o ./build/helpers/hashmap.o ./build/compiler.o ./build/cprocess.o ./build/preprocessor/preprocessor.o ./build/preprocessor/native.o ./build/array.o ./build/node.o ./build/preprocessor/static-includes.o ./build/preprocessor/static-includes/stddef.o ./build/preprocessor/static-includes/stdarg.o  ./build/fixup.o ./build/native.o ./build/stackframe.o
 GCCTHING=${SANDEROS_CROSS_LOCATION}/x86_64-elf-gcc
 all: ${OBJECTS}
-	${GCCTHING} main.c ${INCLUDES} -o main ${OBJECTS} -g
+	${GCCTHING} main.c ${INCLUDES} -ffreestanding -nostdlib -lgcc -T ../../../programsapi/linker.ld -o ../../../bin/programs/dragon.bin ${OBJECTS} ../../../programsapi/stdlib.o -g
 
 ./build/misc.o: ./misc.c
 	${GCCTHING} misc.c ${INCLUDES} -o ./build/misc.o -g -c
@@ -101,3 +101,4 @@ clean:
 	rm -rf ./main
 	rm -rf ./a.out
 	rm -rf ./test.asm
+	cd ./tests && $(MAKE) clean
