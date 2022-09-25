@@ -192,6 +192,17 @@ void isr2handler(stack_registers *ix){
         char* u = (char*) ix->rbx;
         u[0] = 0;
         u[0] = getch(1);
+    }else if(ix->rax==405){
+        uint64_t tv = 0;
+        for(int i = 0 ; i < 10 ; i++){
+            if(getCurrentTaskInfo()->arguments[i]!=0){
+                tv++;
+            }else{
+                break;
+            }
+        }
+        ix->rdi = tv; // argc
+        ix->rsi = getCurrentTaskInfo()->arguments; // argv
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);
