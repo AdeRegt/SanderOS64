@@ -202,7 +202,7 @@ void isr2handler(stack_registers *ix){
             }
         }
         ix->rdi = tv; // argc
-        ix->rsi = getCurrentTaskInfo()->arguments; // argv
+        ix->rsi = (uint64_t)getCurrentTaskInfo()->arguments; // argv
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

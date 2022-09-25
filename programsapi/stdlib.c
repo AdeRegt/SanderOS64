@@ -85,7 +85,7 @@ typedef __builtin_va_list va_list;
 #define va_arg(a,b)    __builtin_va_arg(a,b)
 #define __va_copy(d,s) __builtin_va_copy((d),(s))
 
-void hang(char* func){
+void hang(const char* func){
     printf("\nHANG: %s \n",func);
     for(;;);
 }
@@ -275,7 +275,7 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
     hang(assertion);
 }
 
-void calloc(){
+void *calloc(long unsigned int nitems, long unsigned int size){
     hang("calloc");
 }
 
