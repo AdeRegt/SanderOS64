@@ -1,5 +1,2 @@
 
-__attribute__((noreturn)) void exit(int number);
-int puts(const char *number);
-long unsigned int strlen(const char *ert);
-char getc();
+void *draw_pixel(int x,int y,int z);

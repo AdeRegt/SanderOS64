@@ -181,6 +181,9 @@ void isr2handler(stack_registers *ix){
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
         }
+    }else if(ix->rax==402){
+        // k_printf("isr2: rbx:%x rcx:%x rdx:%x \n",ix->rbx,ix->rcx,ix->rdx);
+        draw_pixel_at(ix->rbx,ix->rcx,ix->rdx);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

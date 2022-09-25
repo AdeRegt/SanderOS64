@@ -225,3 +225,17 @@ void* malloc( uint64_t size ){
 void free( void* ptr ){
     hang("free");
 }
+
+void *draw_pixel(int x,int y,int z){
+    int mode = 402;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (x) , "c" (y) , "d" (z) );
+    return res;
+}
+
+void *memset(void *start, int value, long unsigned int num){
+    for(uint64_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((uint64_t)start + i) = value;
+    }
+    return start;
+}
