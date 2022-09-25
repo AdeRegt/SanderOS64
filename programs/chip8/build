@@ -1,3 +1,4 @@
 #!/bin/bash
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -c origin/main.c -o ./chip8.o -D __SANDEROSUSB
-$SANDEROS_CROSS_LOCATION/x86_64-elf-ld -T ./linker.ld chip8.o -o ./chip8.bin
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -I "../../programsapi/include" -ffreestanding -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c origin/main.c -o ./chip8.o -D __SANDEROSUSB
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -nostdlib -lgcc -T ./linker.ld chip8.o -o ./chip8.bin
+rm *.o
