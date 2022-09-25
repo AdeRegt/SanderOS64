@@ -1,0 +1,3 @@
+#!/bin/bash
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -c origin/main.c -o ./chip8.o -D __SANDEROSUSB
+$SANDEROS_CROSS_LOCATION/x86_64-elf-ld -T ./linker.ld chip8.o -o ./chip8.bin
