@@ -4,3 +4,6 @@
 [submodule "programs/chip8/origin"]
 	path = programs/chip8/origin
 	url = https://github.com/AdeRegt/chip8.git
+[submodule "programs/dragon/origin"]
+	path = programs/dragon/origin
+	url = https://github.com/nibblebits/DragonCompiler.git

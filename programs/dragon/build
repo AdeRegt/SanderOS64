@@ -1,0 +1,4 @@
+#!/bin/bash 
+cd origin
+make --makefile=../Makefile
+cd ..

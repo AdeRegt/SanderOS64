@@ -6,3 +6,7 @@ echo "build chip8..."
 cd chip8
 ./build 
 cd ..
+echo "build dragon..."
+cd dragon
+./build 
+cd ..
