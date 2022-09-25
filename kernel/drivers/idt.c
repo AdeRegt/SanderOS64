@@ -69,7 +69,7 @@ void isrhandler(stack_registers *ix){
     }else if(ix->rax==3){
         if(ix->rbx){
             char* u = (char*) ix->rcx;
-            u[0] = '!';
+            u[0] = getch(1);
         }
     }else if(ix->rax==4){
         // k_printf("rbx: %d | rcx: %d | rdx: %d \n",ix->rbx,ix->rcx,ix->rdx);

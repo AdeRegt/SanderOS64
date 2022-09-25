@@ -26,11 +26,11 @@ void initialise_tty(){
         k_printf("%s > ",wd);
         uint8_t *tw = scanLine(50);
         k_printf("\n");
-        if(strcmp(tw,"exit",4)){
+        if(memcmp(tw,"exit",4)==0){
             break;
-        }else if(strcmp(tw,"dir",3)){
+        }else if(memcmp(tw,"dir",3)==0){
             k_printf("%s\n",dir(wd));
-        }else if(strcmp(tw,"cd",2)){
+        }else if(memcmp(tw,"cd ",3)==0){
             char *strpath = (char*) (tw+3);
             if(strpath[1]==':'){
                 memset((void*)&wd,0,50);

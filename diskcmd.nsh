@@ -6,4 +6,5 @@ copy-in ./bin/sanderos/drivers/xhci.sys /sanderos/drivers
 copy-in ./bin/sanderos/drivers/test.sys /sanderos/drivers
 copy-in ./bin/sanderos/drivers/rtl.sys /sanderos/drivers
 copy-in ./bin/programs/fasm.bin /programs
+copy-in ./bin/programs/chip8.bin /programs
 copy-in ./bin/test.asm /
