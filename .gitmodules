@@ -1,0 +1,3 @@
+[submodule "programs/fasm/origin"]
+	path = programs/fasm/origin
+	url = https://github.com/tgrysztar/fasm.git

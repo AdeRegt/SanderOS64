@@ -1,0 +1,4 @@
+echo "build fasm..."
+cd fasm
+./build 
+cd ..
