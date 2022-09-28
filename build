@@ -41,15 +41,15 @@ if [[ $* == *--build-img* ]]; then
 fi
 if [[ $* == *--emulate-bochs* ]]; then
     echo "Emulate"
+    rm disk.img
+    rm serial.txt
+    VBoxManage clonehd hdd.vhd disk.img --format raw
     if [[ $* == *--32* ]]; then
         bochs -q -f bochsdata
     fi
     if [[ $* == *--64* ]]; then
-        rm disk.img
-        rm serial.txt
-        VBoxManage clonehd hdd.vhd disk.img --format raw
         bochs -q -f bochsefi
-        rm disk.img
     fi
+    rm disk.img
 fi
 echo "Finished!"

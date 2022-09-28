@@ -1,28 +1,1 @@
-[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[0m[35m[40m[2J[01;01H[=3h[2J[01;01H[0m[37m[40m[2J[01;01H[01;01HUEFI Interactive Shell v2.2
-EDK II
-UEFI v2.70 (EDK II, 0x00010000)
-[1m[33m[40mMapping table[0m[37m[40m
-[1m[33m[40m      FS0:[0m[37m[40m [1m[37m[40mAlias(s):[0m[37m[40mHD1a1:;BLK2:
-          PciRoot(0x0)/Pci(0x1,0x1)/Ata(0x0)/HD(1,MBR,0x01CA51C9,0x800,0xE2800)
-[1m[33m[40m     BLK1:[0m[37m[40m [1m[37m[40mAlias(s):[0m[37m[40m
-          PciRoot(0x0)/Pci(0x1,0x1)/Ata(0x0)
-[1m[33m[40m     BLK0:[0m[37m[40m [1m[37m[40mAlias(s):[0m[37m[40m
-          PciRoot(0x0)/Pci(0x1,0x0)/Floppy(0x0)
-[11;01HPress [1m[37m[40mESC[0m[37m[40m in 5 seconds to skip [1m[33m[40mstartup.nsh[0m[37m[40m or any other key to continue.[11;01HPress [1m[37m[40mESC[0m[37m[40m in 4 seconds to skip [1m[33m[40mstartup.nsh[0m[37m[40m or any other key to continue.[11;01HPress [1m[37m[40mESC[0m[37m[40m in 3 seconds to skip [1m[33m[40mstartup.nsh[0m[37m[40m or any other key to continue.[11;01HPress [1m[37m[40mESC[0m[37m[40m in 2 seconds to skip [1m[33m[40mstartup.nsh[0m[37m[40m or any other key to continue.[11;01HPress [1m[37m[40mESC[0m[37m[40m in 1 seconds to skip [1m[33m[40mstartup.nsh[0m[37m[40m or any other key to continue.
-[1m[33m[40mShell> [0m[37m[40mFS0:
-[1m[33m[40mFS0:\> [0m[37m[40mif exist \sanderos\kernel.bin then 
-[1m[33m[40mFS0:\> [0m[37m[40m \sanderos\SANDEROS64.EFI 
-Kernel Loaded Successfully 
-kernel header successfully verified
-Kernel Loaded
-Font found. char size = 16
-GOP located
-Addr: 10013 
-get some info from the old idt...
-sidt: Limit:0xFFF Offset:0x34A7018 
-ist=0x0 offset0=0x4C1B offset1=0x391 offset2=0x0 selector=0x38 type_attr=0x8E 
-ist=0x0 offset0=0x4C1B offset1=0x391 offset2=0x0 selector=0x38 type_attr=0x8E 
-timer: initialise timer...
-multitasking: unable to accept multitasking on bochs platform!
-Scanning for diskdriver to find bootdevice...
-Unable to detect a valid kernel FS!
+[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[2J[01;01H[=3h[2J[01;01H[0m[35m[40m[2J[01;01H[=3h[2J[01;01H[0m[37m[40m
