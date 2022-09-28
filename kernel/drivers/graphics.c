@@ -1,4 +1,5 @@
 #include "../include/graphics.h"
+#include "../include/comport.h"
 #include "../include/psf.h"
 
 GraphicsInfo *graphics_info;
@@ -47,6 +48,9 @@ void clear_screen(unsigned int colour){
 }
 
 void putc(char deze){
+    if(is_com_enabled()){
+        com_write_debug_serial(deze);
+    }
     if(graphics_info->strategy==1){
         if(pointerY>graphics_info->Height){
             clear_screen(0xFFFFFFFF);

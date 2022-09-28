@@ -101,6 +101,11 @@ int addTask(void *task,void *cr3,uint64_t size,char** args){
 }
 
 void initialise_multitasking_driver(){
-    setInterrupt(0,multitaskingint);
-    while(vl==0xF);
+    if(inportb(0xE9)!=0xE9){
+        k_printf("multitasking: enabling multitasking...\n");
+        setInterrupt(0,multitaskingint);
+        while(vl==0xF);
+    }else{
+        k_printf("multitasking: unable to accept multitasking on bochs platform!\n");
+    }
 }

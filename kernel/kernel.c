@@ -7,6 +7,7 @@
 #include "include/device.h"
 #include "include/multitasking.h"
 #include "include/tty.h"
+#include "include/comport.h"
 #include "include/exec/program.h"
 #include "include/exec/module.h"
 
@@ -24,6 +25,7 @@ void kernel_main(BootInfo *gi){
     initialise_graphics_driver();
     initialise_memory_driver();
     initialise_paging_driver();
+    initialise_comport();
     initialise_idt_driver();
     initialise_timer_driver();
     initialise_multitasking_driver();

@@ -24,9 +24,19 @@
             }
         },
         {
-            "label": "Build kernel and emulate via bochs",
+            "label": "Build kernel and emulate via bochs 32",
             "type": "shell",
-            "command": "./build  --build-vhd --build-img --emulate-bochs",
+            "command": "./build  --build-vhd --build-img --emulate-bochs --32",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build kernel and emulate via bochs 64",
+            "type": "shell",
+            "command": "./build  --build-vhd --build-img --emulate-bochs --64",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

@@ -484,7 +484,4 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
 
     bootinfo.font = 0;
 
-    printf("Memory upper %x lower %x \n",grub->mem_upper,grub->mem_lower);
-    // printf("Memory map size: %x sizeof(MemoryDescriptor)=%d  \n",grub->vbe_interface_off,sizeof(MemoryDescriptor));
-    // for(;;);
 }
