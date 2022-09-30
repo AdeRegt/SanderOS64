@@ -14,9 +14,19 @@
             }
         },
         {
-            "label": "Build kernel and emulate via qemu",
+            "label": "Build kernel and emulate via qemu 32",
             "type": "shell",
-            "command": "./build --build-vhd --emulate-qemu",
+            "command": "./build --build-vhd --emulate-qemu --32",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build kernel and emulate via qemu 64",
+            "type": "shell",
+            "command": "./build --build-vhd --emulate-qemu --64",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

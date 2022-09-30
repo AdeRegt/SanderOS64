@@ -65,13 +65,13 @@ void initialise_memory_driver(){
             maxaddr = msize;
         }
         max_memory += size;
-        // k_printf("type: %d mem:%x \n",desc->Type,desc->PhysicalStart);
+        k_printf("type: %d mem:%x size=%x \n",desc->Type,desc->PhysicalStart,size);
         if(desc->Type==7){
-            if( size>1000000 && desc->PhysicalStart!=0 && free_memory_min==0 ){
+            if( size>MEMORY_AREA_PICK_RATE && desc->PhysicalStart!=0 && free_memory_min==0 ){
                 free_memory += size;
                 free_memory_min = desc->PhysicalStart;
                 free_memory_max = desc->PhysicalStart + size;
-            }else if(size>1000000 && desc->PhysicalStart!=0 && empty_memory_min==0 ){
+            }else if(size>MEMORY_AREA_PICK_RATE && desc->PhysicalStart!=0 && empty_memory_min==0 ){
                 empty_memory_min = desc->PhysicalStart;
                 empty_memory_max = desc->PhysicalStart + size;
             }
@@ -81,6 +81,7 @@ void initialise_memory_driver(){
     }
     k_printf("Max-memory: %dKB Free-memory: %dKB Used-memory: %dKB \n",max_memory,free_memory,used_memory);
     k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
+    k_printf("Empty area starts from %x to %x with the size of %x \n",empty_memory_min,empty_memory_max,empty_memory_max-empty_memory_min);
     // for(;;);
 
     upointer_t kernelSize = (upointer_t)&_KernelEnd - (upointer_t)&_KernelStart;

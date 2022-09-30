@@ -4,6 +4,11 @@
 #define MEMORY_MAP_SIZE 1024
 #define PAGE_SIZE 0x1000
 
+#ifdef __x86_64
+#define MEMORY_AREA_PICK_RATE 1000000
+#else
+#define MEMORY_AREA_PICK_RATE 1000
+#endif 
 typedef unsigned long long size_t;
 
 typedef struct {

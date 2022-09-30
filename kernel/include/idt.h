@@ -6,6 +6,7 @@
 #define IDT_TA_CallGate         0b10001100
 #define IDT_TA_TrapGate         0b10001111
 
+#ifdef __x86_64
 typedef struct {
     uint16_t offset0; 
     uint16_t selector;  
@@ -15,11 +16,20 @@ typedef struct {
     uint32_t offset2;
     uint32_t ignore;
 }IDTDescEntry;
+#else 
+typedef struct{
+    uint16_t base_lo;
+    uint16_t sel;        /* Our kernel segment goes here! */
+    uint8_t always0;     /* This will ALWAYS be set to 0! */
+    uint8_t flags;       /* Set using the above table! */
+    uint16_t base_hi;
+}__attribute__((packed)) IDTDescEntry;
+#endif 
 
 typedef struct __attribute__((packed)) {
     uint16_t Limit;
     upointer_t Offset;
-} IDTR ;
+} IDTR;
 
 typedef struct{
     upointer_t ip;
