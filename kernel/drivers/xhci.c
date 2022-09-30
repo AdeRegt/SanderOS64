@@ -1,4 +1,5 @@
 #include "../../drivers/driver.h"
+#include "../include/outint.h"
 
 typedef struct {
     /**
@@ -292,7 +293,10 @@ typedef struct{
 }__attribute__((packed)) XHCI_CAPABILITY_REGISTER;
 
 typedef struct{
-    uint64_t address;
+    upointer_t addresslow;
+    #ifndef __x86_64
+    upointer_t addresshigh;
+    #endif
     uint32_t ringsegmentsize;
     uint32_t rsvd;
 }__attribute__((packed)) XHCIEventRingSegmentTableEntry;
@@ -353,7 +357,13 @@ typedef struct {
 
     uint8_t DequeueCycleState:1;
     uint8_t reservedD:3;
-    uint64_t TRDequeuePointer:59;
+    #ifdef __x86_64
+    upointer_t TRDequeuePointer:59;
+    #endif 
+    #ifndef __x86_64
+    upointer_t TRDequeuePointerLow:28;
+    upointer_t TRDequeuePointerHigh;
+    #endif
 
     uint16_t AverageTRBLength;
     uint16_t MaxESITPayloadLow; 
@@ -370,7 +380,13 @@ typedef struct{
 }__attribute__((packed)) XHCIInputContextBuffer;
 
 typedef struct{
-    uint64_t DataBufferPointerHiandLo;
+    #ifdef __x86_64
+    upointer_t DataBufferPointerHiandLo;
+    #endif 
+    #ifndef __x86_64
+    upointer_t DataBufferPointerLo;
+    upointer_t DataBufferPointerHi;
+    #endif 
     uint32_t TRBTransferLength:17;
     uint16_t TDSize:5;
     uint16_t InterrupterTarget:10;
@@ -807,7 +823,7 @@ void xhci_driver_start(int bus,int slot,int function){
 
     rts = (XHCIEventRingSegmentTableEntry*) requestPage();
     rts->ringsegmentsize = XHCI_SIZE_EVENT_RING;
-    rts->address = (uint64_t) xhci_event_ring;
+    rts->addresslow = (uint64_t) xhci_event_ring;
     xhci_command_ring = requestPage();
 
     memset((void*)xhci_event_ring,0,0x100);
@@ -881,7 +897,12 @@ void xhci_driver_start(int bus,int slot,int function){
                 ic->epc.EPType = 4;
                 ic->epc.Cerr = 3;
                 ic->epc.MaxPacketSize = MaxPackageSize;
-                ic->epc.TRDequeuePointer = ((uint64_t)local_ring)>>4;
+                #ifdef __x86_64
+                    ic->epc.TRDequeuePointer = ((uint64_t)local_ring)>>4;
+                #endif
+                #ifndef __x86_64
+                    ic->epc.TRDequeuePointerLow = ((uint64_t)local_ring)>>4;
+                #endif 
                 ic->epc.DequeueCycleState = 1;
                 ic->epc.AverageTRBLength = 8;
 

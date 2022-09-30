@@ -1,5 +1,6 @@
 #pragma once 
 #include <stdint.h>
+#include "outint.h"
 
 typedef struct{
     uint32_t commandListBase;

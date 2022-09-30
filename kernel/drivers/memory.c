@@ -4,17 +4,17 @@
 
 uint8_t memorymap[MEMORY_MAP_SIZE];
 uint8_t emptymap[MEMORY_MAP_SIZE];
-uint64_t max_memory;
-uint64_t free_memory;
-uint64_t used_memory;
+upointer_t max_memory;
+upointer_t free_memory;
+upointer_t used_memory;
 
-uint64_t free_memory_min;
-uint64_t free_memory_max;
+upointer_t free_memory_min;
+upointer_t free_memory_max;
 
-uint64_t empty_memory_min;
-uint64_t empty_memory_max;
+upointer_t empty_memory_min;
+upointer_t empty_memory_max;
 
-uint64_t getExmptyMax(){
+upointer_t getExmptyMax(){
     return empty_memory_max;
 }
 
@@ -24,14 +24,14 @@ void set_memory_info(MemoryInfo *gi){
     memory_info = gi;
 }
 
-uint64_t getMaximumMemory(){
+upointer_t getMaximumMemory(){
     return max_memory;
 }
 
-extern uint64_t _KernelStart;
-extern uint64_t _KernelEnd;
+extern upointer_t _KernelStart;
+extern upointer_t _KernelEnd;
 
-void *memconcat(void *base1,void *base2,uint64_t newsize,uint64_t size_base1){
+void *memconcat(void *base1,void *base2,upointer_t newsize,upointer_t size_base1){
     char* nd = (char*) malloc(newsize);
     memset(nd,0,newsize);
     memcpy(nd,base1,size_base1);
@@ -50,17 +50,17 @@ int memcmp(const void* aptr, const void* bptr, size_t n){
 
 void initialise_memory_driver(){
     k_printf("memory: mMapSize:%d mMapDescSize:%d entries:%d\n",memory_info->mMapSize , memory_info->mMapDescSize,memory_info->mMapSize / memory_info->mMapDescSize);
-    uint64_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
+    upointer_t mMapEntries = memory_info->mMapSize / memory_info->mMapDescSize;
     max_memory = 0;
     free_memory = 0;
     used_memory = 0;
     free_memory_min = 0;
     empty_memory_min = 0;
-    uint64_t maxaddr = 0;
+    upointer_t maxaddr = 0;
     for (int i = 0; i < mMapEntries; i++){
-        MemoryDescriptor* desc = (MemoryDescriptor*)((uint64_t)memory_info->mMap + (i * memory_info->mMapDescSize));
-        uint64_t size = desc->NumberOfPages * 4096 ;
-        uint64_t msize = desc->PhysicalStart + size;
+        MemoryDescriptor* desc = (MemoryDescriptor*)((upointer_t)memory_info->mMap + (i * memory_info->mMapDescSize));
+        upointer_t size = desc->NumberOfPages * 4096 ;
+        upointer_t msize = desc->PhysicalStart + size;
         if(msize>maxaddr){
             maxaddr = msize;
         }
@@ -83,33 +83,33 @@ void initialise_memory_driver(){
     k_printf("Free area starts from %x to %x with the size of %x \n",free_memory_min,free_memory_max,free_memory_max-free_memory_min);
     // for(;;);
 
-    uint64_t kernelSize = (uint64_t)&_KernelEnd - (uint64_t)&_KernelStart;
-    uint64_t kernelPages = (uint64_t)kernelSize / 4096 + 1;
+    upointer_t kernelSize = (upointer_t)&_KernelEnd - (upointer_t)&_KernelStart;
+    upointer_t kernelPages = (upointer_t)kernelSize / 4096 + 1;
     k_printf("The kernel has a size of %x which are %x kernelpages it starts at %x to %x \n",kernelSize,kernelPages,_KernelStart,_KernelEnd);
     k_printf("Max addr of PC is %x \n",maxaddr);
 }
 
-void memset(void *start, unsigned char value, uint64_t num){
-    for(uint64_t i = 0 ; i < num ; i++){
-        *(unsigned char*)((uint64_t)start + i) = value;
+void memset(void *start, unsigned char value, upointer_t num){
+    for(upointer_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((upointer_t)start + i) = value;
     }
 }
 
-void memcpy(void *to, void *from, uint64_t num){
-    for(uint64_t i = 0 ; i < num ; i++){
-        *(unsigned char*)((uint64_t)to + i) = *(unsigned char*)((uint64_t)from + i);
+void memcpy(void *to, void *from, upointer_t num){
+    for(upointer_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((upointer_t)to + i) = *(unsigned char*)((upointer_t)from + i);
     }
 }
 
-uint64_t strcmp(uint8_t* a, uint8_t* b, uint64_t length){
-	for (uint64_t i = 0; i < length; i++){
+upointer_t strcmp(uint8_t* a, uint8_t* b, upointer_t length){
+	for (upointer_t i = 0; i < length; i++){
 		if (*a != *b) return 0;
 	}
 	return 1;
 }
 
-uint64_t strlen(uint8_t* message){
-    uint64_t res = 0;
+upointer_t strlen(uint8_t* message){
+    upointer_t res = 0;
     uint8_t this = 1;
     while(this){
         this = message[res++];
@@ -117,15 +117,15 @@ uint64_t strlen(uint8_t* message){
     return res;
 }
 
-char get_memory_map_bit(uint64_t index){
-    uint64_t byteIndex = index/8;
+char get_memory_map_bit(upointer_t index){
+    upointer_t byteIndex = index/8;
     unsigned char bitIndex = index % 8;
     unsigned char bitIndexer = 0b10000000 >> bitIndex;
     return (memorymap[byteIndex] & bitIndexer) !=0;
 }
 
-void set_memory_map_bit(uint64_t index,char value){
-    uint64_t byteIndex = index/8;
+void set_memory_map_bit(upointer_t index,char value){
+    upointer_t byteIndex = index/8;
     unsigned char bitIndex = index % 8;
     unsigned char bitIndexer = 0b10000000 >> bitIndex;
     memorymap[byteIndex] &= ~bitIndexer;
@@ -135,7 +135,7 @@ void set_memory_map_bit(uint64_t index,char value){
 }
 
 void *requestPage(){
-    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
+    for(upointer_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
         if(memorymap[i]==0){
             memorymap[i] = 1;
             return (void *)(free_memory_min+(i * PAGE_SIZE));
@@ -145,7 +145,7 @@ void *requestPage(){
 }
 
 void *requestBigPage(){
-    for(uint64_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
+    for(upointer_t i = 0 ; i < ((free_memory_max-free_memory_min)/PAGE_SIZE) ; i++){
         if(memorymap[i]==0){
             if(((free_memory_min+(PAGE_SIZE*i))&0xFFFFF)==0){
                 if(((free_memory_min+(PAGE_SIZE*i))%PAGE_GAP_SIZE)==0){
@@ -159,14 +159,14 @@ void *requestBigPage(){
 }
 
 void freePage(void* memory){
-    uint64_t calculation = (uint64_t) memory;
+    upointer_t calculation = (upointer_t) memory;
     calculation -= free_memory_min;
     calculation /= PAGE_SIZE;
     memorymap[calculation] = 0;
 }
 
-void *malloc(uint64_t size){
-    for(uint64_t i = 0 ; i < ((empty_memory_max-empty_memory_min)/0x100) ; i++){
+void *malloc(upointer_t size){
+    for(upointer_t i = 0 ; i < ((empty_memory_max-empty_memory_min)/0x100) ; i++){
         if(emptymap[i]==0){
             emptymap[i] = 1;
             return (void *)(empty_memory_min+(i * 0x100));
@@ -176,7 +176,7 @@ void *malloc(uint64_t size){
 }
 
 void free(void* memory){
-    uint64_t calculation = (uint64_t) memory;
+    upointer_t calculation = (upointer_t) memory;
     calculation -= empty_memory_min;
     calculation /= 0x100;
     emptymap[calculation] = 0;

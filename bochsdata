@@ -5,10 +5,7 @@ display_library: x
 memory: host=32, guest=32
 romimage: file="/usr/share/bochs/BIOS-bochs-latest", address=0x00000000, options=none
 vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
-boot: floppy
-floppy_bootsig_check: disabled=0
-floppya: type=1_44
-# no floppyb
+
 ata0: enabled=true, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 ata0-master: type=cdrom, path="cdrom.iso", status=inserted, model="Generic 1234", biosdetect=auto
 boot: cdrom
@@ -55,3 +52,4 @@ com4: enabled=false
 parport1: enabled=true, file=none
 parport2: enabled=false
 speaker: enabled=true, mode=sound, volume=15
+# usb_xhci: enabled=1, port1=none, options1=none, port2=none, options2=none, port3=none, options3=none, port4=none, options4=none

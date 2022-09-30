@@ -1,5 +1,6 @@
 
 #include <stdint.h>
+#include "../../include/outint.h"
 
 /* Type for a 16-bit quantity.  */
 typedef uint16_t Elf32_Half;
@@ -12,18 +13,18 @@ typedef uint32_t Elf64_Word;
 typedef	int32_t  Elf64_Sword;
 
 /* Types for signed and unsigned 64-bit quantities.  */
-typedef uint64_t Elf32_Xword;
+typedef upointer_t Elf32_Xword;
 typedef	int64_t  Elf32_Sxword;
-typedef uint64_t Elf64_Xword;
+typedef upointer_t Elf64_Xword;
 typedef	int64_t  Elf64_Sxword;
 
 /* Type of addresses.  */
 typedef uint32_t Elf32_Addr;
-typedef uint64_t Elf64_Addr;
+typedef upointer_t Elf64_Addr;
 
 /* Type of file offsets.  */
 typedef uint32_t Elf32_Off;
-typedef uint64_t Elf64_Off;
+typedef upointer_t Elf64_Off;
 
 /* Type for section indices, which are 16-bit quantities.  */
 typedef uint16_t Elf32_Section;
@@ -111,5 +112,5 @@ typedef struct
 #define ELF64_R_TYPE(i)((i) & 0xffffffffL)
 #define ELF64_R_INFO(s, t)(((s) << 32) + ((t) & 0xffffffffL))
 
-uint64_t elf_load_image(void *programmem);
+upointer_t elf_load_image(void *programmem);
 uint8_t is_elf(void *programmem);

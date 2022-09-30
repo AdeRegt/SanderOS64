@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "../../include/outint.h"
 
 /**
  * @brief Prints the value of one instruction
@@ -9,4 +10,4 @@
  */
 int debugger_interpetate_instruction(void* location);
 
-int debugger_interpetate_next_x_instructions(void *location,uint64_t times);
+int debugger_interpetate_next_x_instructions(void *location,upointer_t times);

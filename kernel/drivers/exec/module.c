@@ -5,9 +5,9 @@
 
 char loadModule(char* path, PCIInfo *pci){
     // request paging
-    uint64_t fz = getFileSize(path);
+    upointer_t fz = getFileSize(path);
     void *programmem = requestPage();
-    for(uint64_t i = 0 ; i < (fz/0x1000) ; i++){
+    for(upointer_t i = 0 ; i < (fz/0x1000) ; i++){
         requestPage();
     }
 
@@ -16,7 +16,7 @@ char loadModule(char* path, PCIInfo *pci){
         return 0;
     }
 
-    uint64_t entrypoint = elf_load_image(programmem);
+    upointer_t entrypoint = elf_load_image(programmem);
     if(entrypoint==0){
         return 0;
     }

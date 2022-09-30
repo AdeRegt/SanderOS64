@@ -21,6 +21,8 @@
         "program.h": "c",
         "time.h": "c",
         "stdio.h": "c",
-        "rtl.h": "c"
+        "rtl.h": "c",
+        "stdint.h": "c",
+        "outint.h": "c"
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "outint.h"
 
 #define IDT_TA_InterruptGate    0b10001110
 #define IDT_TA_CallGate         0b10001100
@@ -17,15 +18,15 @@ typedef struct {
 
 typedef struct __attribute__((packed)) {
     uint16_t Limit;
-    uint64_t Offset;
+    upointer_t Offset;
 } IDTR ;
 
 typedef struct{
-    uint64_t ip;
-    uint64_t cs;
-    uint64_t flags;
-    uint64_t sp;
-    uint64_t ss;
+    upointer_t ip;
+    upointer_t cs;
+    upointer_t flags;
+    upointer_t sp;
+    upointer_t ss;
 }interrupt_frame;
 
 void initialise_idt_driver();

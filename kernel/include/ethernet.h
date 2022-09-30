@@ -1,5 +1,6 @@
 #pragma once 
 #include <stdint.h>
+#include "outint.h"
 
 #define SIZE_OF_MAC 6
 #define SIZE_OF_IP 4

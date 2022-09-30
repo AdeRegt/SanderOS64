@@ -1,8 +1,9 @@
 #include <stdint.h>
+#include "outint.h"
 
 typedef struct  __attribute__((packed)){
     uint16_t Size;
-    uint64_t Offset;
+    upointer_t Offset;
 }GDTDescriptor;
 
 typedef struct __attribute__((packed)) {

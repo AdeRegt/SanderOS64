@@ -46,7 +46,8 @@ void new_program_starter(){
 void multitaskinghandler(stack_registers *ix){
     // vl = 0;
     // goto finishup;
-    uint64_t cr0, cr2, cr3;
+    #ifdef __x86_64
+    upointer_t cr0, cr2, cr3;
     __asm__ __volatile__ (
         "mov %%cr0, %%rax\n\t"
         "mov %%eax, %0\n\t"
@@ -58,6 +59,21 @@ void multitaskinghandler(stack_registers *ix){
     : /* no input */
     : "%rax"
     );
+    #endif 
+    #ifndef __x86_64
+    upointer_t cr0, cr2, cr3;
+    __asm__ __volatile__ (
+        "mov %%cr0, %%eax\n\t"
+        "mov %%eax, %0\n\t"
+        "mov %%cr2, %%eax\n\t"
+        "mov %%eax, %1\n\t"
+        "mov %%cr3, %%eax\n\t"
+        "mov %%eax, %2\n\t"
+    : "=m" (cr0), "=m" (cr2), "=m" (cr3)
+    : /* no input */
+    : "%eax"
+    );
+    #endif 
     if(vl==0xf){
         vl = 0;
         for(int i = 0 ; i < MAX_TASKS ; i++){
@@ -82,13 +98,13 @@ void multitaskinghandler(stack_registers *ix){
 	outportb(0x20,0x20);
 }
 
-int addTask(void *task,void *cr3,uint64_t size,char** args){
+int addTask(void *task,void *cr3,upointer_t size,char** args){
     // fill the registry
-    tasks[cmt].sessionregs.rip = (uint64_t)new_program_starter;
-    tasks[cmt].sessionregs.rsp = (uint64_t)requestPage();
-    // tasks[cmt].sessionregs.ss = (uint64_t)requestPage();
-    tasks[cmt].cr3 = (uint64_t)cr3;
-    tasks[cmt].size = (uint64_t)size;
+    tasks[cmt].sessionregs.rip = (upointer_t)new_program_starter;
+    tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
+    // tasks[cmt].sessionregs.ss = (upointer_t)requestPage();
+    tasks[cmt].cr3 = (upointer_t)cr3;
+    tasks[cmt].size = (upointer_t)size;
     tasks[cmt].files[0].available = 1;
     tasks[cmt].files[1].available = 1;
     tasks[cmt].files[2].available = 1;
@@ -101,6 +117,7 @@ int addTask(void *task,void *cr3,uint64_t size,char** args){
 }
 
 void initialise_multitasking_driver(){
+    #ifdef __x86_64
     if(inportb(0xE9)!=0xE9){
         k_printf("multitasking: enabling multitasking...\n");
         setInterrupt(0,multitaskingint);
@@ -108,4 +125,5 @@ void initialise_multitasking_driver(){
     }else{
         k_printf("multitasking: unable to accept multitasking on bochs platform!\n");
     }
+    #endif
 }

@@ -25,7 +25,7 @@ __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	outportb(0x20,0x20);
 }
 
-void interrupt_set_offset(IDTDescEntry* int_PageFault,uint64_t offset){
+void interrupt_set_offset(IDTDescEntry* int_PageFault,upointer_t offset){
     int_PageFault->offset0 = (uint16_t)(offset & 0x000000000000ffff);
     int_PageFault->offset1 = (uint16_t)((offset & 0x00000000ffff0000) >> 16);
     int_PageFault->offset2 = (uint32_t)((offset & 0xffffffff00000000) >> 32);
@@ -33,14 +33,14 @@ void interrupt_set_offset(IDTDescEntry* int_PageFault,uint64_t offset){
 
 void setInterrupt(int offset,void *fun){
     IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset+idtoffsetcode) * sizeof(IDTDescEntry)));
-    interrupt_set_offset(int_PageFault,(uint64_t)fun);
+    interrupt_set_offset(int_PageFault,(upointer_t)fun);
     int_PageFault->type_attr = IDT_TA_TrapGate;
     int_PageFault->selector = 0x08;
 }
 
 void setRawInterrupt(int offset,void *fun){
     IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset) * sizeof(IDTDescEntry)));
-    interrupt_set_offset(int_PageFault,(uint64_t)fun);
+    interrupt_set_offset(int_PageFault,(upointer_t)fun);
     int_PageFault->type_attr = IDT_TA_TrapGate;
     int_PageFault->selector = 0x08;
 }
@@ -64,7 +64,7 @@ void isrhandler(stack_registers *ix){
 	outportb(0x20,0x20);
     if(ix->rax==1){
         k_printf("program returned with %d from %x \n",ix->rbx,ix->rip);
-        ix->rip = (uint64_t)end_of_program;
+        ix->rip = (upointer_t)end_of_program;
     }else if(ix->rax==2){
         k_printf("isr: fork not implemented!\n");
     }else if(ix->rax==3){
@@ -75,7 +75,7 @@ void isrhandler(stack_registers *ix){
     }else if(ix->rax==4){
         // k_printf("rbx: %d | rcx: %d | rdx: %d \n",ix->rbx,ix->rcx,ix->rdx);
         char* z = ((char*) (ix->rcx));
-        for(uint64_t i = 0 ; i < ix->rdx ; i++){
+        for(upointer_t i = 0 ; i < ix->rdx ; i++){
             k_printf("%c",z[i]);
         }
     }else{
@@ -93,17 +93,17 @@ void isr2handler(stack_registers *ix){
         char* z = ((char*) (ix->rsi));
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         if(ix->rdi<5){
-            for(uint64_t i = 0 ; i < ix->rdx ; i++){
+            for(upointer_t i = 0 ; i < ix->rdx ; i++){
                 k_printf("%c",z[i]);
             }
         }else{
             // k_printf("isr2:request write\n");
-            uint64_t oldsize = getFileSize(fl->filename);
-            uint64_t newsize = oldsize + ix->rdx;
+            upointer_t oldsize = getFileSize(fl->filename);
+            upointer_t newsize = oldsize + ix->rdx;
             void *tmpbuf = requestPage();
             readFile(fl->filename,tmpbuf);
             memcpy((void*)(tmpbuf + oldsize),z,ix->rdx);
-            uint64_t q = writeFile(fl->filename,tmpbuf,newsize);
+            upointer_t q = writeFile(fl->filename,tmpbuf,newsize);
             if(q==0){
                 ix->rax = -1;
             }else{
@@ -115,7 +115,7 @@ void isr2handler(stack_registers *ix){
         // k_printf("isr2:request open\n");
         // fileopen option!
         char* path = (char*) ix->rdi;
-        uint64_t filesize = 0;
+        upointer_t filesize = 0;
         void* buffer;
         if(ix->rsi==0){
             filesize = getFileSize(path);
@@ -166,7 +166,7 @@ void isr2handler(stack_registers *ix){
         // k_printf("isr2:and\n");
         Task* ts = (Task*) (getTasks() + (sizeof(Task)*getPid()));
         ts->task_running = 0;
-        ix->rip = (uint64_t)end_of_program;
+        ix->rip = (upointer_t)end_of_program;
     }else if(ix->rax==96){
         // k_printf("isr2:request time\n");
         timeval* tv = (timeval*) ix->rdi;
@@ -174,11 +174,11 @@ void isr2handler(stack_registers *ix){
         tv->tv_usec = 10000;
         ix->rax = 0;
     }else if(ix->rax==400){
-        ix->rax = (uint64_t) malloc(ix->rdx);
+        ix->rax = (upointer_t) malloc(ix->rdx);
     }else if(ix->rax==401){
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
-            ((uint32_t*)ix->rdi)[0] = (uint32_t)((uint64_t)us);
+            ((uint32_t*)ix->rdi)[0] = (uint32_t)((upointer_t)us);
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
         }
@@ -223,8 +223,10 @@ void initialise_idt_driver(){
         setRawInterrupt(i,GeneralFault_Handler);
     }
     setRawInterrupt(0xCD,PageFault_Handler);
+    #ifdef __x86_64
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
+    #endif
     k_printf("ist=%x offset0=%x offset1=%x offset2=%x selector=%x type_attr=%x \n",pfe.ist,pfe.offset0,pfe.offset1,pfe.offset2,pfe.selector,pfe.type_attr);
 	asm volatile("sti");
 }

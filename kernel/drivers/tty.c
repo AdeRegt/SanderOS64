@@ -37,9 +37,9 @@ void initialise_tty(){
                 memcpy((void*)&wd,strpath,strlen(strpath));
             }else{
                 if(strlen((char*)&wd)>2){
-                    memcpy((void*)(((uint64_t)&wd)+strlen((char*)&wd) + -1 ),"/",1);
+                    memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),"/",1);
                 }
-                memcpy((void*)(((uint64_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
+                memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
             }
         }else{
             memset((void*)&pd,0,50);
@@ -49,10 +49,10 @@ void initialise_tty(){
                 int m1 = -1;
                 memcpy((void*)&pd,(char*)&wd,strlen((char*)&wd));
                 if(strlen((char*)&pd)>2){
-                    memcpy((void*)(((uint64_t)&pd) + strlen((char*)&wd) -1  ),"/",1);
+                    memcpy((void*)(((upointer_t)&pd) + strlen((char*)&wd) -1  ),"/",1);
                     m1 = 0;
                 }
-                memcpy((void*)(((uint64_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
+                memcpy((void*)(((upointer_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
             }
             char* pd2 = 0;
             for(int z = 0 ; z < strlen(pd) ; z++){
