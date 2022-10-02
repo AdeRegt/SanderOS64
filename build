@@ -34,10 +34,10 @@ fi
 if [[ $* == *--emulate-qemu* ]]; then
     echo "Emulate"
     if [[ $* == *--64* ]]; then
-        qemu-system-x86_64 -drive id=disk,file=hdd.vhd,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -m 256m -cpu qemu64 -drive if=pflash,format=raw,unit=0,file="../OVMF.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="../OVMF.fd" -net none
+        qemu-system-x86_64  -trace enable=usb*  -device qemu-xhci,id=ehci -drive id=disk,file=hdd.vhd,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -m 256m -cpu qemu64 -drive if=pflash,format=raw,unit=0,file="../OVMF.fd",readonly=on -drive if=pflash,format=raw,unit=1,file="../OVMF.fd" -net none
     fi
     if [[ $* == *--32* ]]; then
-        qemu-system-x86_64 --cdrom ./cdrom.iso -m 256m  -trace enable=usb*  -device qemu-xhci,id=ehci 
+        qemu-system-x86_64  -trace enable=usb*  -device qemu-xhci,id=ehci --cdrom ./cdrom.iso -m 256m
     fi
 fi
 if [[ $* == *--build-img* ]]; then

@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "../../kernel/include/bootstrapping/GRUB/multiboot.h"
 
 
 /* Type for a 16-bit quantity.  */
@@ -116,46 +117,6 @@ typedef struct
 #define ELF64_R_SYM(i)((i) >> 32)
 #define ELF64_R_TYPE(i)((i) & 0xffffffffL)
 #define ELF64_R_INFO(s, t)(((s) << 32) + ((t) & 0xffffffffL))
-
-typedef struct
-{
-	uint32_t flags;
-	uint32_t mem_lower;
-	uint32_t mem_upper;
-	uint32_t boot_device;
-	uint32_t cmdline;
-	uint32_t mods_count;
-	uint32_t mods_addr;
-	uint32_t num;
-	uint32_t size;
-	uint32_t addr;
-	uint32_t shndx;
-	uint32_t mmap_length;
-	uint32_t mmap_addr;
-	uint32_t drives_length;
-	uint32_t drives_addr;
-	uint32_t config_table;
-	uint32_t boot_loader_name;
-	uint32_t apm_table;
-	uint32_t vbe_control_info;
-	uint32_t vbe_mode_info;
-	uint32_t vbe_mode;
-	uint32_t vbe_interface_seg;
-	uint32_t vbe_interface_off;
-	uint32_t vbe_interface_len;
-}GRUBMultiboot ;
-
-typedef struct{
-  /* the memory used goes from bytes ’mod_start’ to ’mod_end-1’ inclusive */
-  uint32_t mod_start;
-  uint32_t mod_end;
-
-  /* Module command line */
-  uint32_t cmdline;
-
-  /* padding to take it to 16 bytes (must be zero) */
-  uint32_t pad;
-}multiboot_mod_list;
  
 /* Hardware text mode color constants. */
 enum vga_color {
@@ -426,7 +387,7 @@ uint64_t epoint;
 
 extern void *_BootEnd;
  
-void kernel_main(GRUBMultiboot *grub, uint32_t magic) 
+void kernel_main(multiboot_info_t *grub, uint32_t magic) 
 {
 	/* Initialize terminal interface */
 	terminal_initialize();
@@ -441,8 +402,9 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
         terminal_writestring("mods_count!=1\n");
         return;
     }
-    multiboot_mod_list* modlist = (multiboot_mod_list*) grub->mods_addr;
+    struct multiboot_mod_list* modlist = (struct multiboot_mod_list*) grub->mods_addr;
     void* dat = (void*) modlist->mod_start;
+    printf("-> %x %c %c \n",((uint8_t*)dat)[0],((uint8_t*)dat)[1],((uint8_t*)dat)[2]);
     
     Elf64_Ehdr* header = (Elf64_Ehdr*) dat;
     epoint = header->e_entry;
@@ -457,15 +419,27 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
             }
         }
     }
+    multiboot_memory_map_t *memmap = (multiboot_memory_map_t*) grub->mmap_addr;
+    int pointerA = 0;
+    for(multiboot_uint32_t i = 0 ; i < 100; i++){
+        multiboot_memory_map_t thisone = (multiboot_memory_map_t)memmap[i];
+        if( thisone.type==MULTIBOOT_MEMORY_AVAILABLE && ((uint32_t)thisone.addr!=0) ){
+            memdesclist[pointerA].Type = 7;
+            memdesclist[pointerA].PhysicalStart = thisone.addr;
+            memdesclist[pointerA].NumberOfPages = thisone.size;
+            pointerA++;
+            // printf("p%d : addr:%x size:%x \n",i,thisone.addr,thisone.size);
+        }
+    }
 
     // printf("mmap length: %d mmap addr: %x \n",grub->mmap_length,grub->mmap_addr);for(;;);
-    memdesclist[0].Type = 7;
-    memdesclist[0].NumberOfPages = 300;
-    memdesclist[0].PhysicalStart = (uint64_t)((uint32_t)_BootEnd);
+    // memdesclist[0].Type = 7;
+    // memdesclist[0].NumberOfPages = 300;
+    // memdesclist[0].PhysicalStart = (uint64_t)((uint32_t)_BootEnd);
 
-    memdesclist[1].Type = 7;
-    memdesclist[1].NumberOfPages = 300;
-    memdesclist[1].PhysicalStart = ((uint64_t)((uint32_t)_BootEnd)) + ( memdesclist[0].NumberOfPages * 4096 );
+    // memdesclist[1].Type = 7;
+    // memdesclist[1].NumberOfPages = 300;
+    // memdesclist[1].PhysicalStart = ((uint64_t)((uint32_t)_BootEnd)) + ( memdesclist[0].NumberOfPages * 4096 );
 
     bootinfo.memory_info = (uint64_t)((uint32_t)&memoryinfo);
     memoryinfo.mMapDescSize = sizeof(MemoryDescriptor);
@@ -479,9 +453,17 @@ void kernel_main(GRUBMultiboot *grub, uint32_t magic)
     graphicsinfo.Width = 160;
     graphicsinfo.PixelsPerScanLine = 160;
     graphicsinfo.strategy = 2;
+    // graphicsinfo.BaseAddress = grub->framebuffer_addr;
+    // graphicsinfo.PixelsPerScanLine = grub->framebuffer_width;
+    // graphicsinfo.BufferSize = 0;
+    // graphicsinfo.Height = grub->framebuffer_height;
+    // graphicsinfo.Width = grub->framebuffer_width;
+    // graphicsinfo.strategy = 1;
 
     bootinfo.rsdp = 0;
 
     bootinfo.font = 0;
+
+    // printf("EOL\n");
 
 }

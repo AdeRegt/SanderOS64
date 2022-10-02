@@ -117,13 +117,7 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
 }
 
 void initialise_multitasking_driver(){
-    #ifdef __x86_64
-    if(inportb(0xE9)!=0xE9){
-        k_printf("multitasking: enabling multitasking...\n");
-        setInterrupt(0,multitaskingint);
-        while(vl==0xF);
-    }else{
-        k_printf("multitasking: unable to accept multitasking on bochs platform!\n");
-    }
-    #endif
+    k_printf("multitasking: enabling multitasking...\n");
+    setInterrupt(0,multitaskingint);
+    while(vl==0xF);
 }

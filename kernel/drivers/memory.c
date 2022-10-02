@@ -65,7 +65,7 @@ void initialise_memory_driver(){
             maxaddr = msize;
         }
         max_memory += size;
-        k_printf("type: %d mem:%x size=%x \n",desc->Type,desc->PhysicalStart,size);
+        // k_printf("type: %d mem:%x size=%x \n",desc->Type,desc->PhysicalStart,size);
         if(desc->Type==7){
             if( size>MEMORY_AREA_PICK_RATE && desc->PhysicalStart!=0 && free_memory_min==0 ){
                 free_memory += size;

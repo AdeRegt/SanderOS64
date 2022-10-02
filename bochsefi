@@ -44,12 +44,10 @@ error: action=report
 panic: action=ask
 keyboard: type=mf, serial_delay=250, paste_delay=100000, user_shortcut=none
 mouse: type=ps2, enabled=false, toggle=ctrl+mbutton
-sound: waveoutdrv=alsa, waveout=none, waveindrv=alsa, wavein=none, midioutdrv=alsa, midiout=none
 com1: enabled=true, mode=file, dev="serial.txt"
 com2: enabled=false
 com3: enabled=false
 com4: enabled=false
 parport1: enabled=true, file=none
 parport2: enabled=false
-speaker: enabled=true, mode=sound, volume=15
 #usb_xhci: enabled=1, port1=none, options1=none, port2=none, options2=none, port3=none, options3=none, port4=none, options4=none

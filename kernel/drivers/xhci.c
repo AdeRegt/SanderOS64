@@ -804,6 +804,10 @@ void xhci_driver_start(int bus,int slot,int function){
     capabilities = (XHCI_CAPABILITY_REGISTER*) xhci_bar;
 
     k_printf("xhci: Bus: %x \n",xhci_bar);
+    if(xhci_bar==0){
+        k_printf("xhci: seems there is nothing here for us....\n");
+        return;
+    }
     k_printf("xhci: status before reset.... USBCMD: %x USBSTS: %x DNCNTRL: %x \n",xhci_read_usbcmd_register(),xhci_read_usbsts_register(),xhci_read_dnctrl_register());
 
     uint32_t olddcbaapvalue = xhci_read_dcbaap_register();

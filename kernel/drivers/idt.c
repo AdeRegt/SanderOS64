@@ -5,6 +5,7 @@
 #include "../include/multitasking.h"
 #include "../include/device.h"
 #include "../include/paging.h"
+#include "../include/timer.h"
 
 IDTR idtr;
 uint8_t idtoffsetcode = 0;
@@ -46,15 +47,44 @@ __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
     }
 #endif 
 
+void IRQ_set_mask(unsigned char IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(IRQline < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        IRQline -= 8;
+    }
+    value = inportb(port) | (1 << IRQline);
+    outportb(port, value);        
+}
+ 
+void IRQ_clear_mask(unsigned char IRQline) {
+    uint16_t port;
+    uint8_t value;
+ 
+    if(IRQline < 8) {
+        port = PIC1_DATA;
+    } else {
+        port = PIC2_DATA;
+        IRQline -= 8;
+    }
+    value = inportb(port) & ~(1 << IRQline);
+    outportb(port, value);        
+}
+
 void setInterrupt(int offset,void *fun){
     #ifdef __x86_64
         IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset+idtoffsetcode) * sizeof(IDTDescEntry)));
         interrupt_set_offset(int_PageFault,(upointer_t)fun);
-        int_PageFault->type_attr = IDT_TA_TrapGate;
+        int_PageFault->type_attr = IDT_TA_InterruptGate;
         int_PageFault->selector = 0x08;
     #else 
-        idt_set_gate(offset+idtoffsetcode, (uint32_t)fun, 0x08, IDT_TA_TrapGate);
+        idt_set_gate(offset+idtoffsetcode, (uint32_t)fun, 0x08, IDT_TA_InterruptGate);
     #endif 
+    IRQ_clear_mask(offset);
 }
 
 void setRawInterrupt(int offset,void *fun){
@@ -66,6 +96,7 @@ void setRawInterrupt(int offset,void *fun){
     #else
         idt_set_gate(offset, (uint32_t)fun, 0x08, IDT_TA_TrapGate);
     #endif
+    IRQ_clear_mask(offset);
 }
 
 extern void isrint();
@@ -221,13 +252,14 @@ void initialise_idt_driver(){
     k_printf("get some info from the old idt...\n");
     #ifdef __x86_64
     asm volatile ("sidt %0" : "=m"(idtr));
-    #else 
+    #else
     idtr.Limit = (sizeof (IDTDescEntry) * 256) - 1;
     idtr.Offset = (upointer_t) requestPage();
-    __asm__ ("lidt %0" :: "m"(idtr));
+    memset((void*)idtr.Offset,0,idtr.Limit);
     #endif 
 
-    // if(inportb(0xE9)!=0xE9){
+    uint8_t oldpic1 = inportb(PIC1_DATA);
+    uint8_t oldpic2 = inportb(PIC2_DATA);
     idtoffsetcode = 0x20;
     outportb(0x20, 0x11);
     outportb(0xA0, 0x11);
@@ -239,9 +271,10 @@ void initialise_idt_driver(){
     outportb(0xA1, 0x01);
     outportb(0x21, 0x0);
     outportb(0xA1, 0x0);
-    // }
+    outportb(PIC1_DATA,oldpic1);
+    outportb(PIC2_DATA,oldpic2);
 
-    k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
+    // k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);for(;;);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
         setRawInterrupt(i,NakedInterruptHandler);
@@ -253,7 +286,10 @@ void initialise_idt_driver(){
     #ifdef __x86_64
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
-    // for(;;);
-	asm volatile("sti");
+    #else 
+    asm volatile("lidt %0" :: "m"(idtr));
     #endif
+    asm volatile("int $0x20");
+    k_printf("sidt: enabeling interrupts...\n");
+	asm volatile("sti");
 }
