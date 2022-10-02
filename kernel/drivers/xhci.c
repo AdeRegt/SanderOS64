@@ -616,7 +616,7 @@ void *xhci_ring_and_wait(void* trb,int index,int value){
         k_printf(".");
         uint32_t* tv = (uint32_t*) xhci_event_ring;
         for(int i = 0 ; i < XHCI_SIZE_EVENT_RING*4 ; i++){
-            if(tv[i]==(uint32_t)((uint64_t) trb)){
+            if(tv[i]==(uint32_t)((upointer_t) trb)){
                 k_printf("\n");
                 return (void*)&tv[i];
             }
@@ -676,7 +676,7 @@ int xhci_set_address(void* pointer,uint8_t slotid){
     SetAddressCommandTRB *noopcmd = (SetAddressCommandTRB*) xhci_get_next_free_command();
     noopcmd->CycleBit = 1;
     noopcmd->TRBType = 11;
-    noopcmd->InputContextPointer = (uint64_t)pointer;
+    noopcmd->InputContextPointer = (uint64_t)((upointer_t)pointer);
     noopcmd->SlotID = slotid;
     noopcmd->BSR = 0;
 
@@ -800,7 +800,7 @@ void xhci_driver_start(int bus,int slot,int function){
 	k_printf("xhci: Entering xhci driver....\n");
     setInterrupt(inter,xhci_int);
 
-    xhci_bar = (void*) (uint64_t) ((uint32_t)(bar1 & 0xFFFFFFF0));
+    xhci_bar = (void*) ((upointer_t)(bar1 & 0xFFFFFFF0));
     capabilities = (XHCI_CAPABILITY_REGISTER*) xhci_bar;
 
     k_printf("xhci: Bus: %x \n",xhci_bar);
@@ -827,31 +827,33 @@ void xhci_driver_start(int bus,int slot,int function){
 
     rts = (XHCIEventRingSegmentTableEntry*) requestPage();
     rts->ringsegmentsize = XHCI_SIZE_EVENT_RING;
-    rts->addresslow = (uint64_t) xhci_event_ring;
+    rts->addresslow = (upointer_t) xhci_event_ring;
     xhci_command_ring = requestPage();
 
     memset((void*)xhci_event_ring,0,0x100);
     memset(xhci_command_ring,0,0x100);
 
-    xhci_write_erdp_register((uint32_t)((uint64_t)xhci_event_ring));
-    xhci_write_erstba_register((uint32_t)((uint64_t)rts));
-    xhci_write_crcr_register(((uint32_t)((uint64_t)xhci_command_ring)) | 1);
+    xhci_write_erdp_register((uint32_t)((upointer_t)xhci_event_ring));
+    xhci_write_erstba_register((uint32_t)((upointer_t)rts));
+    xhci_write_crcr_register(((uint32_t)((upointer_t)xhci_command_ring)) | 1);
 
     xhci_write_dnctrl_register(0xFFFF);
 
     void *dcbaap = (void*) requestPage();
     memset(dcbaap,0,0xa00);
     for(int i = 0 ; i < sizeof(uint64_t) ; i++){
-        uint8_t ov = ((uint8_t*)((uint64_t)olddcbaapvalue))[i];
+        uint8_t ov = ((uint8_t*)((upointer_t)olddcbaapvalue))[i];
         ((uint8_t*)dcbaap)[i] = ov;
     }
-    xhci_write_dcbaap_register((uint32_t)((uint64_t)dcbaap));
+    xhci_write_dcbaap_register((uint32_t)((upointer_t)dcbaap));
 
     xhci_start_controller();
 
+    #ifdef XHCI_DO_NOOP_TEST
     int noop = xhci_noop_command_ring();
     if(noop==1){
         k_printf("xhci: NOOP succeed with 1 !\n");
+    #endif
         for(int portnumber = 1 ; portnumber < capabilities->HCSPARAMS1.MaxPorts ; portnumber++){
             uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
             uint8_t portspeed = (initial_portsc_status>>10) & 0xF;
@@ -890,7 +892,7 @@ void xhci_driver_start(int bus,int slot,int function){
                 XHCIInputContextBuffer *ic = (XHCIInputContextBuffer*) requestPage();
                 memset(ic,0,sizeof(XHCIInputContextBuffer));
                 ic->icc.Aregisters = 3;
-                k_printf("dbg: icc=%x sc=%x epc=%x \n",(uint64_t)&ic->icc,(uint64_t)&ic->slotcontext,(uint64_t)&ic->epc);
+                k_printf("dbg: icc=%x sc=%x epc=%x \n",(upointer_t)&ic->icc,(upointer_t)&ic->slotcontext,(upointer_t)&ic->epc);
 
                 ic->slotcontext.RootHubPortNumber = portnumber;
                 ic->slotcontext.ContextEntries = 1;
@@ -905,22 +907,24 @@ void xhci_driver_start(int bus,int slot,int function){
                     ic->epc.TRDequeuePointer = ((uint64_t)local_ring)>>4;
                 #endif
                 #ifndef __x86_64
-                    ic->epc.TRDequeuePointerLow = ((uint64_t)local_ring)>>4;
+                    ic->epc.TRDequeuePointerLow = ((upointer_t)local_ring)>>4;
                 #endif 
                 ic->epc.DequeueCycleState = 1;
                 ic->epc.AverageTRBLength = 8;
 
                 XHCISlotContext *outputcontext = (XHCISlotContext*) requestPage();
                 memset(outputcontext,0,sizeof(XHCISlotContext)+0x40);
-                ((uint64_t*)dcbaap)[device_id] = (uint64_t)outputcontext;
+                ((uint64_t*)dcbaap)[device_id] = (uint64_t)((upointer_t)outputcontext);
 
                 int sacc = xhci_set_address(ic,device_id);
                 k_printf("xhci: setaddress completion code: %s \n",xhci_get_status_code_string(sacc));
             }
         }
+    #ifdef XHCI_DO_NOOP_TEST
     }else{
         k_printf("xhci: NOOP failed with %d !\n",noop);
     }
+    #endif
 
     k_printf("Thatsit\n");
     for(;;);

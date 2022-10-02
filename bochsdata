@@ -52,4 +52,4 @@ com4: enabled=false
 parport1: enabled=true, file=none
 parport2: enabled=false
 #speaker: enabled=true, mode=sound, volume=15
-#usb_xhci: enabled=1, port1=none, options1=none, port2=none, options2=none, port3=none, options3=none, port4=none, options4=none
+usb_xhci: enabled=1, port1="disk:disk.img", options1=none, port2=none, options2=none, port3=none, options3=none, port4=none, options4=none

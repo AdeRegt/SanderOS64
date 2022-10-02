@@ -256,7 +256,7 @@ void initialise_idt_driver(){
     #ifdef __x86_64
     asm volatile ("sidt %0" : "=m"(idtr));
     #else
-    idtr.Limit = 0xFFF;
+    idtr.Limit = 0x7FF;
     idtr.Offset = (upointer_t) requestPage();
     memset((void*)idtr.Offset,0,idtr.Limit);
     #endif 
