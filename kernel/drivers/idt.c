@@ -10,10 +10,14 @@
 IDTR idtr;
 uint8_t idtoffsetcode = 0;
 
+void interrupt_eoi(){
+    outportb(0xA0,0x20);
+	outportb(0x20,0x20);
+}
+
 __attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
     k_printf("Interrupt: Page fault detected\n");for(;;);
-	outportb(0xA0,0x20);
-	outportb(0x20,0x20);
+	interrupt_eoi();
 }
 
 __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
@@ -22,8 +26,7 @@ __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
 }
 
 __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
-	outportb(0xA0,0x20);
-	outportb(0x20,0x20);
+	interrupt_eoi();
 }
 
 #ifdef __x86_64
@@ -34,7 +37,7 @@ __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
     }
 #else 
     void idt_set_gate(unsigned char num, unsigned long base, unsigned short sel, unsigned char flags){
-        IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((num+idtoffsetcode) * sizeof(IDTDescEntry)));
+        IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((num) * sizeof(IDTDescEntry)));
         /* The interrupt routine's base address */
         int_PageFault->base_lo = (base & 0xFFFF);
         int_PageFault->base_hi = (base >> 16) & 0xFFFF;
@@ -84,7 +87,6 @@ void setInterrupt(int offset,void *fun){
     #else 
         idt_set_gate(offset+idtoffsetcode, (uint32_t)fun, 0x08, IDT_TA_InterruptGate);
     #endif 
-    IRQ_clear_mask(offset);
 }
 
 void setRawInterrupt(int offset,void *fun){
@@ -96,7 +98,6 @@ void setRawInterrupt(int offset,void *fun){
     #else
         idt_set_gate(offset, (uint32_t)fun, 0x08, IDT_TA_TrapGate);
     #endif
-    IRQ_clear_mask(offset);
 }
 
 extern void isrint();
@@ -232,6 +233,7 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==401){
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
+    k_printf("EOI");
             ((uint32_t*)ix->rdi)[0] = (uint32_t)((upointer_t)us);
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
@@ -244,16 +246,17 @@ void isr2handler(stack_registers *ix){
         for(;;);
     }
     eot:
-    outportb(0xA0,0x20);
-	outportb(0x20,0x20);
+    interrupt_eoi();
 }
+
+extern void gohere();
 
 void initialise_idt_driver(){
     k_printf("get some info from the old idt...\n");
     #ifdef __x86_64
     asm volatile ("sidt %0" : "=m"(idtr));
     #else
-    idtr.Limit = (sizeof (IDTDescEntry) * 256) - 1;
+    idtr.Limit = 0xFFF;
     idtr.Offset = (upointer_t) requestPage();
     memset((void*)idtr.Offset,0,idtr.Limit);
     #endif 
@@ -264,7 +267,7 @@ void initialise_idt_driver(){
     outportb(0x20, 0x11);
     outportb(0xA0, 0x11);
     outportb(0x21, idtoffsetcode);
-    outportb(0xA1, 0x28);
+    outportb(0xA1, idtoffsetcode + 8);
     outportb(0x21, 0x04);
     outportb(0xA1, 0x02);
     outportb(0x21, 0x01);
@@ -274,22 +277,27 @@ void initialise_idt_driver(){
     outportb(PIC1_DATA,oldpic1);
     outportb(PIC2_DATA,oldpic2);
 
-    // k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);for(;;);
+    k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
+        IRQ_clear_mask(i);
         setRawInterrupt(i,NakedInterruptHandler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
+        IRQ_clear_mask(i);
         setRawInterrupt(i,GeneralFault_Handler);
     }
-    setRawInterrupt(0xCD,PageFault_Handler);
+    // setRawInterrupt(0xCD,PageFault_Handler);
     #ifdef __x86_64
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
     #else 
     asm volatile("lidt %0" :: "m"(idtr));
+    for(uint16_t i = idtoffsetcode ; i < idtr.Limit ; i++){
+        setRawInterrupt(i,gohere);
+    }
     #endif
-    asm volatile("int $0x20");
+    // asm volatile("int $0x20");
     k_printf("sidt: enabeling interrupts...\n");
 	asm volatile("sti");
 }

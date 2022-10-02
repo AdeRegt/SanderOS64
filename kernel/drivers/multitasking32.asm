@@ -24,3 +24,14 @@ multitaskingint:
 
     ;add rsp,16
     iret
+
+global gohere 
+extern interrupt_eoi
+gohere:
+    cli 
+    pusha 
+    call interrupt_eoi
+    popa 
+    sti 
+    ret
+    hlt
