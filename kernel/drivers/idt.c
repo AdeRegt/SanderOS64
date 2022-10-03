@@ -283,6 +283,9 @@ void initialise_idt_driver(){
         setRawInterrupt(i,NakedInterruptHandler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
+        #ifdef __x86_64
+            IRQ_clear_mask(i);
+        #endif 
         setRawInterrupt(i,GeneralFault_Handler);
     }
     // setRawInterrupt(0xCD,PageFault_Handler);
