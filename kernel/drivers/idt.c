@@ -276,15 +276,13 @@ void initialise_idt_driver(){
     outportb(0xA1, 0x0);
     outportb(PIC1_DATA,oldpic1);
     outportb(PIC2_DATA,oldpic2);
-
+    
     k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
-        IRQ_clear_mask(i);
         setRawInterrupt(i,NakedInterruptHandler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
-        IRQ_clear_mask(i);
         setRawInterrupt(i,GeneralFault_Handler);
     }
     // setRawInterrupt(0xCD,PageFault_Handler);
