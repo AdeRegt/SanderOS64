@@ -1,4 +1,5 @@
 #include "../include/graphics.h"
+#include "../include/comport.h"
 #include "../include/psf.h"
 
 GraphicsInfo *graphics_info;
@@ -24,30 +25,61 @@ unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned c
 }
 
 void clear_screen(unsigned int colour){
-    asm volatile("cli");
-    unsigned int BBP = 4;
-    for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
-        for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
-            draw_pixel_at(x,y,colour);
+    if(graphics_info->strategy==1){
+        unsigned int BBP = 4;
+        for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
+            for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
+                draw_pixel_at(x,y,colour);
+            }
         }
+        pointerX = 50;
+        pointerY = 50;
+    }else{
+        pointerX = 0;
+        pointerY = 0;
+        for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
+            for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
+                putc(' ');
+            }
+        }
+        pointerX = 0;
+        pointerY = 0;
     }
-    pointerX = 50;
-    pointerY = 50;
-    asm volatile("sti");
 }
 
 void putc(char deze){
-    if(pointerY>(graphics_info->Height-50)){
-        clear_screen(0xFFFFFFFF);
-        pointerX = 50;
-        pointerY = 50;
+    if(is_com_enabled()){
+        com_write_debug_serial(deze);
     }
-    if(deze=='\n'||pointerX>(graphics_info->Width-50)){
-        pointerX = 50;
-        pointerY += 16;
+    if(graphics_info->strategy==1){
+        if(pointerY>graphics_info->Height){
+            clear_screen(0xFFFFFFFF);
+            pointerX = 50;
+            pointerY = 50;
+        }
+        if(deze=='\n'||pointerX>(graphics_info->Width-50)){
+            pointerX = 50;
+            pointerY += 16;
+        }else{
+            drawCharacter(getActiveFont(),deze,0x00000000,pointerX,pointerY);
+            pointerX += 8;
+        }
     }else{
-        drawCharacter(getActiveFont(),deze,0x00000000,pointerX,pointerY);
-        pointerX += 8;
+        if(pointerY>=25){
+            pointerX = 0;
+            pointerY = 0;
+        }
+        if(deze=='\n'){
+            pointerX = 0;
+            pointerY++;
+            return;
+        }
+        ((char*)(graphics_info->BaseAddress+(160*pointerY)+(pointerX*2)))[0] = deze;
+        pointerX++;
+        if(pointerX==80){
+            pointerX = 0;
+            pointerY++;
+        }
     }
 }
 

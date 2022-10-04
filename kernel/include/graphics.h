@@ -6,6 +6,7 @@ typedef struct {
 	unsigned int Width;
 	unsigned int Height;
 	unsigned int PixelsPerScanLine;
+    unsigned char strategy;
 } GraphicsInfo;
 
 void set_graphics_info(GraphicsInfo *gi);

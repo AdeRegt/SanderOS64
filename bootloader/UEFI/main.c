@@ -11,6 +11,7 @@ typedef struct {
 	unsigned int Width;
 	unsigned int Height;
 	unsigned int PixelsPerScanLine;
+    unsigned char strategy;
 } Framebuffer;
 
 typedef struct {
@@ -81,6 +82,7 @@ Framebuffer* InitializeGOP(){
 	framebuffer.Width = gop->Mode->Info->HorizontalResolution;
 	framebuffer.Height = gop->Mode->Info->VerticalResolution;
 	framebuffer.PixelsPerScanLine = gop->Mode->Info->PixelsPerScanLine;
+	framebuffer.strategy = 1;
 
 	return &framebuffer;
 	
@@ -170,7 +172,7 @@ void* FindTable(SDTHeader* sdtHeader, char* signature){
 EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	InitializeLib(ImageHandle, SystemTable);
 
-	EFI_FILE* Kernel = LoadFile(NULL, L"sanderos\\kernel.bin", ImageHandle, SystemTable);
+	EFI_FILE* Kernel = LoadFile(NULL, L"sanderos\\kernel64.bin", ImageHandle, SystemTable);
 	if (Kernel == NULL){
 		Print(L"Could not load kernel \n\r");
 	}

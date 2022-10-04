@@ -29,22 +29,32 @@
 
 HBAMemory* memory;	
 
-uint8_t ahci_read_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, void* buffer){
+uint8_t ahci_read_sector(HBAPort *hbaPort, upointer_t sector, uint32_t counter, void* buffer){
 	uint32_t sectorL = (uint32_t) sector;
+	#ifdef __x86_64
 	uint32_t sectorH = (uint32_t) (sector >> 32);
+	#endif
+	#ifndef __x86_64
+	uint32_t sectorH = 0;
+	#endif
 
 	hbaPort->interruptStatus = (uint32_t)-1;
 
-	HBACommandHeader* cmdHeader = (HBACommandHeader*)(uint64_t)hbaPort->commandListBase;
+	HBACommandHeader* cmdHeader = (HBACommandHeader*)(upointer_t)hbaPort->commandListBase;
 	cmdHeader->commandFISLength = sizeof(FIS_REG_H2D)/ sizeof(uint32_t);
 	cmdHeader->write = 0;
 	cmdHeader->prdtLength = 1;
 
-	HBACommandTable* commandTable = (HBACommandTable*)(uint64_t)(cmdHeader->commandTableBaseAddress);
+	HBACommandTable* commandTable = (HBACommandTable*)(upointer_t)(cmdHeader->commandTableBaseAddress);
 	memset(commandTable, 0, sizeof(HBACommandTable) + (cmdHeader->prdtLength-1)*sizeof(HBAPRDTEntry));
 
-	commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)buffer;
-	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((uint64_t)buffer >> 32);
+	commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(upointer_t)buffer;
+	#ifdef __x86_64
+	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((upointer_t)buffer >> 32);
+	#endif
+	#ifndef __x86_64
+	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)0;
+	#endif
 	commandTable->prdtEntry[0].byteCount = (counter<<9)-1;
 	commandTable->prdtEntry[0].interruptOnCompletion = 1;
 
@@ -66,7 +76,7 @@ uint8_t ahci_read_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, vo
 	cmdFIS->countLow = counter & 0xFF;
 	cmdFIS->countHigh = (counter >> 8) & 0xFF;
 
-	uint64_t spin = 0;
+	upointer_t spin = 0;
 
 	while ((hbaPort->taskFileData & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000){
 		spin ++;
@@ -90,21 +100,31 @@ uint8_t ahci_read_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, vo
 	return 1;
 }
 
-uint8_t ahci_write_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, void* buffer){
+uint8_t ahci_write_sector(HBAPort *hbaPort, upointer_t sector, uint32_t counter, void* buffer){
 	uint32_t sectorL = (uint32_t) sector;
+	#ifdef __x86_64
 	uint32_t sectorH = (uint32_t) (sector >> 32);
+	#endif
+	#ifndef __x86_64
+	uint32_t sectorH = 0;
+	#endif
 
 	hbaPort->interruptStatus = (uint32_t)-1;
-	HBACommandHeader* cmdHeader = (HBACommandHeader*)(uint64_t)hbaPort->commandListBase;
+	HBACommandHeader* cmdHeader = (HBACommandHeader*)(upointer_t)hbaPort->commandListBase;
 	cmdHeader->commandFISLength = sizeof(FIS_REG_H2D)/ sizeof(uint32_t);
 	cmdHeader->write = 1;
 	cmdHeader->prdtLength = 1;
 
-	HBACommandTable* commandTable = (HBACommandTable*)(uint64_t)(cmdHeader->commandTableBaseAddress);
+	HBACommandTable* commandTable = (HBACommandTable*)(upointer_t)(cmdHeader->commandTableBaseAddress);
 	memset(commandTable, 0, sizeof(HBACommandTable) + (cmdHeader->prdtLength-1)*sizeof(HBAPRDTEntry));
 
-	commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(uint64_t)buffer;
-	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((uint64_t)buffer >> 32);
+	commandTable->prdtEntry[0].dataBaseAddress = (uint32_t)(upointer_t)buffer;
+	#ifdef __x86_64
+	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)((upointer_t)buffer >> 32);
+	#endif
+	#ifndef __x86_64
+	commandTable->prdtEntry[0].dataBaseAddressUpper = 0;
+	#endif
 	commandTable->prdtEntry[0].byteCount = (counter<<9)-1;
 	commandTable->prdtEntry[0].interruptOnCompletion = 1;
 
@@ -126,7 +146,7 @@ uint8_t ahci_write_sector(HBAPort *hbaPort, uint64_t sector, uint32_t counter, v
 	cmdFIS->countLow = counter & 0xFF;
 	cmdFIS->countHigh = (counter >> 8) & 0xFF;
 
-	uint64_t spin = 0;
+	upointer_t spin = 0;
 
 	while ((hbaPort->taskFileData & (ATA_DEV_BUSY | ATA_DEV_DRQ)) && spin < 1000000){
 		spin ++;
@@ -184,34 +204,54 @@ void ahci_port_configure(HBAPort *hbaPort){
 
 	void* newBase = requestPage();//memory + (1<<10);
 	// k_printf("mem clb: %x \n",newBase);
-	hbaPort->commandListBase = (uint32_t)(uint64_t)newBase;
-	hbaPort->commandListBaseUpper = (uint32_t)((uint64_t)newBase >> 32);
-	memset((void*)(uint64_t)(hbaPort->commandListBase), 0, 1024);
+	hbaPort->commandListBase = (uint32_t)(upointer_t)newBase;
+	#ifdef __x86_64
+	hbaPort->commandListBaseUpper = (uint32_t)((upointer_t)newBase >> 32);
+	#endif
+	#ifndef __x86_64
+	hbaPort->commandListBaseUpper = 0;
+	#endif
+	memset((void*)(upointer_t)(hbaPort->commandListBase), 0, 1024);
 
 	void* fisBase = requestPage();//memory + (32<<10) + (1<<8);
 	// k_printf("mem fis: %x \n",fisBase);
-	hbaPort->fisBaseAddress = (uint32_t)(uint64_t)fisBase;
-	hbaPort->fisBaseAddressUpper = (uint32_t)((uint64_t)fisBase >> 32);
+	hbaPort->fisBaseAddress = (uint32_t)(upointer_t)fisBase;
+	#ifdef __x86_64
+	hbaPort->fisBaseAddressUpper = (uint32_t)((upointer_t)fisBase >> 32);
+	#endif
+	#ifndef __x86_64
+	hbaPort->fisBaseAddressUpper = 0;
+	#endif
 	memset(fisBase, 0, 256);
 
-	HBACommandHeader* cmdHeader = (HBACommandHeader*)((uint64_t)hbaPort->commandListBase + ((uint64_t)hbaPort->commandListBaseUpper << 32));
+	#ifdef __x86_64
+	HBACommandHeader* cmdHeader = (HBACommandHeader*)((upointer_t)hbaPort->commandListBase + ((upointer_t)hbaPort->commandListBaseUpper << 32));
+	#endif
+	#ifndef __x86_64
+	HBACommandHeader* cmdHeader = (HBACommandHeader*)((upointer_t)hbaPort->commandListBase);
+	#endif
 	for (int i = 0; i < 32; i++){
 		cmdHeader[i].prdtLength = 8;
 
 		void* cmdTableAddress = requestPage();
-		uint64_t address = (uint64_t)cmdTableAddress + (i << 8);
-		cmdHeader[i].commandTableBaseAddress = (uint32_t)(uint64_t)address;
-		cmdHeader[i].commandTableBaseAddressUpper = (uint32_t)((uint64_t)address >> 32);
+		upointer_t address = (upointer_t)cmdTableAddress + (i << 8);
+		cmdHeader[i].commandTableBaseAddress = (uint32_t)(upointer_t)address;
+		#ifdef __x86_64
+		cmdHeader[i].commandTableBaseAddressUpper = (uint32_t)((upointer_t)address >> 32);
+		#endif
+		#ifndef __x86_64
+		cmdHeader[i].commandTableBaseAddressUpper = 0;
+		#endif
 		memset(cmdTableAddress, 0, 256);
 	}
 	ahci_port_startCMD(hbaPort);
 }
 
-char ahci_ata_read(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer){
+char ahci_ata_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
 	return ahci_read_sector((HBAPort*)dev->attachment,sector,counter,buffer);
 }
 
-char ahci_ata_write(Blockdevice* dev, uint64_t sector, uint32_t counter, void* buffer){
+char ahci_ata_write(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
 	return ahci_write_sector((HBAPort*)dev->attachment,sector,counter,buffer);
 }
 

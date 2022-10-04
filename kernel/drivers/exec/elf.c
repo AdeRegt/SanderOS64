@@ -20,7 +20,8 @@ uint8_t is_elf(void *programmem){
     return 1;
 }
 
-uint64_t elf_load_image(void *programmem){
+upointer_t elf_load_image(void *programmem){
+    #ifdef __x86_64
     // casting elfheader
     Elf64_Ehdr* elfheader = (Elf64_Ehdr*) programmem;
 
@@ -32,7 +33,7 @@ uint64_t elf_load_image(void *programmem){
     // check elftype, should be 1 for relocatable (kernelmodule)
     if( elfheader->e_type==1 ){
 
-        uint64_t entrypoint = 0;
+        upointer_t entrypoint = 0;
         Elf64_Shdr *section_symbol;
         Elf64_Shdr *section_string;
 
@@ -51,44 +52,44 @@ uint64_t elf_load_image(void *programmem){
                     Elf64_Xword sym  = ELF64_R_SYM(relocation->r_info);
                     Elf64_Xword type = ELF64_R_TYPE(relocation->r_info);
                     Elf64_Sym *symbol = (Elf64_Sym*) &((Elf64_Sym*)(programmem+section_symbol->sh_offset))[sym];
-                    uint64_t symval = symbol->st_value;
+                    upointer_t symval = symbol->st_value;
 
                     Elf64_Shdr *symbol_target = (Elf64_Shdr*) &((Elf64_Shdr*)(programmem + elfheader->e_shoff))[symbol->st_shndx];
                     
                     if( symbol->st_info&0x10 ){
                         char* symbolname = (char*) (programmem + section_string->sh_offset + symbol->st_name);
                         if(memcmp(symbolname,"k_printf",strlen("k_printf"))==0 ){
-                            symval = (uint64_t) k_printf;
+                            symval = (upointer_t) k_printf;
                         }else if(memcmp(symbolname,"inportb",strlen("inportb"))==0 ){
-                            symval = (uint64_t) inportb;
+                            symval = (upointer_t) inportb;
                         }else if(memcmp(symbolname,"outportb",strlen("outportb"))==0 ){
-                            symval = (uint64_t) outportb;
+                            symval = (upointer_t) outportb;
                         }else if(memcmp(symbolname,"inportw",strlen("inportw"))==0 ){
-                            symval = (uint64_t) inportw;
+                            symval = (upointer_t) inportw;
                         }else if(memcmp(symbolname,"outportw",strlen("outportw"))==0 ){
-                            symval = (uint64_t) outportw;
+                            symval = (upointer_t) outportw;
                         }else if(memcmp(symbolname,"inportl",strlen("inportl"))==0 ){
-                            symval = (uint64_t) inportl;
+                            symval = (upointer_t) inportl;
                         }else if(memcmp(symbolname,"outportl",strlen("outportl"))==0 ){
-                            symval = (uint64_t) outportl;
+                            symval = (upointer_t) outportl;
                         }else if(memcmp(symbolname,"setInterrupt",strlen("setInterrupt"))==0 ){
-                            symval = (uint64_t) setInterrupt;
+                            symval = (upointer_t) setInterrupt;
                         }else if(memcmp(symbolname,"memset",strlen("memset"))==0 ){
-                            symval = (uint64_t) memset;
+                            symval = (upointer_t) memset;
                         }else if(memcmp(symbolname,"getBARaddress",strlen("getBARaddress"))==0 ){
-                            symval = (uint64_t) getBARaddress;
+                            symval = (upointer_t) getBARaddress;
                         }else if(memcmp(symbolname,"sleep",strlen("sleep"))==0 ){
-                            symval = (uint64_t) sleep;
+                            symval = (upointer_t) sleep;
                         }else if(memcmp(symbolname,"requestPage",strlen("requestPage"))==0 ){
-                            symval = (uint64_t) requestPage;
+                            symval = (upointer_t) requestPage;
                         }else if(memcmp(symbolname,"registerHIDDevice",strlen("registerHIDDevice"))==0 ){
-                            symval = (uint64_t) registerHIDDevice;
+                            symval = (upointer_t) registerHIDDevice;
                         }else if(memcmp(symbolname,"ethernet_set_link_status",strlen("ethernet_set_link_status"))==0 ){
-                            symval = (uint64_t) ethernet_set_link_status;
+                            symval = (upointer_t) ethernet_set_link_status;
                         }else if(memcmp(symbolname,"ethernet_handle_package",strlen("ethernet_handle_package"))==0 ){
-                            symval = (uint64_t) ethernet_handle_package;
+                            symval = (upointer_t) ethernet_handle_package;
                         }else if(memcmp(symbolname,"register_ethernet_device",strlen("register_ethernet_device"))==0 ){
-                            symval = (uint64_t) register_ethernet_device;
+                            symval = (upointer_t) register_ethernet_device;
                         }else{
                             int fnd = 0;
                             for(Elf64_Xword d = 0 ; d < (section_symbol->sh_size/section_symbol->sh_entsize) ; d++){
@@ -96,7 +97,7 @@ uint64_t elf_load_image(void *programmem){
                                 Elf64_Shdr *symbol_target2 = (Elf64_Shdr*) &((Elf64_Shdr*)(programmem + elfheader->e_shoff))[symbol2->st_shndx];
                                 char* symbolname2 = (char*) (programmem + section_string->sh_offset + symbol2->st_name);
                                 if(memcmp(symbolname,symbolname2,strlen(symbolname2))==0 && symbol2->st_shndx ){
-                                    symval = (uint64_t)(programmem + symbol_target2->sh_offset + symbol2->st_value);
+                                    symval = (upointer_t)(programmem + symbol_target2->sh_offset + symbol2->st_value);
                                     fnd = 1;
                                 }
                             }
@@ -107,15 +108,15 @@ uint64_t elf_load_image(void *programmem){
                         }
                     }
 
-                    uint64_t S = symval;
-                    uint64_t A = (uint64_t)(relocation->r_addend + (symbol->st_info&0x10?0:(programmem + symbol_target->sh_offset)));
-                    uint64_t P = (uint64_t)programmem + section_target->sh_offset + relocation->r_offset;
+                    upointer_t S = symval;
+                    upointer_t A = (upointer_t)(relocation->r_addend + (symbol->st_info&0x10?0:(programmem + symbol_target->sh_offset)));
+                    upointer_t P = (upointer_t)programmem + section_target->sh_offset + relocation->r_offset;
 
                     if(type==1){ 
                         // R_X86_64_64 1 word64 S + A
                         // k_printf("R_X86_64_64 - ");
-                        uint64_t *ref = (uint64_t *)((programmem + section_target->sh_offset + relocation->r_offset));
-                        uint64_t c = S + A;
+                        upointer_t *ref = (upointer_t *)((programmem + section_target->sh_offset + relocation->r_offset));
+                        upointer_t c = S + A;
                         *ref = c;
                     }else if(type==2){ 
                         // R_X86_64_PC32 2 word32 S + A - P
@@ -123,7 +124,7 @@ uint64_t elf_load_image(void *programmem){
                         uint32_t *ref = (uint32_t *)((programmem + section_target->sh_offset + relocation->r_offset));
                         // uint32_t c = S + A - P;
                         // *ref = c;
-                        uint32_t c = (uint32_t)((uint64_t)programmem + section_target->sh_offset + relocation->r_addend);
+                        uint32_t c = (uint32_t)((upointer_t)programmem + section_target->sh_offset + relocation->r_addend);
                         *ref = c;
                         // k_printf("S=%x A=%x P=%x \n",S,A,P);
                         // k_printf("addend: %x info:%x offset:%x res:%x\n",relocation->r_addend,relocation->r_info,relocation->r_offset,c);
@@ -173,4 +174,8 @@ uint64_t elf_load_image(void *programmem){
     }
     k_printf("Programs EP at %x \n",elfheader->e_entry);
     return elfheader->e_entry;
+    #endif 
+    #ifndef __x86_64
+    return 0;
+    #endif 
 }

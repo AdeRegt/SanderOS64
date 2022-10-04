@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "Compiling $1 to 64bit"
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -m64 -ffreestanding -mgeneral-regs-only -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Werror -c "$1.c" -o "$1_64.o" || exit 
+echo "Compiling $1 to 32bit"
+gcc -m32 -c "$1.c" -o "$1_32.o" -std=gnu99 -ffreestanding -O0 -mgeneral-regs-only -Werror || exit 

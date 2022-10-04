@@ -1,46 +1,47 @@
 #pragma once
 #include <stdint.h>
+#include "outint.h"
 
 typedef struct{
     // Pushed by isr_common_stub
-    uint64_t r15;
-    uint64_t r14;
-    uint64_t r13;
-    uint64_t r12;
-    uint64_t r11;
-    uint64_t r10;
-    uint64_t r9;
-    uint64_t r8;
-    uint64_t rdi;
-    uint64_t rsi;
-    uint64_t rbp;
-    uint64_t rdx;
-    uint64_t rcx;
-    uint64_t rbx;
-    uint64_t rax;
+    upointer_t r15;
+    upointer_t r14;
+    upointer_t r13;
+    upointer_t r12;
+    upointer_t r11;
+    upointer_t r10;
+    upointer_t r9;
+    upointer_t r8;
+    upointer_t rdi;
+    upointer_t rsi;
+    upointer_t rbp;
+    upointer_t rdx;
+    upointer_t rcx;
+    upointer_t rbx;
+    upointer_t rax;
 
     // Registers pushed by IRETQ
-    uint64_t rip;
-    uint64_t cs;
-    uint64_t rflags;
-    uint64_t rsp;
-    uint64_t ss;
+    upointer_t rip;
+    upointer_t cs;
+    upointer_t rflags;
+    upointer_t rsp;
+    upointer_t ss;
 }__attribute__((packed)) stack_registers;
 
 typedef struct{
     uint8_t available;
-    uint64_t filesize;
+    upointer_t filesize;
     void* buffer;
-    uint64_t pointer;
+    upointer_t pointer;
     uint8_t* filename;
-    uint64_t flags;
+    upointer_t flags;
 }__attribute__((packed)) File;
 
 typedef struct{
     stack_registers sessionregs;
     volatile int innercounter;
-    uint64_t cr3;
-    uint64_t size;
+    upointer_t cr3;
+    upointer_t size;
     File files[10];
     uint8_t task_running;
     char** arguments;
@@ -51,7 +52,7 @@ typedef struct{
 void initialise_multitasking_driver();
 extern void multitaskingint();
 Task* getTasks();
-int addTask(void *task,void *cr3,uint64_t size,char** args);
+int addTask(void *task,void *cr3,upointer_t size,char** args);
 int getPid();
 Task* getCurrentTaskInfo();
 void waitForPid(int pid);

@@ -57,7 +57,7 @@ int debugger_interpetate_instruction(void* location){
             uint8_t cs3 = symbol[size++];
             uint8_t cs4 = symbol[size++];
             uint8_t cs5 = symbol[size++];
-            uint64_t *csx = (uint64_t*) (location+2);
+            upointer_t *csx = (upointer_t*) (location+2);
             k_printf("movabs $%x,%%rax",csx[0]);
         }else if(cs==0xBA){
             uint8_t cs1 = symbol[size++];
@@ -65,7 +65,7 @@ int debugger_interpetate_instruction(void* location){
             uint8_t cs3 = symbol[size++];
             uint8_t cs4 = symbol[size++];
             uint8_t cs5 = symbol[size++];
-            uint64_t *csx = (uint64_t*) (location+2);
+            upointer_t *csx = (upointer_t*) (location+2);
             k_printf("movabs $%x,%%rdx",csx[0]);
         }else{
             k_printf("cs 0x48 :: unknown opcode: %x \n",cs);for(;;);
@@ -129,9 +129,9 @@ int debugger_interpetate_instruction(void* location){
     return size;
 }
 
-int debugger_interpetate_next_x_instructions(void *location,uint64_t times){
-    uint64_t pointer = (uint64_t)location;
-    for(uint64_t i = 0 ; i < times ; i++){
+int debugger_interpetate_next_x_instructions(void *location,upointer_t times){
+    upointer_t pointer = (upointer_t)location;
+    for(upointer_t i = 0 ; i < times ; i++){
         pointer += debugger_interpetate_instruction((void*)pointer);
         if(i%2){
             k_printf("\n");

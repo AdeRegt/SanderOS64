@@ -572,7 +572,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 sendEthernetPackage(sec);
 
                 if(switch_endian16(tcp->flags) & TCP_PUS){
-                    unsigned long addr = ((uint64_t)desc.buffer) + sizeof(struct TCPHeader);
+                    unsigned long addr = ((upointer_t)desc.buffer) + sizeof(struct TCPHeader);
                     unsigned long count = desc.buffersize-sizeof(struct TCPHeader);
                     unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
                     k_printf("[ETH] TCP message reieved: size=%x string=%s \n",count,(unsigned char*)addr);

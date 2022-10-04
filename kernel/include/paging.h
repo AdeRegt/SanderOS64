@@ -1,3 +1,7 @@
+
+#include "outint.h"
+
+#ifdef __x86_64
 typedef struct{
     unsigned char present: 1;
     unsigned char readwrite: 1;
@@ -9,18 +13,23 @@ typedef struct{
     unsigned char largepages: 1;
     unsigned char ignore2: 1;
     unsigned char available: 3;
-    unsigned long long address: 52;
+    upointer_t address: 52;
 }Page;
+#endif
+
+#ifndef __x86_64
+typedef struct{}Page;
+#endif 
 
 typedef struct{
     Page pages[512];
 }PageTable;
 
 typedef struct{
-    unsigned long long page_map_level_4_table_index;        // PDP_i
-    unsigned long long page_directory_pointer_table_index;  // PD_i
-    unsigned long long page_directory_table_index;          // PT_i
-    unsigned long long page_table_index;                    // P_i
+    upointer_t page_map_level_4_table_index;        // PDP_i
+    upointer_t page_directory_pointer_table_index;  // PD_i
+    upointer_t page_directory_table_index;          // PT_i
+    upointer_t page_table_index;                    // P_i
 }PageLookupResult;
 
 #define EXTERNAL_PROGRAM_ADDRESS 0xC000000

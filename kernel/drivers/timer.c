@@ -27,5 +27,6 @@ __attribute__((interrupt)) void timer_interrupt(interrupt_frame* frame){
 
 
 void initialise_timer_driver(){
+    k_printf("timer: initialise timer...\n");
     setInterrupt(0,timer_interrupt);
 }

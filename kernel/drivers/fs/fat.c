@@ -3,7 +3,7 @@
 #include "../../include/graphics.h"
 #include "../../include/memory.h"
 
-uint64_t fat_filesize(Filesystem* fs,char* path){
+upointer_t fat_filesize(Filesystem* fs,char* path){
     FATFileSystemSettings *fss = (FATFileSystemSettings*) fs->argument;
     int count_of_slashes = 0;
     int stringcount = 0;
@@ -178,7 +178,15 @@ char fat_read(Filesystem* fs,char* path,void *bufferedcapacity){
         }
     }
 
-    uint32_t toreadsectors = (filesize/fs->blockdevice->blocksize)+1;
+    uint32_t toreadsectors = 0;//(filesize/fs->blockdevice->blocksize)+1;
+    uint32_t ssc = 0;
+    while(1){
+        ssc += fs->blockdevice->blocksize;
+        toreadsectors++;
+        if(ssc>= filesize){
+            break;
+        }
+    }
     return device_read_raw_sector(fs->blockdevice,secset,toreadsectors,bufferedcapacity);
 }
 
@@ -291,7 +299,7 @@ char *fat_dir(Filesystem* fs,char* path){
     return resultstring;
 }
 
-uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t filesize){
+upointer_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,upointer_t filesize){
     FATFileSystemSettings* settings = (FATFileSystemSettings*) fs->argument;
     int count_of_slashes = 0;
     int stringcount = 0;
@@ -423,7 +431,7 @@ uint64_t fat_write(Filesystem* fs,char* path,void* bufferedcapacity,uint64_t fil
     u[index_of_new_or_changed_file].size = filesize;
 
     if(u[index_of_new_or_changed_file].cluster_low==0){
-        uint64_t *chdv = (uint64_t*)requestPage();
+        upointer_t *chdv = (upointer_t*)requestPage();
         if(!device_read_raw_sector(fs->blockdevice,settings->first_fat_sector,1,(void*)chdv)){
             freePage(chdv);
             freePage(es);
