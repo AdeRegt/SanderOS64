@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 
+#define FILENAME_MAX 50
+
 typedef struct{
     uint64_t blocksize;
     void* readcommand;

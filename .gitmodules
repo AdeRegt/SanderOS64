@@ -1,0 +1,6 @@
+[submodule "programs/fasm/origin"]
+	path = programs/fasm/origin
+	url = https://github.com/tgrysztar/fasm.git
+[submodule "programs/chip8/origin"]
+	path = programs/chip8/origin
+	url = https://github.com/AdeRegt/chip8.git

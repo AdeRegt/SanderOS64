@@ -62,6 +62,7 @@ void initialise_drivers_from_pci(){
             }
         }
     }
+    initialise_ethernet();
 }
 
 void initialise_pci_driver(){

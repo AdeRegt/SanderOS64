@@ -1,0 +1,8 @@
+echo "build fasm..."
+cd fasm
+./build 
+cd ..
+echo "build chip8..."
+cd chip8
+./build 
+cd ..
