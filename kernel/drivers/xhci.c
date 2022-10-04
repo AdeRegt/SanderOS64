@@ -925,7 +925,4 @@ void xhci_driver_start(int bus,int slot,int function){
         k_printf("xhci: NOOP failed with %d !\n",noop);
     }
     #endif
-
-    k_printf("Thatsit\n");
-    for(;;);
 }
