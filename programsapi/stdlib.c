@@ -253,3 +253,7 @@ unsigned char wait_for_character(){
 	__asm__ __volatile__( "int $0x81" :  : "a"(mode) , "b" (res) );
     return res[0];
 }
+
+void __stack_chk_fail(){
+    for(;;);
+}

@@ -17,7 +17,10 @@ void initialise_gdt_driver(){
     gdtDescriptor.Offset = (upointer_t)&DefaultGDT;
     LoadGDT(&gdtDescriptor);
 }
-#else 
+#else
+
+struct gdt_entry gdt[3];
+struct gdt_ptr gp; 
 
 void gdt_set_gate(int num, unsigned long base, unsigned long limit, unsigned char access, unsigned char gran){
     /* Setup the descriptor base address */
