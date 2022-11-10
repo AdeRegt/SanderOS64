@@ -857,12 +857,6 @@ void xhci_driver_start(int bus,int slot,int function){
         for(int portnumber = 1 ; portnumber < capabilities->HCSPARAMS1.MaxPorts ; portnumber++){
             uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
             uint8_t portspeed = (initial_portsc_status>>10) & 0xF;
-            if( (initial_portsc_status&3)!=0 && (initial_portsc_status&0x200)==0x200 ){
-                xhci_write_portsc_register(portnumber,initial_portsc_status | 0x10 );
-                sleep(20);
-                initial_portsc_status = xhci_read_portsc_register(portnumber);
-                portspeed = (initial_portsc_status>>10) & 0xF;
-            }
             if((initial_portsc_status&3)==3){
                 k_printf("xhci-%d: This port deserves our attention and it has the status of %x and a portspeed of %s \n",portnumber,initial_portsc_status,xhci_get_portspeed_string(portspeed));
                 if((initial_portsc_status>>5)&0xF!=0){

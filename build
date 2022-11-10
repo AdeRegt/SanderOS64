@@ -21,16 +21,19 @@ cd programs
 ./build_programs || exit
 cd ..
 
-echo "Update VHD"
-guestfish --rw -a hdd.vhd -m /dev/sda1:./ -f diskcmd.nsh || exit
-grub-mkrescue -o cdrom.iso bin || exit
-
 if [[ $* == *--install* ]]; then
-    echo "Copy all important files to drive /media/sander/SOS"
-    [ -d "/media/sander/SOS" ] && cp -r ./bin/* "/media/sander/SOS"
-    echo "Copy all important files to drive ${SANDEROS_MOUNT_POINT}"
-    cp -r ./bin/* "${SANDEROS_MOUNT_POINT}"
+    [ -d "${SANDEROS_REMOVABLE_MOUNT_POINT}" ] && echo "Copy all important files to drive ${SANDEROS_REMOVABLE_MOUNT_POINT}" && cp -r ./bin/* "${SANDEROS_REMOVABLE_MOUNT_POINT}"
+    [ -d "${SANDEROS_MOUNT_POINT}" ] && echo "Copy all important files to drive ${SANDEROS_MOUNT_POINT}" && cp -r ./bin/* "${SANDEROS_MOUNT_POINT}"
 fi
+
+if [[ $* == *--build-img* ]]; then
+    rm -f disk.img
+    echo "Update VHD"  
+    guestfish --rw -a hdd.vhd -m /dev/sda1:./ -f diskcmd.nsh || exit
+    grub-mkrescue -o cdrom.iso bin || exit
+    #VBoxManage clonehd hdd.vhd disk.img --format raw
+fi
+
 if [[ $* == *--emulate-qemu* ]]; then
     echo "Emulate"
     if [[ $* == *--64* ]]; then
@@ -39,10 +42,6 @@ if [[ $* == *--emulate-qemu* ]]; then
     if [[ $* == *--32* ]]; then
         qemu-system-x86_64  -trace enable=usb*  -device qemu-xhci,id=ehci --cdrom ./cdrom.iso -m 256m
     fi
-fi
-if [[ $* == *--build-img* ]]; then
-    rm -f disk.img
-    #VBoxManage clonehd hdd.vhd disk.img --format raw
 fi
 if [[ $* == *--emulate-bochs* ]]; then
     echo "Emulate"
