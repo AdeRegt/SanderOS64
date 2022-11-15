@@ -170,6 +170,7 @@ void *malloc(upointer_t size){
     for(upointer_t i = 0 ; i < ((empty_memory_max-empty_memory_min)/0x100) ; i++){
         if(emptymap[i]==0){
             emptymap[i] = 1;
+            memset((void *)(empty_memory_min+(i * 0x100)),0,size);
             return (void *)(empty_memory_min+(i * 0x100));
         }
     }

@@ -56,7 +56,11 @@ void initialise_drivers_from_pci(){
 					if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
                         // loadModule("A:SANDEROS/DRIVERS/XHCI.SYS",(PCIInfo*)&pi);
                     }else if( classc==0x02 && sublca==0x00 && (device==0x8168||device==0x8139)&&vendor==0x10ec ){
+                        #ifdef use_driver
                         loadModule("A:SANDEROS/DRIVERS/RTL.SYS",(PCIInfo*)&pi);
+                        #else
+                        rtl_driver_start(bus,slot,function);
+                        #endif
                     }
                 }
             }
