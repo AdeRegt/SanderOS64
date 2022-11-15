@@ -30,13 +30,18 @@ void kernel_main(BootInfo *gi){
     initialise_timer_driver();
     initialise_multitasking_driver();
     initialise_pci_driver();
+    #ifndef use_driver
+        initialise_drivers_from_pci();
+    #endif 
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");
         for(;;);
     }
     loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
-    initialise_drivers_from_pci();
+    #ifdef use_driver
+        initialise_drivers_from_pci();
+    #endif 
     initialise_tty();
     k_printf("__end of kernel!\n");
     for(;;);
