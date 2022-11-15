@@ -266,7 +266,7 @@ unsigned char* getIpAddressFromDHCPServer(){
     dhcpheader->hops = 0;
     dhcpheader->xid = 0x26F30339;
     dhcpheader->timing = 0;
-    dhcpheader->flags = switch_endian16(0x8000);
+    // dhcpheader->flags = switch_endian16(0x8000);
 
     fillMac((unsigned char*)&dhcpheader->client_mac_addr,(unsigned char*)&defaultEthernetDevice.mac);
     dhcpheader->magic_cookie = 0x63538263;

@@ -26,6 +26,7 @@ echo "Compiling C files..."
 ./build_component drivers/device || exit
 ./build_component drivers/tty || exit
 ./build_component drivers/xhci || exit
+./build_component drivers/rtl || exit
 ./build_component drivers/fs/fat || exit
 ./build_component drivers/fs/mbr || exit
 ./build_component drivers/exec/elf || exit
@@ -34,8 +35,8 @@ echo "Compiling C files..."
 ./build_component drivers/exec/debugger || exit
 
 echo "Linking files..."
-$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker64.ld ./kernel_64.o ./drivers/graphics_64.o ./drivers/memory_64.o ./drivers/paging_64.o ./drivers/psf_64.o ./drivers/gdt_64.o ./drivers/exec/debugger_64.o ./drivers/gdtsetup_64.o ./drivers/idt_64.o ./drivers/pci_64.o ./drivers/xhci_64.o ./drivers/isr_64.o ./drivers/comport_64.o ./drivers/tty_64.o ./drivers/exec/program_64.o ./drivers/ports_64.o ./drivers/ahci_64.o ./drivers/exec/module_64.o ./drivers/exec/elf_64.o ./drivers/multitasking_64.o ./drivers/multitasking2_64.o ./drivers/device_64.o ./drivers/fs/mbr_64.o ./drivers/fs/fat_64.o ./drivers/timer_64.o ./drivers/ethernet_64.o -o ./../bin/sanderos/kernel64.bin -nostdlib -lgcc || exit
-gcc -ffreestanding -T ./linker32.ld -m32 -ffreestanding -O2 -nostdlib ./kernel_32.o ./bootstrapping/GRUB/boot.o ./bootstrapping/GRUB/grub.o ./drivers/graphics_32.o ./drivers/memory_32.o ./drivers/paging_32.o ./drivers/psf_32.o ./drivers/gdt_32.o ./drivers/exec/debugger_32.o ./drivers/idt_32.o ./drivers/pci_32.o ./drivers/xhci_32.o ./drivers/comport_32.o ./drivers/tty_32.o ./drivers/exec/program_32.o ./drivers/ports_32.o ./drivers/ahci_32.o ./drivers/exec/module_32.o ./drivers/exec/elf_32.o ./drivers/multitasking_32.o ./drivers/device_32.o ./drivers/multitasking2_32.o ./drivers/fs/mbr_32.o ./drivers/fs/fat_32.o ./drivers/timer_32.o ./drivers/ethernet_32.o -o ./../bin/sanderos/kernel32.bin || exit
+$SANDEROS_CROSS_LOCATION/x86_64-elf-gcc -ffreestanding -T ./linker64.ld ./kernel_64.o ./drivers/rtl_64.o ./drivers/graphics_64.o ./drivers/memory_64.o ./drivers/paging_64.o ./drivers/psf_64.o ./drivers/gdt_64.o ./drivers/exec/debugger_64.o ./drivers/gdtsetup_64.o ./drivers/idt_64.o ./drivers/pci_64.o ./drivers/xhci_64.o ./drivers/isr_64.o ./drivers/comport_64.o ./drivers/tty_64.o ./drivers/exec/program_64.o ./drivers/ports_64.o ./drivers/ahci_64.o ./drivers/exec/module_64.o ./drivers/exec/elf_64.o ./drivers/multitasking_64.o ./drivers/multitasking2_64.o ./drivers/device_64.o ./drivers/fs/mbr_64.o ./drivers/fs/fat_64.o ./drivers/timer_64.o ./drivers/ethernet_64.o -o ./../bin/sanderos/kernel64.bin -nostdlib -lgcc || exit
+gcc -ffreestanding -T ./linker32.ld -m32 -ffreestanding -O2 -nostdlib ./kernel_32.o ./bootstrapping/GRUB/boot.o ./bootstrapping/GRUB/grub.o ./drivers/graphics_32.o ./drivers/rtl_32.o ./drivers/memory_32.o ./drivers/paging_32.o ./drivers/psf_32.o ./drivers/gdt_32.o ./drivers/exec/debugger_32.o ./drivers/idt_32.o ./drivers/pci_32.o ./drivers/xhci_32.o ./drivers/comport_32.o ./drivers/tty_32.o ./drivers/exec/program_32.o ./drivers/ports_32.o ./drivers/ahci_32.o ./drivers/exec/module_32.o ./drivers/exec/elf_32.o ./drivers/multitasking_32.o ./drivers/device_32.o ./drivers/multitasking2_32.o ./drivers/fs/mbr_32.o ./drivers/fs/fat_32.o ./drivers/timer_32.o ./drivers/ethernet_32.o -o ./../bin/sanderos/kernel32.bin || exit
 
 echo "Cleanup"
 rm *.o  || exit
