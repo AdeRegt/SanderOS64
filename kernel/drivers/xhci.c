@@ -678,7 +678,7 @@ int xhci_set_address(void* pointer,uint8_t slotid){
     noopcmd->TRBType = 11;
     noopcmd->InputContextPointer = (uint64_t)((upointer_t)pointer);
     noopcmd->SlotID = slotid;
-    noopcmd->BSR = 0;
+    noopcmd->BSR = 1;
 
     CommandCompletionEventTRB *result = xhci_ring_and_wait(noopcmd,0,0);
     return result->CompletionCode;
@@ -840,20 +840,21 @@ void xhci_driver_start(int bus,int slot,int function){
     xhci_write_dnctrl_register(0xFFFF);
 
     void *dcbaap = (void*) requestPage();
-    memset(dcbaap,0,0xa00);
-    for(int i = 0 ; i < sizeof(uint64_t) ; i++){
-        uint8_t ov = ((uint8_t*)((upointer_t)olddcbaapvalue))[i];
-        ((uint8_t*)dcbaap)[i] = ov;
-    }
+    memset(dcbaap,0,sizeof(uint64_t)*255);
+    void *dctmp = (void*) requestPage();
+    memset(dctmp,0,sizeof(uint64_t)*255);
+    ((upointer_t*)dcbaap)[0] = (upointer_t) dctmp;
+    // for(int i = 0 ; i < sizeof(uint64_t) ; i++){
+    //     uint8_t ov = ((uint8_t*)((upointer_t)olddcbaapvalue))[i];
+    //     ((uint8_t*)dcbaap)[i] = ov;
+    // }
     xhci_write_dcbaap_register((uint32_t)((upointer_t)dcbaap));
 
     xhci_start_controller();
 
-    #ifdef XHCI_DO_NOOP_TEST
     int noop = xhci_noop_command_ring();
     if(noop==1){
         k_printf("xhci: NOOP succeed with 1 !\n");
-    #endif
         for(int portnumber = 1 ; portnumber < capabilities->HCSPARAMS1.MaxPorts ; portnumber++){
             uint32_t initial_portsc_status = xhci_read_portsc_register(portnumber);
             uint8_t portspeed = (initial_portsc_status>>10) & 0xF;
@@ -884,9 +885,8 @@ void xhci_driver_start(int bus,int slot,int function){
 
                 // after this, we need an address
                 XHCIInputContextBuffer *ic = (XHCIInputContextBuffer*) requestPage();
-                memset(ic,0,sizeof(XHCIInputContextBuffer));
+                memset(ic,0,sizeof(XHCIInputContextBuffer)*3);
                 ic->icc.Aregisters = 3;
-                k_printf("dbg: icc=%x sc=%x epc=%x \n",(upointer_t)&ic->icc,(upointer_t)&ic->slotcontext,(upointer_t)&ic->epc);
 
                 ic->slotcontext.RootHubPortNumber = portnumber;
                 ic->slotcontext.ContextEntries = 1;
@@ -914,9 +914,7 @@ void xhci_driver_start(int bus,int slot,int function){
                 k_printf("xhci: setaddress completion code: %s \n",xhci_get_status_code_string(sacc));
             }
         }
-    #ifdef XHCI_DO_NOOP_TEST
     }else{
         k_printf("xhci: NOOP failed with %d !\n",noop);
     }
-    #endif
 }
