@@ -33,145 +33,145 @@ typedef struct{
 }EthernetDevice;
 
 struct EthernetHeader{
-    unsigned char to[SIZE_OF_MAC];
-    unsigned char from[SIZE_OF_MAC];
-    unsigned short type;
+    uint8_t to[SIZE_OF_MAC];
+    uint8_t from[SIZE_OF_MAC];
+    uint16_t type;
 } __attribute__ ((packed));
 
 struct ARPHeader{
     struct EthernetHeader ethernetheader;
-    unsigned short hardware_type;
-    unsigned short protocol_type;
-    unsigned char hardware_address_length;
-    unsigned char protocol_address_length;
-    unsigned short operation;
+    uint16_t hardware_type;
+    uint16_t protocol_type;
+    uint8_t hardware_address_length;
+    uint8_t protocol_address_length;
+    uint16_t operation;
 
-    unsigned char source_mac[SIZE_OF_MAC];
-    unsigned char source_ip[SIZE_OF_IP];
+    uint8_t source_mac[SIZE_OF_MAC];
+    uint8_t source_ip[SIZE_OF_IP];
 
-    unsigned char dest_mac[SIZE_OF_MAC];
-    unsigned char dest_ip[SIZE_OF_IP];
+    uint8_t dest_mac[SIZE_OF_MAC];
+    uint8_t dest_ip[SIZE_OF_IP];
 } __attribute__ ((packed));
 
 struct IPv4Header{
     struct EthernetHeader ethernetheader;
-    unsigned char internet_header_length:4;
-    unsigned char version:4;
-    unsigned char type_of_service;
-    unsigned short total_length;
-    unsigned short id;
-    unsigned short flags:3;
-    unsigned short fragment_offset:13;
-    unsigned char time_to_live;
-    unsigned char protocol;
-    unsigned short checksum;
-    unsigned long source_addr;
-    unsigned long dest_addr;
+    uint8_t internet_header_length:4;
+    uint8_t version:4;
+    uint8_t type_of_service;
+    uint16_t total_length;
+    uint16_t id;
+    uint16_t flags:3;
+    uint16_t fragment_offset:13;
+    uint8_t time_to_live;
+    uint8_t protocol;
+    uint16_t checksum;
+    uint32_t source_addr;
+    uint32_t dest_addr;
 } __attribute__ ((packed));
 
 struct ICMPHeader{
     struct IPv4Header ipv4header;
-    unsigned char type;
-    unsigned char code;
-    unsigned short checksum;
-    unsigned short ident_BE;
-    unsigned short ident_LE;
-    unsigned short seqe_BE;
-    unsigned short seqe_LE;
-    unsigned char timestamp[8];
+    uint8_t type;
+    uint8_t code;
+    uint16_t checksum;
+    uint16_t ident_BE;
+    uint16_t ident_LE;
+    uint16_t seqe_BE;
+    uint16_t seqe_LE;
+    uint8_t timestamp[8];
 } __attribute__ ((packed));
 
 struct UDPHeader{
     struct IPv4Header ipv4header;
-    unsigned short source_port;
-    unsigned short destination_port;
-    unsigned short length;
-    unsigned short checksum;
+    uint16_t source_port;
+    uint16_t destination_port;
+    uint16_t length;
+    uint16_t checksum;
 } __attribute__ ((packed));
 
 struct TCPHeader{
     struct IPv4Header header;
-    unsigned short source_port;
-    unsigned short destination_port;
-    unsigned long sequence_number;
-    unsigned long acknowledge_number;
-    unsigned short flags;
-    unsigned short window_size;
-    unsigned short checksum;
-    unsigned short urgent_pointer;
+    uint16_t source_port;
+    uint16_t destination_port;
+    uint32_t sequence_number;
+    uint32_t acknowledge_number;
+    uint16_t flags;
+    uint16_t window_size;
+    uint16_t checksum;
+    uint16_t urgent_pointer;
 } __attribute__ ((packed));
 
 struct TFTPAcknowledgeHeader{
     struct UDPHeader header;
-    unsigned short type;
-    unsigned short index;
+    uint16_t type;
+    uint16_t index;
 } __attribute__ ((packed));
 
 struct DHCPDISCOVERHeader{
     struct UDPHeader udpheader;
-    unsigned char op;
-    unsigned char htype;
-    unsigned char hlen;
-    unsigned char hops;
-    unsigned long xid;
-    unsigned short timing;
-    unsigned short flags;
-    unsigned long address_of_machine;
-    unsigned long dhcp_offered_machine;
-    unsigned long ip_addr_of_dhcp_server;
-    unsigned long ip_addr_of_relay;
-    unsigned char client_mac_addr [16];
-    unsigned char sname [64];
-    unsigned char file [128];
-    unsigned long magic_cookie;
-    unsigned char options[76];
+    uint8_t op;
+    uint8_t htype;
+    uint8_t hlen;
+    uint8_t hops;
+    uint32_t xid;
+    uint16_t timing;
+    uint16_t flags;
+    uint32_t address_of_machine;
+    uint32_t dhcp_offered_machine;
+    uint32_t ip_addr_of_dhcp_server;
+    uint32_t ip_addr_of_relay;
+    uint8_t client_mac_addr [16];
+    uint8_t sname [64];
+    uint8_t file [128];
+    uint32_t magic_cookie;
+    uint8_t options[76];
 } __attribute__ ((packed));
 
 struct DHCPREQUESTHeader{
     struct UDPHeader udpheader;
-    unsigned char op;
-    unsigned char htype;
-    unsigned char hlen;
-    unsigned char hops;
-    unsigned long xid;
-    unsigned short timing;
-    unsigned short flags;
-    unsigned long address_of_machine;
-    unsigned long dhcp_offered_machine;
-    unsigned long ip_addr_of_dhcp_server;
-    unsigned long ip_addr_of_relay;
-    unsigned char client_mac_addr [16];
-    unsigned char sname [64];
-    unsigned char file [128];
-    unsigned long magic_cookie;
-    unsigned char options[25];
+    uint8_t op;
+    uint8_t htype;
+    uint8_t hlen;
+    uint8_t hops;
+    uint32_t xid;
+    uint16_t timing;
+    uint16_t flags;
+    uint32_t address_of_machine;
+    uint32_t dhcp_offered_machine;
+    uint32_t ip_addr_of_dhcp_server;
+    uint32_t ip_addr_of_relay;
+    uint8_t client_mac_addr [16];
+    uint8_t sname [64];
+    uint8_t file [128];
+    uint32_t magic_cookie;
+    uint8_t options[25];
 } __attribute__ ((packed));
 
 struct DNSREQUESTHeader{
     struct UDPHeader udpheader;
-    unsigned short transaction_id;
-    unsigned short flags;
-    unsigned short question_count;
-    unsigned short answer_rr;
-    unsigned short authority_rr;
-    unsigned short aditional_rr;
+    uint16_t transaction_id;
+    uint16_t flags;
+    uint16_t question_count;
+    uint16_t answer_rr;
+    uint16_t authority_rr;
+    uint16_t aditional_rr;
 } __attribute__ ((packed));
 
 void ethernet_detect(int bus,int slot,int function,int device,int vendor);
-void ethernet_set_link_status(unsigned long a);
-void register_ethernet_device(void *sendPackage,void *recievePackage,unsigned char mac[SIZE_OF_MAC]);
+void ethernet_set_link_status(uint32_t a);
+void register_ethernet_device(void *sendPackage,void *recievePackage,uint8_t mac[SIZE_OF_MAC]);
 EthernetDevice getDefaultEthernetDevice();
 PackageRecievedDescriptor getEthernetPackage();
 int sendEthernetPackage(PackageRecievedDescriptor desc);
 void initialise_ethernet();
 int ethernet_handle_package(PackageRecievedDescriptor desc);
-unsigned char* getMACFromIp(unsigned char* ip);
-unsigned char* getOurRouterIp();
-void create_tcp_session(unsigned long from, unsigned long to, unsigned short from_port, unsigned short to_port, unsigned long func);
-unsigned char* getIPFromName(char* name);
-void fillUdpHeader(struct UDPHeader *udpheader, unsigned char *destmac, unsigned short size,unsigned long from, unsigned long to,unsigned short source_port, unsigned short destination_port);
-void fillTcpHeader(struct TCPHeader *tcpheader,unsigned char *destmac,unsigned short size,unsigned long from,unsigned long to,unsigned short from_port,unsigned short to_port,unsigned long sequence_number,unsigned long acknowledge_number,unsigned char header_length,unsigned short flags,unsigned short window);
-unsigned long getOurIpAsLong();
+uint8_t* getMACFromIp(uint8_t* ip);
+uint8_t* getOurRouterIp();
+void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, uint32_t func);
+uint8_t* getIPFromName(char* name);
+void fillUdpHeader(struct UDPHeader *udpheader, uint8_t *destmac, uint16_t size,uint32_t from, uint32_t to,uint16_t source_port, uint16_t destination_port);
+void fillTcpHeader(struct TCPHeader *tcpheader,uint8_t *destmac,uint16_t size,uint32_t from,uint32_t to,uint16_t from_port,uint16_t to_port,uint32_t sequence_number,uint32_t acknowledge_number,uint8_t header_length,uint16_t flags,uint16_t window);
+uint32_t getOurIpAsLong();
 PackageRecievedDescriptor getEthernetPackage();
-unsigned short switch_endian16(unsigned short nb);
-unsigned long switch_endian32(unsigned long num);
+uint16_t switch_endian16(uint16_t nb);
+uint32_t switch_endian32(uint32_t num);
