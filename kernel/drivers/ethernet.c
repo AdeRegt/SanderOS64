@@ -308,9 +308,12 @@ uint8_t* getIpAddressFromDHCPServer(){
         }
         struct EthernetHeader *eh = (struct EthernetHeader*) prd.buffer;
         if(eh->type==ETHERNET_TYPE_IP4){
-            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) prd.buffer;
-            if(hd5->options[2]==2&&hd5->xid==dhcpheader->xid&&hd5->op==2){
-                break;
+            struct IPv4Header *ip = (struct IPv4Header*) eh;
+            if(ip->protocol==IPV4_TYPE_UDP){
+                struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
+                if(switch_endian16(hd5->udpheader.destination_port)==68){
+                    break;
+                }
             }
         }
     }
@@ -381,13 +384,19 @@ uint8_t* getIpAddressFromDHCPServer(){
     PackageRecievedDescriptor p3d;
     while(1){
         p3d = getEthernetPackage(); 
+        if(p3d.buffer==0){
+            return 0;
+        }
         struct EthernetHeader *eh = (struct EthernetHeader*) p3d.buffer;
         if(eh->type==ETHERNET_TYPE_IP4){
-            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) p3d.buffer;
-            if(hd5->options[2]==5&&hd5->xid==dhcp2header->xid&&hd5->op==2){
-                break;
+            struct IPv4Header *ip = (struct IPv4Header*) eh;
+            if(ip->protocol==IPV4_TYPE_UDP){
+                struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
+                if(switch_endian16(hd5->udpheader.destination_port)==68&&hd5->op==2&&hd5->xid==dhcp2header->xid){
+                    break;
+                }
             }
-        } 
+        }
     }
     k_printf("[ETH] Got Approval\n");
 
@@ -615,6 +624,8 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 sendEthernetPackage(sec);
                 return 1;
             }
+        }else{
+            k_printf("eth: unknown ipv4 protocol: %d \n",ip->protocol);
         }
     }
     return 0;

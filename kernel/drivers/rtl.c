@@ -46,7 +46,7 @@ uint32_t package_send_ack = 0;
 
 
 __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
-	k_printf("[RTL81] Interrupt detected\n");
+	// k_printf("[RTL81] Interrupt detected\n");
 	unsigned short status = inportw(bar1 + 0x3E);
 	if(status&0x20){
 		k_printf("[RTL81] Link change detected!\n");
@@ -54,7 +54,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 		status |= 0x20;
 	}
 	if(status&0x01){
-		k_printf("[RTL81] Package recieved!\n");
+		// k_printf("[RTL81] Package recieved!\n");
 		PackageRecievedDescriptor prd;
 		for(int z = 0 ; z < 100 ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
