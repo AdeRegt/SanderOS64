@@ -185,7 +185,7 @@ void rtl_driver_start(int bus,int slot,int function){
 	void *packet_buffer_address = requestPage();
 	k_printf("[RTL81] Setup RX descriptor\n");
 	for(unsigned long i = 0; i < num_of_rx_descriptors; i++){
-		unsigned long rx_buffer_len = 100;
+		unsigned long rx_buffer_len = 512;
         packet_buffer_address += 0x1000;
 		if(i == (num_of_rx_descriptors - 1)){
 			Rx_Descriptors[i].command = (OWN | EOR | (rx_buffer_len & 0x3FFF));

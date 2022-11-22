@@ -22,6 +22,7 @@ void initialise_tty(){
     k_printf("dir                - Print contents of the working directory\n");
     k_printf("cd        [path]   - Change working directory\n");
     k_printf("\n");
+    exec("A:PROGRAMS/CHAT.BIN",0);for(;;);
     while(1){
         k_printf("%s > ",wd);
         uint8_t *tw = scanLine(50);

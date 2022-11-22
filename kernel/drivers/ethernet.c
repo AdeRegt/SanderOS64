@@ -81,7 +81,8 @@ uint8_t* getMACFromIp(uint8_t* ip){
     struct ARPHeader* arpie = (struct ARPHeader*)malloc(sizeof(struct ARPHeader));
     uint8_t everyone[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
     uint8_t empty[SIZE_OF_MAC] = {0x00,0x00,0x00,0x00,0x00,0x00};
-    uint8_t prefip[SIZE_OF_IP] = {192,168,5,5};
+    uint8_t prefip[SIZE_OF_IP] = {0,0,0,0};
+    memcpy(prefip,our_ip,4);
     fillEthernetHeader((struct EthernetHeader*) &arpie->ethernetheader,everyone,ETHERNET_TYPE_ARP);
     arpie->hardware_type = 0x0100;
     arpie->protocol_type = 0x0008;
@@ -320,22 +321,20 @@ uint8_t* getIpAddressFromDHCPServer(){
     k_printf("[ETH] Got offer\n");
     struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) prd.buffer;
     uint8_t* offeredip = (uint8_t*) &hd->dhcp_offered_machine;
+    k_printf("[ETH] We are talking to: %s \n",hd->sname);
     int a = 0;
     while(1){
         uint8_t t = hd->options[a++];
+        uint8_t z = hd->options[a++];
         if(t==0xFF||t==0x00){
             break;
-        }
-        uint8_t z = hd->options[a++];
-        if( t==0x03){ // router
+        }else if( t==0x03){ // router
             uint8_t* re = (uint8_t*)&hd->options[a];
             fillIP((uint8_t*)&router_ip,re);
-        }
-        if (t==0x06 ){ // dns
+        }else if (t==0x06 ){ // dns
             uint8_t* re = (uint8_t*)&hd->options[a];
             fillIP((uint8_t*)&dns_ip,re);
-        }
-        if (t==54 ){ // dhcp
+        }else if (t==54 ){ // dhcp
             uint8_t* re = (uint8_t*)&hd->options[a];
             fillIP((uint8_t*)&dhcp_ip,re);
         }
@@ -473,15 +472,22 @@ void setTcpHandler(uint16_t port,uint32_t func){
     ethjmplist[port] = func;
 }
 
-void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, uint32_t func){
+void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, upointer_t func){
     uint32_t sizetype = sizeof(struct TCPHeader);
     struct TCPHeader* tcp1 = (struct TCPHeader*) malloc(sizetype);
     uint8_t* destmac;
     uint8_t* t4 = (uint8_t*)&to;
+    uint8_t bckp_from[8];
+    memcpy(bckp_from,our_ip,4);
+    if(from==0){
+        from = (uint32_t)((uint32_t*)bckp_from)[0];
+    }
 
     if(t4[0]==192){
+        k_printf("intern zoeken.....\n");
         destmac = getMACFromIp(t4);
     }else{
+        k_printf("extern zoeken.....%d \n",t4[0]);
         destmac = getMACFromIp((uint8_t*)&router_ip);
     }
     uint16_t size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
@@ -530,7 +536,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         struct IPv4Header* ip = (struct IPv4Header*) eh;
         if(ip->protocol==IPV4_TYPE_UDP){
             struct UDPHeader* udp = (struct UDPHeader*) eh;
-            k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
+            // k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
             if(udp->destination_port==switch_endian16(50618)){
                 // TFTP, automatic ACK
                 struct TFTPAcknowledgeHeader* tftp_old = (struct TFTPAcknowledgeHeader*)eh;
@@ -552,10 +558,10 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             uint16_t fx = switch_endian16(tcp->flags);
-            k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
+            // k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
             if(((switch_endian16(tcp->flags) & TCP_PUS)||(switch_endian16(tcp->flags) & TCP_SYN)||(switch_endian16(tcp->flags) & TCP_FIN)) && (switch_endian16(tcp->flags) & TCP_ACK)){
                 // TCP auto accept ACK SYN
-                k_printf("[ETH] TCP package handled\n");
+                // k_printf("[ETH] TCP package handled\n");
                 uint32_t from = tcp->header.dest_addr; 
                 uint32_t to = tcp->header.source_addr; 
                 uint16_t from_port = switch_endian16(tcp->destination_port); 
@@ -584,17 +590,17 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                     upointer_t addr = ((upointer_t)desc.buffer) + sizeof(struct TCPHeader);
                     uint32_t count = desc.buffersize-sizeof(struct TCPHeader);
                     upointer_t func = ethjmplist[switch_endian16(tcp->destination_port)];
-                    k_printf("[ETH] TCP message reieved: size=%x string=%s \n",count,(uint8_t*)addr);
+                    // k_printf("[ETH] TCP message reieved: size=%x string=%s \n",count,(uint8_t*)addr);
                     if(func){
-                        k_printf("[ETH] function handler is about to get called\n");
+                        // k_printf("[ETH] function handler is about to get called\n");
                         int (*sendPackage)(uint32_t a,uint32_t b) = (void*)func;
                         sendPackage(addr,count);
                     }else{
-                        k_printf("[ETH] No function handler for this tcpservice!\n");
+                        // k_printf("[ETH] No function handler for this tcpservice!\n");
                     }
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
-                    k_printf("[ETH] Stream is finished!\n");
+                    // k_printf("[ETH] Stream is finished!\n");
                 }
             }
             return 1;
@@ -625,7 +631,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 return 1;
             }
         }else{
-            k_printf("eth: unknown ipv4 protocol: %d \n",ip->protocol);
+            // k_printf("eth: unknown ipv4 protocol: %d \n",ip->protocol);
         }
     }
     return 0;
@@ -644,6 +650,7 @@ void exsend(upointer_t addr,uint32_t count){
 }
 
 void initialise_ethernet(){
+    clear_screen(0xFFFFFFFF);
     k_printf("[ETH] Ethernet module reached!\n");
     EthernetDevice ed = getDefaultEthernetDevice();
     if(ed.is_enabled){

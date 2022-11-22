@@ -167,7 +167,7 @@ void initialise_ethernet();
 int ethernet_handle_package(PackageRecievedDescriptor desc);
 uint8_t* getMACFromIp(uint8_t* ip);
 uint8_t* getOurRouterIp();
-void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, uint32_t func);
+void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, upointer_t func);
 uint8_t* getIPFromName(char* name);
 void fillUdpHeader(struct UDPHeader *udpheader, uint8_t *destmac, uint16_t size,uint32_t from, uint32_t to,uint16_t source_port, uint16_t destination_port);
 void fillTcpHeader(struct TCPHeader *tcpheader,uint8_t *destmac,uint16_t size,uint32_t from,uint32_t to,uint16_t from_port,uint16_t to_port,uint32_t sequence_number,uint32_t acknowledge_number,uint8_t header_length,uint16_t flags,uint16_t window);

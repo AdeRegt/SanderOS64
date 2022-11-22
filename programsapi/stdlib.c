@@ -254,6 +254,13 @@ unsigned char wait_for_character(){
     return res[0];
 }
 
+void *setup_tcp_connection(void *tcpinfo){
+    int mode = 405;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (tcpinfo));
+    return res;
+}
+
 void __stack_chk_fail(){
     for(;;);
 }
