@@ -558,8 +558,8 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             uint16_t fx = switch_endian16(tcp->flags);
-            // k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
-            if(((switch_endian16(tcp->flags) & TCP_PUS)||(switch_endian16(tcp->flags) & TCP_SYN)||(switch_endian16(tcp->flags) & TCP_FIN)) && (switch_endian16(tcp->flags) & TCP_ACK)){
+            k_printf("[ETH] TCP package recieved for port %d [flags:%x] %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx,fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
+            if(((fx & TCP_PUS)||(fx & TCP_SYN)||(fx & TCP_FIN)) && (fx & TCP_ACK)){
                 // TCP auto accept ACK SYN
                 // k_printf("[ETH] TCP package handled\n");
                 uint32_t from = tcp->header.dest_addr; 
@@ -600,7 +600,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                     }
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
-                    // k_printf("[ETH] Stream is finished!\n");
+                    k_printf("[ETH] Stream is finished!\n");
                 }
             }
             return 1;
@@ -631,7 +631,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 return 1;
             }
         }else{
-            // k_printf("eth: unknown ipv4 protocol: %d \n",ip->protocol);
+            k_printf("eth: unknown ipv4 protocol: %d \n",ip->protocol);
         }
     }
     return 0;
@@ -650,7 +650,6 @@ void exsend(upointer_t addr,uint32_t count){
 }
 
 void initialise_ethernet(){
-    clear_screen(0xFFFFFFFF);
     k_printf("[ETH] Ethernet module reached!\n");
     EthernetDevice ed = getDefaultEthernetDevice();
     if(ed.is_enabled){

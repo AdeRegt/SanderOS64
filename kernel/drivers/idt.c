@@ -234,7 +234,7 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==401){
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
-    k_printf("EOI");
+            k_printf("EOI");
             ((uint32_t*)ix->rdi)[0] = (uint32_t)((upointer_t)us);
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
@@ -251,9 +251,9 @@ void isr2handler(stack_registers *ix){
         u[0] = 0;
         u[0] = getch(1);
     }else if(ix->rax==405){
-        k_printf("isr2: setupTCP\n");
-        uint8_t dinges[SIZE_OF_IP] = {192,168,2,3};   
-        create_tcp_session(0,((uint32_t)((uint32_t*)dinges)[0]),6667,6667,0);
+        INetRequest *inet = (INetRequest*) ix->rbx;
+        k_printf("isr2: setupTCP: %d.%d.%d.%d func:%x port:%d \n",inet->address[0],inet->address[1],inet->address[2],inet->address[3],inet->function,inet->port);
+        create_tcp_session(0,((uint32_t)((uint32_t*)inet->address)[0]),inet->port,inet->port,(upointer_t)inet->function);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

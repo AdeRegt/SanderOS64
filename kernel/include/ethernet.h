@@ -157,6 +157,12 @@ struct DNSREQUESTHeader{
     uint16_t aditional_rr;
 } __attribute__ ((packed));
 
+typedef struct {
+    unsigned char address[4];
+    unsigned short port;
+    void *function;
+}__attribute__((packed)) INetRequest;
+
 void ethernet_detect(int bus,int slot,int function,int device,int vendor);
 void ethernet_set_link_status(uint32_t a);
 void register_ethernet_device(void *sendPackage,void *recievePackage,uint8_t mac[SIZE_OF_MAC]);

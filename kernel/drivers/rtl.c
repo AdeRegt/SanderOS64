@@ -76,7 +76,8 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 	
 	status = inportw(bar1 + 0x3E);
 	if(status!=0x00){
-		k_printf("[RTL81] Unresolved interrupt: %x \n",status);
+		// k_printf("[RTL81] Unresolved interrupt: %x (clearing it anyway)\n",status);
+		outportw(bar1 + 0x3E,status);
 	}
 	
 	outportb(0xA0,0x20);
@@ -91,9 +92,6 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 	volatile struct Descriptor *desz;
 	oa:
 	desz = ((volatile struct Descriptor*)(Tx_Descriptors+(sizeof(struct Descriptor)*tx_pointer)));
-	if(desz->command!=0x80000064){ // a check if we somehow lost the count
-		k_printf("[RTL81] Unexpected default value: %x \n",desz->command);
-	}
 	desz->buffer = ms3;
 	desz->vlan = ms2;
 	desz->command = ms1;
