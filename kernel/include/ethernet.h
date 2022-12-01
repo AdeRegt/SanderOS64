@@ -163,6 +163,15 @@ typedef struct {
     void *function;
 }__attribute__((packed)) INetRequest;
 
+typedef struct {
+    uint8_t *destmac;
+    uint32_t from; 
+    uint32_t to; 
+    uint16_t port; 
+    uint32_t sequence_number; 
+    uint32_t acknowledge_number;
+}__attribute__((packed)) TCPMemory;
+
 void ethernet_detect(int bus,int slot,int function,int device,int vendor);
 void ethernet_set_link_status(uint32_t a);
 void register_ethernet_device(void *sendPackage,void *recievePackage,uint8_t mac[SIZE_OF_MAC]);
@@ -174,6 +183,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc);
 uint8_t* getMACFromIp(uint8_t* ip);
 uint8_t* getOurRouterIp();
 void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, upointer_t func);
+void send_tcp_package(uint16_t port,upointer_t data,uint16_t length);
 uint8_t* getIPFromName(char* name);
 void fillUdpHeader(struct UDPHeader *udpheader, uint8_t *destmac, uint16_t size,uint32_t from, uint32_t to,uint16_t source_port, uint16_t destination_port);
 void fillTcpHeader(struct TCPHeader *tcpheader,uint8_t *destmac,uint16_t size,uint32_t from,uint32_t to,uint16_t from_port,uint16_t to_port,uint32_t sequence_number,uint32_t acknowledge_number,uint8_t header_length,uint16_t flags,uint16_t window);

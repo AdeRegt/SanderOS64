@@ -254,6 +254,11 @@ void isr2handler(stack_registers *ix){
         INetRequest *inet = (INetRequest*) ix->rbx;
         k_printf("isr2: setupTCP: %d.%d.%d.%d func:%x port:%d \n",inet->address[0],inet->address[1],inet->address[2],inet->address[3],inet->function,inet->port);
         create_tcp_session(0,((uint32_t)((uint32_t*)inet->address)[0]),inet->port,inet->port,(upointer_t)inet->function);
+    }else if(ix->rax==406){
+        uint16_t port = ix->rdx;
+        upointer_t data = ix->rbx;
+        uint16_t length = ix->rcx;
+        send_tcp_package(port,data,length);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

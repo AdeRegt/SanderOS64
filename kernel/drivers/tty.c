@@ -57,6 +57,9 @@ void initialise_tty(){
             }
             char* pd2 = 0;
             for(int z = 0 ; z < strlen(pd) ; z++){
+                if(pd[z]>='a'&&pd[z]<='z'){
+                    pd[z] = pd[z] - 32;
+                }
                 if(pd[z]==' '){
                     pd2 = (char*)(pd+z+1);
                     pd[z] = 0;

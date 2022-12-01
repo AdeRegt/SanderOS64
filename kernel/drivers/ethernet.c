@@ -472,6 +472,9 @@ void setTcpHandler(uint16_t port,uint32_t func){
     ethjmplist[port] = func;
 }
 
+TCPMemory tcpmemory[20];
+int tcpmemmap;
+
 void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, upointer_t func){
     uint32_t sizetype = sizeof(struct TCPHeader);
     struct TCPHeader* tcp1 = (struct TCPHeader*) malloc(sizetype);
@@ -493,12 +496,48 @@ void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t
     uint16_t size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
     fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1,0,5,TCP_SYN,0xffd7);
 
+    tcpmemory[tcpmemmap].destmac = destmac;
+    tcpmemory[tcpmemmap].from = from;
+    tcpmemory[tcpmemmap].to = to;
+    tcpmemory[tcpmemmap].port = from_port;
+    tcpmemory[tcpmemmap].sequence_number = 1;
+    tcpmemory[tcpmemmap].acknowledge_number = 0;
+    tcpmemmap++;
+
     setTcpHandler(to_port,func);
 
     PackageRecievedDescriptor sec;
     sec.buffersize = sizetype;
     sec.buffer = tcp1;
     sendEthernetPackage(sec);
+}
+
+void send_tcp_package(uint16_t port,upointer_t data,uint16_t length){
+    int i = 0 ;
+    for(int z = 0 ; z < tcpmemmap ; z++){
+        if(tcpmemory[z].port==port){
+            i = z;
+        }
+    }
+    uint32_t sizetype = sizeof(struct TCPHeader) + length;
+    struct TCPHeader* tcp1 = (struct TCPHeader*) malloc(sizetype);
+    uint8_t *early = (uint8_t*) (tcp1 + sizeof(struct TCPHeader) );
+    uint8_t *source = (uint8_t*) data;
+    int d = 0;
+    for(int z = sizeof(struct TCPHeader) ; z < sizetype ; z++){
+        ((uint8_t*)tcp1)[z]=source[d++];
+    }
+    
+    uint16_t size = (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader))+length;
+    fillTcpHeader(tcp1,tcpmemory[i].destmac,size,tcpmemory[i].from,tcpmemory[i].to,port,port,tcpmemory[i].sequence_number,tcpmemory[i].acknowledge_number,5,TCP_PUS | TCP_ACK,0xffd7);
+
+   
+    PackageRecievedDescriptor sec;
+    sec.buffersize = sizetype;
+    sec.buffer = tcp1;
+    sendEthernetPackage(sec);
+
+    k_printf("tcp: port:%d data:%s length:%d \n",port,data,length);
 }
 
 int ethernet_handle_package(PackageRecievedDescriptor desc){
@@ -558,8 +597,8 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             uint16_t fx = switch_endian16(tcp->flags);
-            k_printf("[ETH] TCP package recieved for port %d [flags:%x] %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx,fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
-            if(((fx & TCP_PUS)||(fx & TCP_SYN)||(fx & TCP_FIN)) && (fx & TCP_ACK)){
+            k_printf("[ETH] TCP package recieved for port %d [flags:%x] %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx,fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"",fx&TCP_RES?"RES":"");
+            if(((fx & TCP_PUS)||(fx & TCP_SYN)||(fx & TCP_FIN)||(fx & TCP_RES)) && (fx & TCP_ACK)){
                 // TCP auto accept ACK SYN
                 // k_printf("[ETH] TCP package handled\n");
                 uint32_t from = tcp->header.dest_addr; 
@@ -572,14 +611,25 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 uint16_t size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
                 uint32_t sid = switch_endian32(tcp->sequence_number);
                 if(switch_endian16(tcp->flags) & TCP_PUS){
-                    uint32_t tr = desc.buffersize - sizeof(struct TCPHeader);
+                    uint32_t tr = (desc.buffersize - ((uint32_t)sizeof(struct TCPHeader)))-4;
                     sid += tr;
                 }else if(switch_endian16(tcp->flags) & TCP_SYN){
                     sid++;
                 }else if(switch_endian16(tcp->flags) & TCP_FIN){
                     sid++;
+                }else if(switch_endian16(tcp->flags) & TCP_RES){
+                    sid++;
                 }
                 fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,switch_endian32(tcp->acknowledge_number),sid,5,TCP_ACK,512);
+
+                int i = 0 ;
+                for(int z = 0 ; z < tcpmemmap ; z++){
+                    if(tcpmemory[z].port==from_port){
+                        i = z;
+                    }
+                }
+                tcpmemory[i].sequence_number = sid;
+                tcpmemory[i].acknowledge_number = switch_endian32(tcp->acknowledge_number);
 
                 PackageRecievedDescriptor sec;
                 sec.buffersize = sizetype;
