@@ -502,6 +502,7 @@ void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t
     tcpmemory[tcpmemmap].port = from_port;
     tcpmemory[tcpmemmap].sequence_number = 1;
     tcpmemory[tcpmemmap].acknowledge_number = 0;
+    tcpmemory[tcpmemmap].sendcount = 0;
     tcpmemmap++;
 
     setTcpHandler(to_port,func);
@@ -520,7 +521,8 @@ void send_tcp_package(uint16_t port,upointer_t data,uint16_t length){
         }
     }
     uint32_t sizetype = sizeof(struct TCPHeader) + length;
-    struct TCPHeader* tcp1 = (struct TCPHeader*) malloc(sizetype);
+    struct TCPHeader* tcp1 = (struct TCPHeader*) malloc(sizetype*2);
+    memset(tcp1,0,sizetype*2);
     uint8_t *early = (uint8_t*) (tcp1 + sizeof(struct TCPHeader) );
     uint8_t *source = (uint8_t*) data;
     int d = 0;
@@ -529,11 +531,10 @@ void send_tcp_package(uint16_t port,upointer_t data,uint16_t length){
     }
     
     uint16_t size = (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader))+length;
-    fillTcpHeader(tcp1,tcpmemory[i].destmac,size,tcpmemory[i].from,tcpmemory[i].to,port,port,tcpmemory[i].sequence_number,tcpmemory[i].acknowledge_number,5,TCP_PUS | TCP_ACK,0xffd7);
+    fillTcpHeader(tcp1,tcpmemory[i].destmac,size+1,tcpmemory[i].from,tcpmemory[i].to,port,port,tcpmemory[i].acknowledge_number,tcpmemory[i].sequence_number,5,TCP_PUS | TCP_ACK,0xffd7);
 
-   
     PackageRecievedDescriptor sec;
-    sec.buffersize = sizetype;
+    sec.buffersize = sizetype+1;
     sec.buffer = tcp1;
     sendEthernetPackage(sec);
 
@@ -597,7 +598,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             uint16_t fx = switch_endian16(tcp->flags);
-            k_printf("[ETH] TCP package recieved for port %d [flags:%x] %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx,fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"",fx&TCP_RES?"RES":"");
+            k_printf("[ETH] TCP package recieved for port %d [flags:%x] %s %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx,fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"",fx&TCP_RES?"RES":"");
             if(((fx & TCP_PUS)||(fx & TCP_SYN)||(fx & TCP_FIN)||(fx & TCP_RES)) && (fx & TCP_ACK)){
                 // TCP auto accept ACK SYN
                 // k_printf("[ETH] TCP package handled\n");
@@ -651,6 +652,9 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
                     k_printf("[ETH] Stream is finished!\n");
+                }
+                if(switch_endian16(tcp->flags) & TCP_RES){
+                    k_printf("[ETH] Stream is rejected!\n");
                 }
             }
             return 1;

@@ -170,6 +170,7 @@ typedef struct {
     uint16_t port; 
     uint32_t sequence_number; 
     uint32_t acknowledge_number;
+    uint32_t sendcount;
 }__attribute__((packed)) TCPMemory;
 
 void ethernet_detect(int bus,int slot,int function,int device,int vendor);

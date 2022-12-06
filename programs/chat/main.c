@@ -34,7 +34,7 @@ int main(int argc, char const* argv)
 
     while(isworking);
 
-    char* msg = "Hello from SanderOS!";
+    char* msg = "Hello from SanderOS!\n";
     send_tcp_message(PORT,msg,strlen(msg));
 
     return 0xCD;
