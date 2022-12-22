@@ -10,11 +10,11 @@ cd drivers
 cd ..
 echo "The kernel"
 cd kernel
-./build_kernel || exit
+make || exit
 cd ..
 echo "The programsapi"
 cd programsapi 
-./build_programsapi || exit
+make || exit
 cd ..
 echo "The programs"
 cd programs 
