@@ -17,6 +17,10 @@ BootInfo *getBootInfo(){
     return bi;
 }
 
+void __stack_chk_fail(){
+    for(;;);
+}
+
 void kernel_main(BootInfo *gi){
     bi = gi;
     initialise_gdt_driver();
