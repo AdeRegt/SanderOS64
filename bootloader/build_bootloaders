@@ -1,8 +1,0 @@
-echo "UEFI"
-cd UEFI 
-make all || exit
-cd ..
-echo "GRUB32"
-cd GRUB32 
-./build || exit
-cd ..
