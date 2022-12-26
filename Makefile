@@ -1,11 +1,8 @@
-all: kernel drivers programsapi programs
+all: programs
 	$(MAKE) -C bootloader/UEFI
 	$(MAKE) -C bootloader/GRUB32
+	$(MAKE) -C drivers
+	$(MAKE) -C kernel
+	$(MAKE) -C programsapi
 
-drivers: 
-
-kernel:
-
-programs: 
-
-programsapi:
+programs:
