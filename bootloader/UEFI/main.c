@@ -77,7 +77,7 @@ Framebuffer* InitializeGOP(){
 		Print(L"GOP located\n\r");
 	}
 
-	framebuffer.BaseAddress = (void*)gop->Mode->FrameBufferBase;
+	framebuffer.BaseAddress = (void*)(upointer_t)gop->Mode->FrameBufferBase;
 	framebuffer.BufferSize = gop->Mode->FrameBufferSize;
 	framebuffer.Width = gop->Mode->Info->HorizontalResolution;
 	framebuffer.Height = gop->Mode->Info->VerticalResolution;
@@ -157,7 +157,7 @@ void* FindTable(SDTHeader* sdtHeader, char* signature){
     int entries = (sdtHeader->Length - sizeof(SDTHeader)) / 8;
 
 	for (int t = 0; t < entries; t++){
-		SDTHeader* newSDTHeader = (SDTHeader*)*(uint64_t*)((uint64_t)sdtHeader + sizeof(SDTHeader) + (t * 8));
+		SDTHeader* newSDTHeader = (SDTHeader*)*(upointer_t*)((upointer_t)sdtHeader + sizeof(SDTHeader) + (t * 8));
 		for (int i = 0; i < 4; i++){
 			if (newSDTHeader->Signature[i] != signature[i])
 			{
@@ -231,7 +231,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 				Kernel->SetPosition(Kernel, phdr->p_offset);
 				UINTN size = phdr->p_filesz;
-				Kernel->Read(Kernel, &size, (void*)segment);
+				Kernel->Read(Kernel, &size, (void*)(upointer_t)segment);
 				break;
 			}
 		}
@@ -264,7 +264,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	}
 
-	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) header.e_entry);
+	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) (upointer_t)header.e_entry);
 
 	// EFI_CONFIGURATION_TABLE* configTable = SystemTable->ConfigurationTable;
 	void* rsdp = NULL; 
