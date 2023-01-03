@@ -23,6 +23,7 @@
         "stdio.h": "c",
         "rtl.h": "c",
         "stdint.h": "c",
-        "outint.h": "c"
+        "outint.h": "c",
+        "bootboot.h": "c"
     }
 }

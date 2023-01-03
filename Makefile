@@ -1,4 +1,5 @@
 all:
+	$(MAKE) -C bootloader/Custom
 	$(MAKE) -C bootloader/UEFI ARCH=x86_64 BIT=64
 	$(MAKE) -C bootloader/GRUB32
 	$(MAKE) -C drivers

@@ -21,6 +21,10 @@ void __stack_chk_fail(){
     for(;;);
 }
 
+void __stack_chk_fail_local(){
+    for(;;);
+}
+
 void kernel_main(BootInfo *gi){
     bi = gi;
     initialise_gdt_driver();
