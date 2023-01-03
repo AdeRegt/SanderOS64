@@ -12,3 +12,6 @@ update_image:
 	guestunmount ./vh
 	sleep 5
 	rm ./vh
+
+update_iso:
+	grub-mkrescue -o cdrom.iso bin

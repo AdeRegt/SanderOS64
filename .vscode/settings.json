@@ -24,6 +24,8 @@
         "rtl.h": "c",
         "stdint.h": "c",
         "outint.h": "c",
-        "bootboot.h": "c"
+        "bootboot.h": "c",
+        "compare": "c",
+        "multiboot.h": "c"
     }
 }

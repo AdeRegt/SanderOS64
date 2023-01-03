@@ -6,7 +6,7 @@
         {
             "label": "Build kernel",
             "type": "shell",
-            "command": "./build",
+            "command": "make",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
