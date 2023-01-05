@@ -85,7 +85,7 @@ void setInterrupt(int offset,void *fun){
         int_PageFault->type_attr = IDT_TA_InterruptGate;
         int_PageFault->selector = 0x08;
     #else 
-        idt_set_gate(offset+idtoffsetcode, (uint32_t)fun, 0x08, IDT_TA_InterruptGate);
+        idt_set_gate(32 + offset, (uint32_t)fun, 0x08, 0x8E);
     #endif 
 }
 
@@ -96,7 +96,7 @@ void setRawInterrupt(int offset,void *fun){
         int_PageFault->type_attr = IDT_TA_TrapGate;
         int_PageFault->selector = 0x08;
     #else
-        idt_set_gate(offset, (uint32_t)fun, 0x08, IDT_TA_TrapGate);
+        idt_set_gate(offset, (uint32_t)fun, 0x08, 0x8E);
     #endif
 }
 
@@ -262,18 +262,24 @@ void isr2handler(stack_registers *ix){
 
 extern void gohere();
 
+#ifndef __x86_64
+    extern void idt_load();
+#endif
+
 void initialise_idt_driver(){
     k_printf("get some info from the old idt...\n");
     #ifdef __x86_64
     asm volatile ("sidt %0" : "=m"(idtr));
     #else
-    idtr.Limit = 0x7FF;
+    idtr.Limit = (sizeof (IDTDescEntry) * 256) - 1;
     idtr.Offset = (upointer_t) requestPage();
     memset((void*)idtr.Offset,0,idtr.Limit);
     #endif 
 
+    #ifdef __x86_64
     uint8_t oldpic1 = inportb(PIC1_DATA);
     uint8_t oldpic2 = inportb(PIC2_DATA);
+    #endif 
     idtoffsetcode = 0x20;
     outportb(0x20, 0x11);
     outportb(0xA0, 0x11);
@@ -285,8 +291,10 @@ void initialise_idt_driver(){
     outportb(0xA1, 0x01);
     outportb(0x21, 0x0);
     outportb(0xA1, 0x0);
+    #ifdef __x86_64
     outportb(PIC1_DATA,oldpic1);
     outportb(PIC2_DATA,oldpic2);
+    #endif 
     
     k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
@@ -304,7 +312,7 @@ void initialise_idt_driver(){
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
     #else 
-    asm volatile("lidt %0" :: "m"(idtr));
+    idt_load();
     for(uint16_t i = idtoffsetcode ; i < idtr.Limit ; i++){
         setRawInterrupt(i,gohere);
     }

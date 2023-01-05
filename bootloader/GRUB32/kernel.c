@@ -423,10 +423,10 @@ void kernel_main(multiboot_info_t *grub, uint32_t magic)
     int pointerA = 0;
     for(multiboot_uint32_t i = 0 ; i < 100; i++){
         multiboot_memory_map_t thisone = (multiboot_memory_map_t)memmap[i];
-        if( thisone.type==MULTIBOOT_MEMORY_AVAILABLE && ((uint32_t)thisone.addr!=0) ){
+        if( thisone.type==MULTIBOOT_MEMORY_AVAILABLE && ((uint32_t)thisone.addr_low!=0) ){
             memdesclist[pointerA].Type = 7;
-            memdesclist[pointerA].PhysicalStart = thisone.addr;
-            memdesclist[pointerA].NumberOfPages = thisone.size;
+            memdesclist[pointerA].PhysicalStart = thisone.addr_low;
+            memdesclist[pointerA].NumberOfPages = thisone.size / 4096;
             pointerA++;
             // printf("p%d : addr:%x size:%x \n",i,thisone.addr,thisone.size);
         }
@@ -443,22 +443,22 @@ void kernel_main(multiboot_info_t *grub, uint32_t magic)
 
     bootinfo.memory_info = (uint64_t)((uint32_t)&memoryinfo);
     memoryinfo.mMapDescSize = sizeof(MemoryDescriptor);
-    memoryinfo.mMapSize = 15 * memoryinfo.mMapDescSize;
+    memoryinfo.mMapSize = pointerA * memoryinfo.mMapDescSize;
     memoryinfo.mMap = (uint64_t)((uint32_t)&memdesclist);
 
     bootinfo.graphics_info = (uint64_t)((uint32_t)&graphicsinfo);
-    graphicsinfo.BaseAddress = 0xB8000;
-    graphicsinfo.BufferSize = 3145728;
-    graphicsinfo.Height = 24;
-    graphicsinfo.Width = 160;
-    graphicsinfo.PixelsPerScanLine = 160;
-    graphicsinfo.strategy = 2;
-    // graphicsinfo.BaseAddress = grub->framebuffer_addr;
-    // graphicsinfo.PixelsPerScanLine = grub->framebuffer_width;
-    // graphicsinfo.BufferSize = 0;
-    // graphicsinfo.Height = grub->framebuffer_height;
-    // graphicsinfo.Width = grub->framebuffer_width;
-    // graphicsinfo.strategy = 1;
+    // graphicsinfo.BaseAddress = 0xB8000;
+    // graphicsinfo.BufferSize = 3145728;
+    // graphicsinfo.Height = 24;
+    // graphicsinfo.Width = 160;
+    // graphicsinfo.PixelsPerScanLine = 160;
+    // graphicsinfo.strategy = 2;
+    graphicsinfo.BaseAddress = grub->framebuffer_addr;
+    graphicsinfo.PixelsPerScanLine = grub->framebuffer_width;
+    graphicsinfo.BufferSize = 0;
+    graphicsinfo.Height = grub->framebuffer_height;
+    graphicsinfo.Width = grub->framebuffer_width;
+    graphicsinfo.strategy = 1;
 
     bootinfo.rsdp = 0;
 

@@ -182,5 +182,5 @@ void k_printf(char* format,...){
 void initialise_graphics_driver(){
     clear_screen(0xFFFFFFFF);
     setActiveFont(getDefaultFont());
-    k_printf("Graphics driver initialised!\nBase Address: %x\nHeight: %x \nPixelsPerScanline: %x \nWidth: %x \n",graphics_info->BaseAddress,graphics_info->Height,graphics_info->PixelsPerScanLine,graphics_info->Width);for(;;);
+    k_printf("Graphics driver initialised!\nBase Address: %x\nHeight: %x \nPixelsPerScanline: %x \nWidth: %x \n",graphics_info->BaseAddress,graphics_info->Height,graphics_info->PixelsPerScanLine,graphics_info->Width);
 }

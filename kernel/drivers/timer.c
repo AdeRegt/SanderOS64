@@ -19,10 +19,9 @@ void timerfunc(){
 }
 
 __attribute__((interrupt)) void timer_interrupt(interrupt_frame* frame){
-    timerfunc();
+    counter = 1;
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
-    return;
 }
 
 

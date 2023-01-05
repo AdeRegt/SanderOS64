@@ -97,4 +97,30 @@ _start:
 	jmp .hang
 .end:
 
+; global timer_interrupt
+; extern irq_multitasking
+; timer_interrupt:
+;     pusha
+; 	push ds
+; 	push es
+; 	push fs
+; 	push gs
+; 	mov eax, esp   ; Push us the stack
+; 	push eax
+; 	mov eax, irq_multitasking
+; 	call eax       ; A special call, preserves the 'eip' register
+; 	pop eax
+; 	pop gs
+; 	pop fs
+; 	pop es
+; 	pop ds
+; 	popa
+; 	iret
+
+global idt_load
+extern idtr
+idt_load:
+    lidt [idtr]
+    ret
+
 %include "drivers/multitasking32.asm"
