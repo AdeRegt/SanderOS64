@@ -14,18 +14,6 @@ uint32_t switch_endian32(uint32_t num) {
     ((num<<24)&0xff000000); // byte 0 to byte 3
 }
 
-// void ethernet_detect(int bus,int slot,int function,int device,int vendor){
-//     if((device==0x8168||device==0x8139)&&vendor==0x10ec){ 
-//         // Sander his RTL8169 driver comes here
-//         init_rtl(bus,slot,function);
-//     }else if(device==0x100e||device==0x153A||device==0x10EA||vendor==0x8086){
-//         // Johan his E1000 driver comes here
-//         init_e1000(bus,slot,function);
-//     }else{
-//         printf("[ETH] Unknown ethernet device: device: %x vendor: %x \n",device,vendor);
-//     }
-// }
-
 EthernetDevice defaultEthernetDevice;
 uint8_t our_ip[SIZE_OF_IP];
 uint8_t router_ip[SIZE_OF_IP];

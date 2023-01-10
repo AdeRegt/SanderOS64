@@ -27,6 +27,7 @@ __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
 
 __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	interrupt_eoi();
+	asm volatile("cli\nhlt");
 }
 
 #ifdef __x86_64
@@ -264,6 +265,7 @@ extern void gohere();
 
 #ifndef __x86_64
     extern void idt_load();
+    extern void simpleint();
 #endif
 
 void initialise_idt_driver(){
@@ -299,7 +301,11 @@ void initialise_idt_driver(){
     k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
+        #ifdef __x86_64
         setRawInterrupt(i,NakedInterruptHandler);
+        #else 
+        setRawInterrupt(i,simpleint);
+        #endif 
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
         #ifdef __x86_64
@@ -313,11 +319,6 @@ void initialise_idt_driver(){
     setRawInterrupt(0x81,isr2int);
     #else 
     idt_load();
-    for(uint16_t i = idtoffsetcode ; i < idtr.Limit ; i++){
-        setRawInterrupt(i,gohere);
-    }
     #endif
     // asm volatile("int $0x20");
-    k_printf("sidt: enabeling interrupts...\n");
-	asm volatile("sti");
 }

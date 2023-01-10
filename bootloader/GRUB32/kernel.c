@@ -221,215 +221,39 @@ typedef struct
 
 BootInfo bootinfo;
 
- 
-static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg) 
-{
-	return fg | bg << 4;
-}
- 
-static inline uint16_t vga_entry(unsigned char uc, uint8_t color) 
-{
-	return (uint16_t) uc | (uint16_t) color << 8;
-}
- 
-size_t strlen(const char* str) 
-{
-	size_t len = 0;
-	while (str[len])
-		len++;
-	return len;
-}
- 
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
- 
-size_t terminal_row;
-size_t terminal_column;
-uint8_t terminal_color;
-uint16_t* terminal_buffer;
- 
-void terminal_initialize(void) 
-{
-	terminal_row = 0;
-	terminal_column = 0;
-	terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-	terminal_buffer = (uint16_t*) 0xB8000;
-	for (size_t y = 0; y < VGA_HEIGHT; y++) {
-		for (size_t x = 0; x < VGA_WIDTH; x++) {
-			const size_t index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', terminal_color);
-		}
-	}
-}
- 
-void terminal_setcolor(uint8_t color) 
-{
-	terminal_color = color;
-}
- 
-void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) 
-{
-	const size_t index = y * VGA_WIDTH + x;
-	terminal_buffer[index] = vga_entry(c, color);
-}
- 
-void terminal_putchar(char c) 
-{
-    if(c=='\n'){
-        terminal_row++;
-        terminal_column = 0;
-        return;
-    }
-	terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
-	if (++terminal_column == VGA_WIDTH) {
-		terminal_column = 0;
-		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
-	}
-}
- 
-void terminal_write(const char* data, size_t size) 
-{
-	for (size_t i = 0; i < size; i++)
-		terminal_putchar(data[i]);
-}
- 
-void terminal_writestring(const char* data) 
-{
-	terminal_write(data, strlen(data));
-}
-
-void nolongmodemessager()
-{
-    terminal_writestring("No long mode available\n");
-}
-
-char *convert(unsigned int num, int base) { 
-	static char Representation[]= "0123456789ABCDEF";
-	static char buffer[50]; 
-	char *ptr; 
-
-    for(int i = 0 ; i < 50 ; i++){
-        buffer[i] = 0x00;
-    }
-
-	if(num==0){
-		ptr = &buffer[0];
-		buffer[0] = '0';
-		return ptr;
-	}
-	
-	ptr = &buffer[49]; 
-	*--ptr = '\0'; 
-	*--ptr = '\0'; 
-	*--ptr = '\0'; 
-	
-	do 
-	{ 
-		*--ptr = Representation[num%base]; 
-		num /= base; 
-	}while(num != 0);
-	
-	return(ptr); 
-}
-
-typedef __builtin_va_list va_list;
-
-#define va_start(a,b)  __builtin_va_start(a,b)
-#define va_end(a)      __builtin_va_end(a)
-#define va_arg(a,b)    __builtin_va_arg(a,b)
-#define __va_copy(d,s) __builtin_va_copy((d),(s))
-
-void printf(char* format,...){
-    va_list arg; 
-	va_start(arg, format);
-    int length = 0;
-    while(1){
-        char deze = format[length];
-        if(deze=='\0'){
-            break;
-        }else if(deze=='%'){
-            length++;
-            deze = format[length];
-            if(deze=='c'){
-                char i = va_arg(arg,int);
-                terminal_putchar(i);
-            }else if(deze=='%'){
-                terminal_putchar('%');
-            }else if(deze=='s'){
-                char *s = va_arg(arg,char *);
-                terminal_writestring(s);
-            }else if(deze=='x'){
-                int t = va_arg(arg,unsigned int);
-                terminal_putchar('0');
-                terminal_putchar('x');
-                char *convertednumber = convert(t,16);
-                terminal_writestring(convertednumber);
-            }else if(deze=='d'){
-                int t = va_arg(arg,unsigned int);
-                char *convertednumber = convert(t,10);
-                terminal_writestring(convertednumber);
-            }else if(deze=='o'){
-                int t = va_arg(arg,unsigned int);
-                char *convertednumber = convert(t,8);
-                terminal_writestring(convertednumber);
-            }
-            length++;
-        }else{
-            terminal_putchar(deze);
-            length++;
-        }
-    }
-    va_end(arg);
-}
-
-uint64_t epoint;
+Elf64_Addr epoint;
 
 extern void *_BootEnd;
  
 void kernel_main(multiboot_info_t *grub, uint32_t magic) 
 {
-	/* Initialize terminal interface */
-	terminal_initialize();
- 
-	/* Newline support is left as an exercise. */
-	terminal_writestring("Bootloader\n");
-    if(magic!=0x2BADB002){
-        terminal_writestring("Invalid header\n");
-        return;
-    }
-    if(grub->mods_count!=1){
-        terminal_writestring("mods_count!=1\n");
-        return;
-    }
+
     struct multiboot_mod_list* modlist = (struct multiboot_mod_list*) grub->mods_addr;
     void* dat = (void*) modlist->mod_start;
-    printf("-> %x %c %c \n",((uint8_t*)dat)[0],((uint8_t*)dat)[1],((uint8_t*)dat)[2]);
-    
+
     Elf64_Ehdr* header = (Elf64_Ehdr*) dat;
     epoint = header->e_entry;
 
-    printf("e_shnum: %d e_shentsize: %d \n",header->e_shnum,header->e_shentsize);
     for(Elf64_Half i = 0 ; i < header->e_shnum ; i++){
         Elf64_Shdr* shr = (Elf64_Shdr*) (header->e_shoff + dat + (header->e_shentsize*i));
         if(shr->sh_flagsA&2){
-            printf("%d: flags: %x address: %x offset: %x size: %x \n",i,shr->sh_flagsA,shr->sh_addrA,shr->sh_offsetA,shr->sh_sizeA);
             for(uint32_t z = 0 ; z < shr->sh_sizeA; z++){
                 ((uint8_t*)(shr->sh_addrA))[z] = ((uint8_t*)(shr->sh_offsetA + dat))[z];
             }
         }
     }
-    multiboot_memory_map_t *memmap = (multiboot_memory_map_t*) grub->mmap_addr;
-    int pointerA = 0;
-    for(multiboot_uint32_t i = 0 ; i < 100; i++){
-        multiboot_memory_map_t thisone = (multiboot_memory_map_t)memmap[i];
-        if( thisone.type==MULTIBOOT_MEMORY_AVAILABLE && ((uint32_t)thisone.addr_low!=0) ){
-            memdesclist[pointerA].Type = 7;
-            memdesclist[pointerA].PhysicalStart = thisone.addr_low;
-            memdesclist[pointerA].NumberOfPages = thisone.size / 4096;
-            pointerA++;
-            // printf("p%d : addr:%x size:%x \n",i,thisone.addr,thisone.size);
+    
+    int z = 0;
+    for(int i = 0; i < grub->mmap_length;  i += sizeof(multiboot_memory_map_t)) {
+        multiboot_memory_map_t* mmmt =  (multiboot_memory_map_t*) (grub->mmap_addr + i);
+
+        if(mmmt->type == MULTIBOOT_MEMORY_AVAILABLE) {
+            memdesclist[z].Type = 7;
+            memdesclist[z].PhysicalStart = mmmt->addr_low;
+            memdesclist[z].NumberOfPages = mmmt->size / 4096;
+            z++;
         }
+        
     }
 
     // printf("mmap length: %d mmap addr: %x \n",grub->mmap_length,grub->mmap_addr);for(;;);
@@ -443,7 +267,7 @@ void kernel_main(multiboot_info_t *grub, uint32_t magic)
 
     bootinfo.memory_info = (uint64_t)((uint32_t)&memoryinfo);
     memoryinfo.mMapDescSize = sizeof(MemoryDescriptor);
-    memoryinfo.mMapSize = pointerA * memoryinfo.mMapDescSize;
+    memoryinfo.mMapSize = z * memoryinfo.mMapDescSize;
     memoryinfo.mMap = (uint64_t)((uint32_t)&memdesclist);
 
     bootinfo.graphics_info = (uint64_t)((uint32_t)&graphicsinfo);
@@ -465,5 +289,4 @@ void kernel_main(multiboot_info_t *grub, uint32_t magic)
     bootinfo.font = 0;
 
     // printf("EOL\n");
-
 }

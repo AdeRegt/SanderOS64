@@ -37,7 +37,9 @@ unsigned long getBARaddress(int bus,int slot,int function,int barNO){
 void initialise_drivers_from_pci(){
     // scan for available drivers
     char* filedir = dir("A:SANDEROS/DRIVERS");
-    k_printf("Available drivers: %s \n",filedir);
+    if(filedir){
+        k_printf("Available drivers: %s \n",filedir);
+    }
 	for(int bus = 0 ; bus < 256 ; bus++){
 		for(int slot = 0 ; slot < 32 ; slot++){
 			for(int function = 0 ; function <= 7 ; function++){

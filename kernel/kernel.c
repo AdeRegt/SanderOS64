@@ -50,6 +50,8 @@ void kernel_main(BootInfo *gi){
     #ifdef use_driver
         initialise_drivers_from_pci();
     #endif 
+    k_printf("IDT: Enable ints...\n");
+    asm volatile("sti");
     initialise_tty();
     k_printf("__end of kernel!\n");
     for(;;);

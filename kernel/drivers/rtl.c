@@ -19,6 +19,9 @@ struct Descriptor{
 	uint32_t command;  /* command/status uint32_t */
 	uint32_t vlan;     /* currently unused */
 	void *buffer;
+	#ifndef __x86_64
+	uint32_t empty;
+	#endif
 };
 
 void init_rtl(int bus,int slot,int function);
@@ -97,6 +100,9 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 	desz->buffer = ms3;
 	desz->vlan = ms2;
 	desz->command = ms1;
+	#ifndef __x86_64
+	desz->empty = 0;
+	#endif
 	
 	((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0] = 0;
 	outportb(bar1 + 0x38, 0x40); // ring the doorbell
@@ -155,9 +161,6 @@ void rtl_driver_start(int bus,int slot,int function){
 	k_printf("[RTL81] Set interrupter\n");
 	unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
 	setInterrupt(usbint,irq_rtl8169);
-
-	// enable device
-	// outportb( bar1 + 0x52, 0x0);
 	
 	//
 	// trigger reset
