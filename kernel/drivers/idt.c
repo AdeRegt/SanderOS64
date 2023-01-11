@@ -17,11 +17,6 @@ void interrupt_eoi(){
 	outportb(0x20,0x20);
 }
 
-__attribute__((interrupt)) void PageFault_Handler(interrupt_frame* frame){
-    k_printf("Interrupt: Page fault detected\n");for(;;);
-	interrupt_eoi();
-}
-
 __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
     k_printf("\nInterrupt: error cs:%x flags:%x ip:%x sp:%x ss:%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
 	asm volatile("cli\nhlt");
@@ -34,11 +29,6 @@ __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 
 __attribute__((interrupt)) void DefaultInterruptHandler(interrupt_frame* frame){
 	interrupt_eoi();
-}
-
-void exception_handler() {
-    outportb(0xA0,0x20);
-	outportb(0x20,0x20);
 }
 
 #ifdef __x86_64
@@ -97,7 +87,7 @@ void setInterrupt(int offset,void *fun){
         int_PageFault->type_attr = IDT_TA_InterruptGate;
         int_PageFault->selector = 0x08;
     #else 
-        idt_set_gate(32 + offset, (uint32_t)fun, 0x08, 0x8E);
+        idt_set_gate(32 + (unsigned char)offset, (unsigned long)fun, 0x08, 0x8E);
     #endif 
 }
 
@@ -108,7 +98,7 @@ void setRawInterrupt(int offset,void *fun){
         int_PageFault->type_attr = IDT_TA_TrapGate;
         int_PageFault->selector = 0x08;
     #else
-        idt_set_gate(offset, (uint32_t)fun, 0x08, 0x8E);
+        idt_set_gate((unsigned char)offset, (unsigned long)fun, 0x08, 0x8E);
     #endif
 }
 
@@ -294,7 +284,8 @@ void initialise_idt_driver(){
     idtr.Offset = (uintptr_t)&idt[0];
     idtr.Limit = (uint16_t)sizeof(IDTDescEntry) * IDT_MAX_DESCRIPTORS - 1;
     for(uint8_t i = 0 ; i < IDT_MAX_DESCRIPTORS ; i++){
-        idt_set_gate(i,(unsigned long)isr_stub_table[i],0x08,0x8E);
+        idt_set_gate(i,(unsigned long)DefaultInterruptHandler,0x08,0x8E);
+        // setRawInterrupt(i,(unsigned long)GeneralFault_Handler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
         setRawInterrupt(i,GeneralFault_Handler);
@@ -302,7 +293,7 @@ void initialise_idt_driver(){
     __asm__ volatile ("lidt %0" : : "m"(idtr));
     __asm__ volatile ("sti");
     return;
-    #endif 
+    #else
     // k_printf("get some info from the old idt...\n");
     asm volatile ("sidt %0" : "=m"(idtr));
     
@@ -319,4 +310,5 @@ void initialise_idt_driver(){
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
     asm volatile ("sti");
+    #endif 
 }

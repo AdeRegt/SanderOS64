@@ -44,6 +44,7 @@ typedef struct{
 
 void initialise_idt_driver();
 void setInterrupt(int offset,void *fun);
+void interrupt_eoi();
 
 #define PIC1		0x20		/* IO base address for master PIC */
 #define PIC2		0xA0		/* IO base address for slave PIC */

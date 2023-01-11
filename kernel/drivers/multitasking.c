@@ -133,11 +133,17 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     return cmt - 1;
 }
 
+__attribute__((interrupt)) void legacy_timer_handler(interrupt_frame* frame){
+    timerfunc();
+    interrupt_eoi();
+}
+
 void initialise_multitasking_driver(){
     #ifdef __x86_64
     k_printf("multitasking: enabling multitasking...\n");
     setInterrupt(0,multitaskingint);
     #else 
     k_printf("multitasking: ignoring function...\n");
+    setInterrupt(0,legacy_timer_handler);
     #endif
 }
