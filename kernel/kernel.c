@@ -35,7 +35,6 @@ void kernel_main(BootInfo *gi){
     initialise_paging_driver();
     initialise_comport();
     initialise_idt_driver();
-    initialise_timer_driver();
     initialise_multitasking_driver();
     initialise_pci_driver();
     #ifndef use_driver
@@ -50,8 +49,6 @@ void kernel_main(BootInfo *gi){
     #ifdef use_driver
         initialise_drivers_from_pci();
     #endif 
-    k_printf("IDT: Enable ints...\n");
-    asm volatile("sti");
     initialise_tty();
     k_printf("__end of kernel!\n");
     for(;;);

@@ -6,6 +6,8 @@
 #define IDT_TA_CallGate         0b10001100
 #define IDT_TA_TrapGate         0b10001111
 
+#define IDT_MAX_DESCRIPTORS     251
+
 #ifdef __x86_64
 typedef struct {
     uint16_t offset0; 

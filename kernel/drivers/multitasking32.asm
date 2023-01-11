@@ -58,7 +58,7 @@ multitaskingint:
     mov eax, 0x003FFFF0 
     mov esp, eax
     ; call the functions
-    call multitaskinghandler
+    ; call multitaskinghandler
     ; now restore the segment registers
     mov eax,0
     mov ax, word [_context_ds]
@@ -90,33 +90,24 @@ multitaskingint:
     ; now, restore the context
     iret
 
-global gohere 
-extern interrupt_eoi
-gohere:
+extern exception_handler
+global isr_stub_table
+isr_stub_table:
+%assign i 0 
+%rep    256 
+    dd isr_stub_%+i ; use DQ instead if targeting 64-bit
+%assign i i+1 
+%endrep
+
+%assign i 0 
+%rep    256 
+isr_stub_%+i:
     cli 
-    pusha 
-    call interrupt_eoi
+    pusha
+    ; push dword i
+    call exception_handler
     popa 
-    sti 
-    ret
-    hlt
-
-global simpleint
-simpleint:
-    cli
-    push ax
-    mov al, 0x20
-    out 0xA0, al
-    mov al, 0x20
-    out 0x20, al
-    pop ax
     sti
-    iretd
-
-%macro IODELAY 0 
-
-    pushf
-    popf
-    jmp $+2
-
-%endmacro
+    iret
+%assign i i+1 
+%endrep

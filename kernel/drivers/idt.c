@@ -7,8 +7,10 @@
 #include "../include/paging.h"
 #include "../include/timer.h"
 
-IDTR idtr;
+static IDTR idtr;
 uint8_t idtoffsetcode = 0;
+__attribute__ ((aligned(0x10))) static IDTDescEntry idt[256];
+extern void* isr_stub_table[];
 
 void interrupt_eoi(){
     outportb(0xA0,0x20);
@@ -28,6 +30,15 @@ __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
 __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	interrupt_eoi();
 	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void DefaultInterruptHandler(interrupt_frame* frame){
+	interrupt_eoi();
+}
+
+void exception_handler() {
+    outportb(0xA0,0x20);
+	outportb(0x20,0x20);
 }
 
 #ifdef __x86_64
@@ -261,28 +272,11 @@ void isr2handler(stack_registers *ix){
     interrupt_eoi();
 }
 
-extern void gohere();
-
-#ifndef __x86_64
-    extern void idt_load();
-    extern void simpleint();
-#endif
-
 void initialise_idt_driver(){
-    k_printf("get some info from the old idt...\n");
-    #ifdef __x86_64
-    asm volatile ("sidt %0" : "=m"(idtr));
-    #else
-    idtr.Limit = (sizeof (IDTDescEntry) * 256) - 1;
-    idtr.Offset = (upointer_t) requestPage();
-    memset((void*)idtr.Offset,0,idtr.Limit);
-    #endif 
+    idtoffsetcode = 0x20;
 
-    #ifdef __x86_64
     uint8_t oldpic1 = inportb(PIC1_DATA);
     uint8_t oldpic2 = inportb(PIC2_DATA);
-    #endif 
-    idtoffsetcode = 0x20;
     outportb(0x20, 0x11);
     outportb(0xA0, 0x11);
     outportb(0x21, idtoffsetcode);
@@ -293,32 +287,36 @@ void initialise_idt_driver(){
     outportb(0xA1, 0x01);
     outportb(0x21, 0x0);
     outportb(0xA1, 0x0);
-    #ifdef __x86_64
     outportb(PIC1_DATA,oldpic1);
     outportb(PIC2_DATA,oldpic2);
+
+    #ifndef __x86_64
+    idtr.Offset = (uintptr_t)&idt[0];
+    idtr.Limit = (uint16_t)sizeof(IDTDescEntry) * IDT_MAX_DESCRIPTORS - 1;
+    for(uint8_t i = 0 ; i < IDT_MAX_DESCRIPTORS ; i++){
+        idt_set_gate(i,(unsigned long)isr_stub_table[i],0x08,0x8E);
+    }
+    for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
+        setRawInterrupt(i,GeneralFault_Handler);
+    }
+    __asm__ volatile ("lidt %0" : : "m"(idtr));
+    __asm__ volatile ("sti");
+    return;
     #endif 
+    // k_printf("get some info from the old idt...\n");
+    asm volatile ("sidt %0" : "=m"(idtr));
     
     k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
-        #ifdef __x86_64
         setRawInterrupt(i,NakedInterruptHandler);
-        #else 
-        setRawInterrupt(i,simpleint);
-        #endif 
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
-        #ifdef __x86_64
-            IRQ_clear_mask(i);
-        #endif 
+        IRQ_clear_mask(i);
         setRawInterrupt(i,GeneralFault_Handler);
     }
     // setRawInterrupt(0xCD,PageFault_Handler);
-    #ifdef __x86_64
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
-    #else 
-    idt_load();
-    #endif
-    // asm volatile("int $0x20");
+    asm volatile ("sti");
 }

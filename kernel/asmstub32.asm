@@ -97,10 +97,4 @@ _start:
 	jmp .hang
 .end:
 
-global idt_load
-extern idtr
-idt_load:
-    lidt [idtr]
-    ret
-
 %include "drivers/multitasking32.asm"
