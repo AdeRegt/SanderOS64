@@ -63,6 +63,8 @@ void initialise_drivers_from_pci(){
                         #else
                         rtl_driver_start(bus,slot,function);
                         #endif
+                    }else if( classc==0x02 && sublca==0x00 && (device==0x100e||device==0x153A||device==0x10EA||vendor==0x8086)){
+                        e1000_driver_start(bus,slot,function);
                     }
                 }
             }
