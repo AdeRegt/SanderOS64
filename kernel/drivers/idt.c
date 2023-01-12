@@ -284,6 +284,7 @@ void initialise_idt_driver(){
     idtr.Offset = (uintptr_t)&idt[0];
     idtr.Limit = (uint16_t)sizeof(IDTDescEntry) * IDT_MAX_DESCRIPTORS - 1;
     for(uint8_t i = 0 ; i < IDT_MAX_DESCRIPTORS ; i++){
+        IRQ_clear_mask(i);
         idt_set_gate(i,(unsigned long)DefaultInterruptHandler,0x08,0x8E);
         // setRawInterrupt(i,(unsigned long)GeneralFault_Handler);
     }

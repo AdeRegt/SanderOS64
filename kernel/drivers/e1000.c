@@ -42,7 +42,7 @@ unsigned char e1000_is_eeprom(){
 }
 
 __attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
-	// printf("[E1000] Interrupt detected\n");
+	// k_printf("[E1000] Interrupt detected\n");
     e1000_write_in_space(0xD0,1);
     unsigned long to = e1000_read_in_space(0xC0);
     if(to&0x01){
@@ -85,6 +85,7 @@ int e1000_send_package(PackageRecievedDescriptor desc){
     tx_cur = (tx_cur + 1) % E1000_NUM_TX_DESC;
     e1000_write_in_space(REG_TXDESCTAIL, tx_cur);
     while(!tx_descs[old]->status);
+	k_printf("[E1000] Package send!\n");
     return 1;
 }
 

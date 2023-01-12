@@ -161,7 +161,6 @@ void rtl_driver_start(int bus,int slot,int function){
 	k_printf("[RTL81] Set interrupter\n");
 	unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
 	setInterrupt(usbint,irq_rtl8169);
-	
 	//
 	// trigger reset
 	k_printf("[RTL81] Resetting driver \n");
