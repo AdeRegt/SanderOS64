@@ -10,10 +10,40 @@
 #define EHCI_HCI_VER                0x100
 #define EHCI_PERIODIC_FRAME_SIZE    1024
 
+typedef struct  {
+    uint8_t bRequestType;
+    uint8_t bRequest;
+    uint16_t wValue;
+    uint16_t wIndex;
+    uint16_t wLength;
+} EhciCMD;
+
+typedef struct {
+    volatile uint32_t nextlink;
+    volatile uint32_t altlink;
+    volatile uint32_t token;
+    volatile uint32_t buffer[5];
+    volatile uint32_t extbuffer[5];
+} EhciTD;
+
+typedef struct {
+    volatile uint32_t horizontal_link_pointer;
+    volatile uint32_t characteristics;
+    volatile uint32_t capabilities;
+    volatile uint32_t curlink;
+
+    volatile uint32_t nextlink;
+    volatile uint32_t altlink;
+    volatile uint32_t token;
+    volatile uint32_t buffer[5];
+    volatile uint32_t extbuffer[5];
+}EhciQH;
+
 void *ehci_base_addr;
 uint8_t caplength;
 unsigned long periodic_list[EHCI_PERIODIC_FRAME_SIZE] __attribute__ ((aligned (0x1000)));
 uint8_t ehci_available_ports;
+uint8_t ehci_address_count = 1;
 
 uint32_t ehci_get_usbcmd()
 {
@@ -35,6 +65,7 @@ __attribute__((interrupt)) void irq_ehci(interrupt_frame* frame)
     if(status&0x10)
     {
         k_printf("ehci: host system error!\n");
+        ((uint32_t*)(ehci_base_addr + caplength + 4))[0] |= 0x10;
     }
     if(status&0x8)
     {
@@ -55,6 +86,139 @@ __attribute__((interrupt)) void irq_ehci(interrupt_frame* frame)
     interrupt_eoi();
 }
 
+EhciCMD *ehci_generate_command_structure(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue)
+{
+    EhciCMD *command = (EhciCMD*) requestPage();
+    memset(command,0,sizeof(EhciCMD));
+    command->bRequest = request; // set address
+    command->bRequestType = 0;
+    command->bRequestType |= dir; // dir is out
+    command->bRequestType |= (type<<5); // type is standard
+    command->bRequestType |= recieve; // recieve 
+    command->wIndex = windex; 
+    command->wLength = wlength;
+    command->wValue = wvalue;
+    return command;
+}
+
+EhciTD *ehci_generate_transfer_descriptor(uint32_t nextlink,uint8_t type,uint8_t size,uint8_t toggle,uint32_t data)
+{
+    EhciTD *command = (EhciTD*) requestPage();
+    memset(command,0,sizeof(EhciTD));
+    command->nextlink = nextlink;
+    command->altlink = 1;
+    command->token = 0;
+    command->token |= (1<<7); // actief
+    command->token |= (type<<8); 
+    command->token |= (3<<10); // maxerror
+    command->token |= (size<<16);
+    command->token |= (toggle<<31);
+    command->buffer[0] = data;
+    return command;
+}
+
+EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint8_t t,uint8_t mplen,uint32_t capabilities,uint32_t token)
+{
+    EhciQH *command = (EhciQH*) requestPage();
+    memset(command,0,sizeof(EhciQH));
+    command->altlink = 1;
+    command->nextlink = next_link;
+    command->curlink = 0;
+    command->characteristics = 0;
+    command->characteristics |= (eps<<12);
+    command->characteristics |= (dtc<<14);
+    command->characteristics |= (t<<15);
+    command->characteristics |= (mplen<<16);
+    command->capabilities = capabilities;
+    command->token = token;
+    return command;
+}
+
+uint8_t ehci_wait_for_completion(volatile EhciTD *status)
+{
+    uint8_t lstatus = 1;
+    k_printf("ehci: waiting for completion qh: ");
+    int timeout = 10;
+    while(1)
+    {
+        sleep(10);
+        k_printf("*");
+        volatile uint32_t tstatus = (volatile uint32_t)status->token;
+        if(tstatus & (1 << 4))
+        {
+            // not anymore active and failed miserably
+            k_printf("[EHCI] Transmission failed due babble error\n");
+            lstatus = 0;
+            break;
+        }
+        if(tstatus & (1 << 3))
+        {
+            // not anymore active and failed miserably
+            k_printf("[EHCI] Transmission failed due transaction error\n");
+            lstatus = 0;
+            break;
+        }
+        if(tstatus & (1 << 6))
+        {
+            // not anymore active and failed miserably
+            k_printf("[EHCI] Transmission failed due serious error\n");
+            lstatus = 0;
+            break;
+        }
+        if(tstatus & (1 << 5))
+        {
+            // not anymore active and failed miserably
+            k_printf("[EHCI] Transmission failed due data buffer error\n");
+            lstatus = 0;
+            break;
+        }
+        if(!(tstatus & (1 << 7)))
+        {
+            // not anymore active and succesfull ended
+            // k_printf("[EHCI] Transaction succeed\n");
+            k_printf("\n");
+            lstatus = 1;
+            break;
+        }
+        timeout--;
+        if(timeout==0)
+        {
+            k_printf("[EHCI] Timeout\n");
+            lstatus = 0;
+            break;
+        }
+    }
+    return lstatus;
+}
+
+uint8_t ehci_offer_queuehead_to_ring(uint32_t qh,EhciTD *stat)
+{
+    ((uint32_t*)(ehci_base_addr + caplength + 0x18 ))[0] = (uint32_t) qh;
+    ((uint32_t*)(ehci_base_addr + caplength))[0] |= 0b100000;
+    uint8_t res = ehci_wait_for_completion(stat);
+    ((uint32_t*)(ehci_base_addr + caplength))[0] &= ~0b100000;
+    ((uint32_t*)(ehci_base_addr + caplength + 0x18 ))[0] = 1;
+    return res;
+}
+
+uint8_t ehci_request_device_addr(uint8_t wantedaddress)
+{
+    EhciCMD *command = ehci_generate_command_structure(5,0,0,0,0,0,wantedaddress);
+    EhciTD *status = ehci_generate_transfer_descriptor(1,1,0,1,0);
+    EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,2,8,0,(uint32_t)(upointer_t)command);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0x40);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,0x40000000,0);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(command);
+    freePage(status);
+    freePage(transfercommand);
+    freePage(head1);
+    freePage(head2);
+    return res;
+}
+
 void ehci_test_port(int portno)
 {
     volatile uint32_t portreg = ((volatile uint32_t*)(ehci_base_addr + caplength + 0x44 + ( 4 * ( portno  - 1 ) ) ))[0];
@@ -63,7 +227,20 @@ void ehci_test_port(int portno)
         // no connection, halt
         return;
     }
-    k_printf("YAY!!!");
+    if((portreg&0x1005)!=0x1005)
+    {
+        // invalid statement
+        // you might not be ready yet...
+        return;
+    }
+    k_printf("ehci-%d: found connection width status %x \n",portno,portreg);
+
+    //
+    // our new device needs an address...
+    uint8_t rdar = ehci_request_device_addr(ehci_address_count);
+    k_printf("ehci-%d: request address resulted in %x \n",portno,rdar);
+
+    for(;;);
 }
 
 void ehci_probe_ports()
@@ -230,7 +407,7 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // run and enable the cycle
-    ((uint32_t*)(ehci_base_addr + caplength))[0] = 0x80011 | (0x40<<16);
+    ((uint32_t*)(ehci_base_addr + caplength))[0] = 0x80001 | (0x40<<16);//0x80011 | (0x40<<16);
 
     //
     // wait untill everything should be ready
