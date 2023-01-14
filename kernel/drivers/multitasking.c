@@ -138,12 +138,12 @@ __attribute__((interrupt)) void legacy_timer_handler(interrupt_frame* frame){
     interrupt_eoi();
 }
 
+void _test_handler(){
+    timerfunc();
+    return;
+}
+
 void initialise_multitasking_driver(){
-    #ifdef __x86_64
     k_printf("multitasking: enabling multitasking...\n");
     setInterrupt(0,multitaskingint);
-    #else 
-    k_printf("multitasking: ignoring function...\n");
-    setInterrupt(0,legacy_timer_handler);
-    #endif
 }

@@ -117,7 +117,7 @@ EhciTD *ehci_generate_transfer_descriptor(uint32_t nextlink,uint8_t type,uint8_t
     return command;
 }
 
-EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint8_t t,uint8_t mplen,uint32_t capabilities,uint32_t token)
+EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint8_t t,uint8_t mplen,uint8_t device,uint32_t capabilities,uint32_t token)
 {
     EhciQH *command = (EhciQH*) requestPage();
     memset(command,0,sizeof(EhciQH));
@@ -129,6 +129,7 @@ EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint
     command->characteristics |= (dtc<<14);
     command->characteristics |= (t<<15);
     command->characteristics |= (mplen<<16);
+    command->characteristics |= (device);
     command->capabilities = capabilities;
     command->token = token;
     return command;
@@ -138,7 +139,7 @@ uint8_t ehci_wait_for_completion(volatile EhciTD *status)
 {
     uint8_t lstatus = 1;
     k_printf("ehci: waiting for completion qh: ");
-    int timeout = 10;
+    int timeout = 25;
     while(1)
     {
         sleep(10);
@@ -206,8 +207,8 @@ uint8_t ehci_request_device_addr(uint8_t wantedaddress)
     EhciCMD *command = ehci_generate_command_structure(5,0,0,0,0,0,wantedaddress);
     EhciTD *status = ehci_generate_transfer_descriptor(1,1,0,1,0);
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,2,8,0,(uint32_t)(upointer_t)command);
-    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0x40);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,0x40000000,0);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,0,0x40000000,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
@@ -219,6 +220,34 @@ uint8_t ehci_request_device_addr(uint8_t wantedaddress)
     return res;
 }
 
+void *ehci_request_device_descriptor(uint8_t address,uint8_t size)
+{
+    void *buffer2 = requestPage();
+    memset(buffer2,0,sizeof(EhciQH));
+    void *buffer = requestPage();
+    EhciCMD *command = ehci_generate_command_structure(6,4,0,0,0,size,1 << 8);                                                          // OK
+    EhciTD *status = ehci_generate_transfer_descriptor(1,0,0,1,0);                                                                      // OK
+    EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
+    EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,size,0,(uint32_t)(upointer_t)command);       // OK
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    head2->curlink = (uint32_t) (upointer_t) buffer2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(command);
+    freePage(status);
+    freePage(transfercommand);
+    freePage(td);
+    freePage(head1);
+    freePage(head2);
+    if(res){
+        return buffer;
+    }else{
+        return 0;
+    }
+}
+
 void ehci_test_port(int portno)
 {
     volatile uint32_t portreg = ((volatile uint32_t*)(ehci_base_addr + caplength + 0x44 + ( 4 * ( portno  - 1 ) ) ))[0];
@@ -227,20 +256,31 @@ void ehci_test_port(int portno)
         // no connection, halt
         return;
     }
-    if((portreg&0x1005)!=0x1005)
-    {
-        // invalid statement
-        // you might not be ready yet...
-        return;
-    }
     k_printf("ehci-%d: found connection width status %x \n",portno,portreg);
+
+    uint8_t device_address = ehci_address_count++;
 
     //
     // our new device needs an address...
-    uint8_t rdar = ehci_request_device_addr(ehci_address_count);
-    k_printf("ehci-%d: request address resulted in %x \n",portno,rdar);
+    uint8_t rdar = ehci_request_device_addr(device_address);
+    if(rdar==0)
+    {
+        goto failed;
+    }
+    k_printf("ehci-%d: device-address: %d \n",portno,device_address);
+
+    void *devicedescriptor = ehci_request_device_descriptor(device_address,8);
+    if(devicedescriptor==0)
+    {
+        goto failed;
+    }
 
     for(;;);
+    return;
+    failed:
+    k_printf("ehci-%d: sadly we failed to configure this device!\n",portno);
+    for(;;);
+    return;
 }
 
 void ehci_probe_ports()
@@ -411,7 +451,7 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // wait untill everything should be ready
-    sleep(50);
+    sleep(25);
 
     //
     // We need to own everything!

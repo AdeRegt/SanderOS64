@@ -21,13 +21,17 @@ extern _context_eflags
 extern _context_cs
 extern _context_eip
 extern _context_eax
+extern _test_handler
+
 multitaskingint:
     ; make sure interrupts do not happen when we are playing..
     cli
+
     ; we have a stackframe which we can recieve by popping the right values from the stack...
     pop dword [_context_eip]
     pop dword [_context_cs]
     pop dword [_context_eflags]
+
     ; save the general registers
     mov dword [_context_edx], edx
     mov dword [_context_ecx], ecx
@@ -36,6 +40,7 @@ multitaskingint:
     mov dword [_context_ebp], ebp
     mov dword [_context_edi], edi
     mov dword [_context_esi], esi
+
     ; save the segments registers
     mov eax,0
     mov ax, gs 
@@ -46,6 +51,7 @@ multitaskingint:
     mov word [_context_es], es
     mov ax, ds 
     mov word [_context_ds], ds
+
     ; set the right segment register for the current state
     ; this is also to switch to kernel mode
     mov eax, 0
@@ -55,11 +61,13 @@ multitaskingint:
     mov fs, ax 
     mov gs, ax 
     mov ss, ax 
-    mov eax, 0x003FFFF0 
+    mov eax, __new_stack_end 
     mov esp, eax
-    ; call the functions
-    ; call multitaskinghandler
-    ; now restore the segment registers
+
+    pushad
+    call _test_handler
+    popad
+
     mov eax,0
     mov ax, word [_context_ds]
     mov ds, ax
@@ -69,6 +77,7 @@ multitaskingint:
     mov fs, ax
     mov ax, word [_context_gs]
     mov gs, ax
+
     ; now restore the general registers
     mov esi, dword [_context_esi]
     mov edi, dword [_context_edi]
@@ -77,18 +86,22 @@ multitaskingint:
     mov ebx, dword [_context_ebx]
     mov ecx, dword [_context_ecx]
     mov edx, dword [_context_edx]
+
     ; now restore the stackframe
-    pop dword [_context_eflags]
-    pop dword [_context_cs]
-    pop dword [_context_eip]
+    push dword [_context_eflags]
+    push dword [_context_cs]
+    push dword [_context_eip]
+
     ; tell the interrupts we are done with them
     mov al, 0x20
     out 0x20, al 
+
     ; wait a bit 
     ; now restore the ax register
     mov eax, dword [_context_eax]
     ; now, restore the context
-    iret
+    sti
+    iretd
 
 global gdt_flush     ; Allows the C code to link to this
 extern gp            ; Says that '_gp' is in another file
@@ -103,3 +116,9 @@ gdt_flush:
     jmp 0x08:flush2   ; 0x08 is the offset to our code segment: Far jump!
 flush2:
     ret               ; Returns back to the C code!
+
+
+global __new_stack
+__new_stack:
+    times (32*1024) db 0
+__new_stack_end:
