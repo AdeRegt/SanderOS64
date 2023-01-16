@@ -4,6 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build kernel and put in tftp",
+            "type": "shell",
+            "command": "make && cp bin/sanderos/kernel32.bin /srv/tftp/kernel32.bin",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "Build kernel",
             "type": "shell",
             "command": "make",
