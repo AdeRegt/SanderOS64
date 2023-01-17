@@ -190,8 +190,6 @@ uint8_t ehci_request_device_addr(uint8_t wantedaddress)
 
 void *ehci_request_device_descriptor(uint8_t address,uint8_t type,uint8_t index,uint8_t size)
 {
-    void *buffer2 = requestPage();
-    memset(buffer2,0,sizeof(EhciQH));
     void *buffer = requestPage();
     EhciCMD *command = ehci_generate_command_structure(USB2_REQUEST_GET_DESCRIPTOR,0,4,0,0,size,(type << 8) | index);                                                          // OK
     EhciTD *status = ehci_generate_transfer_descriptor(1,0,0,1,0);                                                                      // OK
@@ -201,7 +199,6 @@ void *ehci_request_device_descriptor(uint8_t address,uint8_t type,uint8_t index,
     EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
-    head2->curlink = (uint32_t) (upointer_t) buffer2;
     uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
     freePage(command);
     freePage(status);
@@ -234,6 +231,34 @@ uint8_t ehci_set_used_config(uint8_t address,uint8_t config)
     return res;
 }
 
+void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address)
+{
+    void *buffer2 = requestPage();
+    memset(buffer2,0,sizeof(EhciQH));
+    void *buffer = requestPage();
+    EhciCMD *command = ehci_generate_command_structure(request,dir,type,recieve,windex,wlength,wvalue);                                                          // OK
+    EhciTD *status = ehci_generate_transfer_descriptor(1,0,0,1,0);                                                                      // OK
+    EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
+    EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,8,0,(uint32_t)(upointer_t)command);       // OK 8
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    head2->curlink = (uint32_t) (upointer_t) buffer2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(command);
+    freePage(status);
+    freePage(transfercommand);
+    freePage(td);
+    freePage(head1);
+    freePage(head2);
+    if(res){
+        return buffer;
+    }else{
+        return 0;
+    }
+}
+
 void ehci_test_port(int portno)
 {
     volatile uint32_t portreg = ((volatile uint32_t*)(ehci_base_addr + caplength + 0x44 + ( 4 * ( portno  - 1 ) ) ))[0];
@@ -256,7 +281,7 @@ void ehci_test_port(int portno)
     {
         goto failed;
     }
-    k_printf("ehci-%d: device-address: %d \n",portno,device_address);
+    // k_printf("ehci-%d: device-address: %d \n",portno,device_address);
     device->deviceaddres = device_address;
 
     //
@@ -274,12 +299,12 @@ void ehci_test_port(int portno)
         goto failed;
     }
     usb_interface_descriptor* desc = (usb_interface_descriptor*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
-    k_printf("ehci-%d: There are %d endpoints available!\n",portno,desc->bNumEndpoints);
+    // k_printf("ehci-%d: There are %d endpoints available!\n",portno,desc->bNumEndpoints);
     EHCI_DEVICE_ENDPOINT *ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
     EHCI_DEVICE_ENDPOINT *ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
-    k_printf("ehci-%d: EP1 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep1->bLength,ep1->bDescriptorType,ep1->bEndpointAddress&0x80?'I':'O',ep1->bEndpointAddress&0xF,ep1->wMaxPacketSize&0x7FF);
-    k_printf("ehci-%d: EP2 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep2->bLength,ep2->bDescriptorType,ep2->bEndpointAddress&0x80?'I':'O',ep2->bEndpointAddress&0xF,ep2->wMaxPacketSize&0x7FF);
-    k_printf("ehci-%d: class=%x subclass=%x \n",portno,desc->bInterfaceClass,desc->bInterfaceSubClass);
+    // k_printf("ehci-%d: EP1 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep1->bLength,ep1->bDescriptorType,ep1->bEndpointAddress&0x80?'I':'O',ep1->bEndpointAddress&0xF,ep1->wMaxPacketSize&0x7FF);
+    // k_printf("ehci-%d: EP2 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep2->bLength,ep2->bDescriptorType,ep2->bEndpointAddress&0x80?'I':'O',ep2->bEndpointAddress&0xF,ep2->wMaxPacketSize&0x7FF);
+    // k_printf("ehci-%d: class=%x subclass=%x \n",portno,desc->bInterfaceClass,desc->bInterfaceSubClass);
 
     device->config = (usb_config_descriptor*) devicedescriptor;
     device->interface = (usb_interface_descriptor*) (((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
@@ -291,7 +316,7 @@ void ehci_test_port(int portno)
     {
         goto failed;
     }
-    k_printf("ehci-%d: set_config to 1 \n",portno);
+    // k_printf("ehci-%d: set_config to 1 \n",portno);
 
     install_usb_device(device);
     return;

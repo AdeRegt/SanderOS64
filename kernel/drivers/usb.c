@@ -9,7 +9,7 @@ USBDevice *getFreeUSBDeviceClass(){
 }
 
 void install_usb_device(USBDevice *device){
-    if(device->interface->bInterfaceClass==USB_IF_CLASS_MSD&&device->interface->bInterfaceSubClass==0x06)
+    if(device->interface->bInterfaceClass==USB_IF_CLASS_MSD)
     {
         install_usb_stick(device);
     }

@@ -23,6 +23,7 @@
 #define USB2_REQUEST_GET_STATUS 0
 
 #define USB_IF_CLASS_MSD 8
+#define USB_IF_CLASS_MSD_SCSI 6
 
 
 typedef struct __attribute__ ((packed)){
@@ -80,3 +81,4 @@ typedef struct {
 USBDevice *getFreeUSBDeviceClass();
 void install_usb_device(USBDevice *device);
 void install_usb_stick(USBDevice *device);
+void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address);
