@@ -4,40 +4,12 @@
 #include "../include/idt.h"
 #include "../include/memory.h"
 #include "../include/timer.h"
+#include "../include/usb.h"
 
 #define EHCI_PCI_INFO_REG           0x60
 #define EHCI_PROTOCOL_VER           0x20
 #define EHCI_HCI_VER                0x100
 #define EHCI_PERIODIC_FRAME_SIZE    1024
-
-#define USB2_DESCRIPTOR_TYPE_POWER  8
-#define USB2_DESCRIPTOR_TYPE_OTHER  7
-#define USB2_DESCRIPTOR_TYPE_QUALI  6
-#define USB2_DESCRIPTOR_TYPE_ENDPOINT 5
-#define USB2_DESCRIPTOR_TYPE_INTERFACE 4
-#define USB2_DESCRIPTOR_TYPE_STRING 3
-#define USB2_DESCRIPTOR_TYPE_CONFIGURATION 2
-#define USB2_DESCRIPTOR_TYPE_DEVICE 1
-
-#define USB2_REQUEST_SYNCH_FRAME 12
-#define USB2_REQUEST_SET_INTERFACE 11
-#define USB2_REQUEST_GET_INTERFACE 10
-#define USB2_REQUEST_SET_CONFIGURATION 9
-#define USB2_REQUEST_GET_CONFIGURATION 8
-#define USB2_REQUEST_SET_DESCRIPTOR 7
-#define USB2_REQUEST_GET_DESCRIPTOR 6
-#define USB2_REQUEST_SET_ADDRESS 5
-#define USB2_REQUEST_SET_FEATURE 3
-#define USB2_REQUEST_CLEAR_FEATURE 1
-#define USB2_REQUEST_GET_STATUS 0
-
-typedef struct  {
-    uint8_t bRequestType;
-    uint8_t bRequest;
-    uint16_t wValue;
-    uint16_t wIndex;
-    uint16_t wLength;
-} EhciCMD;
 
 typedef struct {
     volatile uint32_t nextlink;
@@ -59,40 +31,6 @@ typedef struct {
     volatile uint32_t buffer[5];
     volatile uint32_t extbuffer[5];
 }EhciQH;
-
-typedef struct __attribute__ ((packed)){
-    unsigned char  bLength;
-    unsigned char  bDescriptorType;
-
-    unsigned short wTotalLength;
-    unsigned char  bNumInterfaces;
-    unsigned char  bConfigurationValue;
-    unsigned char  iConfiguration;
-    unsigned char  bmAttributes;
-    unsigned char  bMaxPower;
-}usb_config_descriptor ;
-
-typedef struct __attribute__ ((packed)) {
-    uint8_t  bLength;
-    uint8_t  bDescriptorType;
-
-    uint8_t  bInterfaceNumber;
-    uint8_t  bAlternateSetting;
-    uint8_t  bNumEndpoints;
-    uint8_t  bInterfaceClass;
-    uint8_t  bInterfaceSubClass;
-    uint8_t  bInterfaceProtocol;
-    uint8_t  iInterface;
-}usb_interface_descriptor;
-
-typedef struct {
-	unsigned char bLength;
-	unsigned char bDescriptorType;
-	unsigned char bEndpointAddress;
-	unsigned char bmAttributes;
-	unsigned short wMaxPacketSize;
-	unsigned char bInterval;
-}EHCI_DEVICE_ENDPOINT;
 
 void *ehci_base_addr;
 uint8_t caplength;
@@ -303,6 +241,24 @@ void *ehci_request_device_descriptor(uint8_t address,uint8_t type,uint8_t index,
     }
 }
 
+uint8_t ehci_set_used_config(uint8_t address,uint8_t config)
+{
+    EhciCMD *command = ehci_generate_command_structure(USB2_REQUEST_SET_CONFIGURATION,0,0,0,0,0,config);
+    EhciTD *status = ehci_generate_transfer_descriptor(1,1,0,1,0);
+    EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,2,8,0,(uint32_t)(upointer_t)command);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,address,0x40000000,0);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(command);
+    freePage(status);
+    freePage(transfercommand);
+    freePage(head1);
+    freePage(head2);
+    return res;
+}
+
 void ehci_test_port(int portno)
 {
     volatile uint32_t portreg = ((volatile uint32_t*)(ehci_base_addr + caplength + 0x44 + ( 4 * ( portno  - 1 ) ) ))[0];
@@ -311,7 +267,10 @@ void ehci_test_port(int portno)
         // no connection, halt
         return;
     }
-    k_printf("ehci-%d: found connection width status %x \n",portno,portreg);
+
+    USBDevice *device = getFreeUSBDeviceClass();
+    device->protocol = 2;
+    device->physport = portno;
 
     uint8_t device_address = ehci_address_count++;
 
@@ -323,6 +282,7 @@ void ehci_test_port(int portno)
         goto failed;
     }
     k_printf("ehci-%d: device-address: %d \n",portno,device_address);
+    device->deviceaddres = device_address;
 
     //
     // we need some information about our device
@@ -333,7 +293,7 @@ void ehci_test_port(int portno)
     }
     freePage(devicedescriptor);
 
-    devicedescriptor = ehci_request_device_descriptor(device_address,USB2_DESCRIPTOR_TYPE_CONFIGURATION,0,sizeof(usb_interface_descriptor) + sizeof(usb_config_descriptor)+(sizeof(EHCI_DEVICE_ENDPOINT)*2));
+    devicedescriptor = ehci_request_device_descriptor(device_address,USB2_DESCRIPTOR_TYPE_CONFIGURATION,0,sizeof(usb_config_descriptor) + sizeof(usb_interface_descriptor) +(sizeof(EHCI_DEVICE_ENDPOINT)*2));
     if(devicedescriptor==0)
     {
         goto failed;
@@ -345,8 +305,20 @@ void ehci_test_port(int portno)
     k_printf("ehci-%d: EP1 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep1->bLength,ep1->bDescriptorType,ep1->bEndpointAddress&0x80?'I':'O',ep1->bEndpointAddress&0xF,ep1->wMaxPacketSize&0x7FF);
     k_printf("ehci-%d: EP2 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep2->bLength,ep2->bDescriptorType,ep2->bEndpointAddress&0x80?'I':'O',ep2->bEndpointAddress&0xF,ep2->wMaxPacketSize&0x7FF);
     k_printf("ehci-%d: class=%x subclass=%x \n",portno,desc->bInterfaceClass,desc->bInterfaceSubClass);
+
+    device->config = (usb_config_descriptor*) devicedescriptor;
+    device->interface = (usb_interface_descriptor*) (((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
+    device->ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
+    device->ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
     
-    freePage(devicedescriptor);
+    rdar = ehci_set_used_config(device_address,1);
+    if(rdar==0)
+    {
+        goto failed;
+    }
+    k_printf("ehci-%d: set_config to 1 \n",portno);
+
+    install_usb_device(device);
 
     for(;;);
     return;
@@ -524,19 +496,12 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // wait untill everything should be ready
-    sleep(25);
+    sleep(10);
 
     //
     // We need to own everything!
     ((uint32_t*)(ehci_base_addr + caplength + 0x40 ))[0] |= 1;
 
-    //
-    // proof we do not hang!
-    while(1)
-    {
-        sleep(10);
-        k_printf("#");
-        ehci_probe_ports();
-    }
-    for(;;);
+    sleep(10);
+    ehci_probe_ports();
 }
