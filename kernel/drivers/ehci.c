@@ -5,32 +5,7 @@
 #include "../include/memory.h"
 #include "../include/timer.h"
 #include "../include/usb.h"
-
-#define EHCI_PCI_INFO_REG           0x60
-#define EHCI_PROTOCOL_VER           0x20
-#define EHCI_HCI_VER                0x100
-#define EHCI_PERIODIC_FRAME_SIZE    1024
-
-typedef struct {
-    volatile uint32_t nextlink;
-    volatile uint32_t altlink;
-    volatile uint32_t token;
-    volatile uint32_t buffer[5];
-    volatile uint32_t extbuffer[5];
-} EhciTD;
-
-typedef struct {
-    volatile uint32_t horizontal_link_pointer;
-    volatile uint32_t characteristics;
-    volatile uint32_t capabilities;
-    volatile uint32_t curlink;
-
-    volatile uint32_t nextlink;
-    volatile uint32_t altlink;
-    volatile uint32_t token;
-    volatile uint32_t buffer[5];
-    volatile uint32_t extbuffer[5];
-}EhciQH;
+#include "../include/ehci.h"
 
 void *ehci_base_addr;
 uint8_t caplength;
@@ -319,12 +294,10 @@ void ehci_test_port(int portno)
     k_printf("ehci-%d: set_config to 1 \n",portno);
 
     install_usb_device(device);
-
-    for(;;);
     return;
+
     failed:
     k_printf("ehci-%d: sadly we failed to configure this device!\n",portno);
-    for(;;);
     return;
 }
 

@@ -22,6 +22,8 @@
 #define USB2_REQUEST_CLEAR_FEATURE 1
 #define USB2_REQUEST_GET_STATUS 0
 
+#define USB_IF_CLASS_MSD 8
+
 
 typedef struct __attribute__ ((packed)){
     unsigned char  bLength;
@@ -77,3 +79,4 @@ typedef struct {
 
 USBDevice *getFreeUSBDeviceClass();
 void install_usb_device(USBDevice *device);
+void install_usb_stick(USBDevice *device);
