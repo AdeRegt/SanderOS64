@@ -59,11 +59,20 @@ void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
     return res;
 }
 
-uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
+uint32_t usbtagpointer = 1;
+
+CommandBlockWrapper* usb_stick_generate_pointer()
+{
     CommandBlockWrapper *ep = (CommandBlockWrapper*) requestPage();
     memset(ep,0,sizeof(CommandBlockWrapper));
     ep->signature = 0x43425355;
-    ep->tag = 1;
+    ep->tag = usbtagpointer++;
+    return ep;
+}
+
+uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
+{
+    CommandBlockWrapper *ep = usb_stick_generate_pointer();
     ep->transferlength = 512;
     ep->flags = 0x80;
     ep->command_len = 10;
@@ -81,10 +90,12 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
     ep->data[7] = 0;
     ep->data[8] = counter;
     uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
+    freePage(ep);
     if(cq==0){
         return 0;
     }
     memcpy(buffer,cq,512);
+    freePage(cq);
     return 1;
 }
 

@@ -262,7 +262,8 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
 
 void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
-    EhciTD *status = ehci_generate_transfer_descriptor(1,0,size,0,command);
+    EhciTD *status2 = ehci_generate_transfer_descriptor(1,0,0,1,0);
+    EhciTD *status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,0,size,0,command);
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
     EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
@@ -277,7 +278,13 @@ void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint
 {
     void* command = requestPage();
     memset(command,0,size);
-    EhciTD *status = ehci_generate_transfer_descriptor(1,1,size,toggle,(uint32_t)(upointer_t)command);
+    EhciTD *status;
+    if(toggle){
+        EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
+        status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
+    }else{
+        status = ehci_generate_transfer_descriptor(1,1,size,toggle,(uint32_t)(upointer_t)command);
+    }
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
     EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
