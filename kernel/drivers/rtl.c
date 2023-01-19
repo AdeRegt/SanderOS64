@@ -46,6 +46,7 @@ uint32_t rx_pointer = 0;
 uint32_t tx_pointer = 0;
 uint32_t package_recieved_ack = 0;
 uint32_t package_send_ack = 0;
+static uint8_t is_online = 0;
 
 
 __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
@@ -54,7 +55,9 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 	if(status&0x20){
 		k_printf("[RTL81] Link change detected!\n");
 		ethernet_set_link_status(1);
+		is_online = is_online==0;
 		status |= 0x20;
+		ethernet_set_link_status(is_online);
 	}
 	if(status&0x01){
 		// k_printf("[RTL81] Package recieved!\n");
@@ -86,38 +89,45 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 	outportb(0x20,0x20);
 }
 
-void rtl_sendPackage(PackageRecievedDescriptor desc){
+int rtl_sendPackage(PackageRecievedDescriptor desc){
 	uint32_t ms1 = 0x80000000 | 0x40000000 | 0x40000 | 0x20000000 | 0x10000000 | (desc.buffersize & 0x3FFF); // 0x80000000 | ownbit=yes | firstsegment | lastsegment | length
 	uint32_t ms2 = 0 ;
 	void *ms3 = desc.buffer;
 	
 	volatile struct Descriptor *desz;
-	oa:
 	desz = ((volatile struct Descriptor*)(Tx_Descriptors+(sizeof(struct Descriptor)*tx_pointer)));
-	if(desz->command!=0x80000064){ // a check if we somehow lost the count
-		k_printf("[RTL81] Unexpected default value: %x \n",desz->command);
-	}
 	desz->buffer = ms3;
 	desz->vlan = ms2;
 	desz->command = ms1;
 	#ifndef __x86_64
 	desz->empty = 0;
 	#endif
-	
+
 	((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0] = 0;
 	outportb(bar1 + 0x38, 0x40); // ring the doorbell
+
 	
+	int i = 0;
+	int res = 1;
 	while(1){ // wait for int or end of polling
 		unsigned volatile long x = ((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0];
 		if(x==1){
 			break;
 		}
+
 		unsigned volatile char poller = inportb(bar1 + 0x38);
 		if((poller&0x40)==0){
 			break;
 		}
+		sleep(1);
+		i++;
+		if(i>15){
+			res = 0;
+			break;
+		}
 	}
 	((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0] = 0;
+	return res;
 }
 
 PackageRecievedDescriptor rtl_recievePackage(){
@@ -161,6 +171,7 @@ void rtl_driver_start(int bus,int slot,int function){
 	k_printf("[RTL81] Set interrupter\n");
 	unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
 	setInterrupt(usbint,irq_rtl8169);
+
 	//
 	// trigger reset
 	k_printf("[RTL81] Resetting driver \n");
@@ -195,6 +206,9 @@ void rtl_driver_start(int bus,int slot,int function){
 			Rx_Descriptors[i].command = (OWN | (rx_buffer_len & 0x3FFF));
 		}
 		Rx_Descriptors[i].buffer = packet_buffer_address;
+		#ifndef __x86_64
+		Rx_Descriptors[i].empty = 0;
+		#endif
 	}
 	
 	outportb(bar1 + 0x50, 0xC0); /* Unlock config registers */
@@ -203,13 +217,13 @@ void rtl_driver_start(int bus,int slot,int function){
 	outportl(bar1 + 0x40, 0x03000700); /* TxConfig = IFG: normal, MXDMA: unlimited */
 	outportw(bar1 + 0xDA, 0x1FFF); /* Max rx packet size */
 	outportb(bar1 + 0xEC, 0x3B); /* max tx packet size */ // 0x3B
-	outportl(bar1 + 0x20, (uint32_t)((upointer_t)Tx_Descriptors)); /* Tell the NIC where the first Tx descriptor is */
+	outportl(bar1 + 0x20, (uint32_t)((upointer_t)&Tx_Descriptors[0])); /* Tell the NIC where the first Tx descriptor is */
     #ifdef __x86_64
 	outportl(bar1 + 0x24, (uint32_t)((uint64_t)(Tx_Descriptors) >> 32)); 
     #else 
     outportl(bar1 + 0x24, (uint32_t)0); 
     #endif 
-	outportl(bar1 + 0xE4, (uint32_t)((upointer_t)Rx_Descriptors)); /* Tell the NIC where the first Rx descriptor is */
+	outportl(bar1 + 0xE4, (uint32_t)((upointer_t)&Rx_Descriptors[0])); /* Tell the NIC where the first Rx descriptor is */
     #ifdef __x86_64
 	outportl(bar1 + 0xE8, (uint32_t)((uint64_t)(Rx_Descriptors) >> 32));
     #else 
@@ -220,5 +234,6 @@ void rtl_driver_start(int bus,int slot,int function){
 	outportb(bar1 + 0x50, 0x00); /* Lock config registers */
 	
 	register_ethernet_device(rtl_sendPackage,rtl_recievePackage,macaddress);
+	ethernet_set_link_status(is_online);
 	k_printf("[RTL81] Setup finished\n");
 }

@@ -111,7 +111,7 @@ uint8_t ehci_wait_for_completion(volatile EhciTD *status)
     int timeout = 25;
     while(1)
     {
-        sleep(10);
+        sleep(5);
         // k_printf("*");
         volatile uint32_t tstatus = (volatile uint32_t)status->token;
         if(tstatus & (1 << 4))

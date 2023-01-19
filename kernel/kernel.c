@@ -5,6 +5,7 @@
 #include "include/pci.h"
 #include "include/timer.h"
 #include "include/device.h"
+#include "include/ethernet.h"
 #include "include/multitasking.h"
 #include "include/tty.h"
 #include "include/comport.h"
@@ -40,6 +41,11 @@ void kernel_main(BootInfo *gi){
     #ifndef use_driver
         initialise_drivers_from_pci();
     #endif 
+    initialise_ethernet();
+}
+
+void post_init_kernel(){
+    k_printf("@-> %s \n",dir("A:"));
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");

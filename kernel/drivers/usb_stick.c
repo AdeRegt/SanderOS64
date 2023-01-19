@@ -75,6 +75,7 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
     upointer_t buffervoid = (upointer_t)buffer;
     for(uint32_t i = 0 ; i < counter ; i++)
     {
+        upointer_t calculatedaddress = sector + i ;
         CommandBlockWrapper *ep = usb_stick_generate_pointer();
         ep->transferlength = 512;
         ep->flags = 0x80;
@@ -84,10 +85,10 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
         // reserved
         ep->data[1] = 0;
         // lba
-        ep->data[2] = 0;
-        ep->data[3] = 0;
-        ep->data[4] = 0;
-        ep->data[5] = dev->offset + sector;
+        ep->data[2] = (uint8_t) ((calculatedaddress >> 24) & 0xFF);
+        ep->data[3] = (uint8_t) ((calculatedaddress >> 16) & 0xFF);
+        ep->data[4] = (uint8_t) ((calculatedaddress >> 8) & 0xFF);
+        ep->data[5] = (uint8_t) ((calculatedaddress) & 0xFF);
         // counter
         ep->data[6] = 0;
         ep->data[7] = 0;
@@ -120,7 +121,6 @@ void install_usb_stick(USBDevice *device)
         k_printf("usb-%d: cant get lun!\n",device->physport);
     }
     uint8_t lun = luns[0];
-    k_printf("usb-%d: LUN is %d \n",device->physport,lun);
 
     Blockdevice* bdev = registerBlockDevice(512, usb_stick_read, usb_stick_write, 0, device);
 

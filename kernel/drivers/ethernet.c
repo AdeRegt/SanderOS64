@@ -2,6 +2,7 @@
 #include "../include/graphics.h"
 #include "../include/memory.h"
 
+extern void post_init_kernel();
 
 uint16_t switch_endian16(uint16_t nb) {
     return (nb>>8) | (nb<<8);
@@ -244,151 +245,6 @@ void fillDhcpRequestHeader(struct DHCPREQUESTHeader *dhcpheader){
     uint8_t destmac[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
     uint16_t size = sizeof(struct DHCPREQUESTHeader) - sizeof(struct EthernetHeader);
     fillUdpHeader((struct UDPHeader*)&dhcpheader->udpheader,(uint8_t*)&destmac,size,0,0xFFFFFFFF,68,67);
-}
-
-uint8_t* getIpAddressFromDHCPServer(){
-    struct DHCPDISCOVERHeader *dhcpheader = (struct DHCPDISCOVERHeader *)malloc(sizeof(struct DHCPDISCOVERHeader));
-    dhcpheader->op = 1;
-    dhcpheader->htype = 1;
-    dhcpheader->hlen = 6;
-    dhcpheader->hops = 0;
-    dhcpheader->xid = 0x26F30339;
-    dhcpheader->timing = 0;
-    dhcpheader->flags = switch_endian16(0x8000);
-
-    fillMac((uint8_t*)&dhcpheader->client_mac_addr,(uint8_t*)&defaultEthernetDevice.mac);
-    dhcpheader->magic_cookie = 0x63538263;
-    // DHCP Message Type
-    dhcpheader->options[0] = 0x35;
-    dhcpheader->options[1] = 0x01;
-    dhcpheader->options[2] = 0x01;
-    // parameter request list
-    dhcpheader->options[3] = 0x37;
-    dhcpheader->options[4] = 0x40;
-    dhcpheader->options[5] = 0xfc;
-    for(uint8_t i = 1 ; i < 0x43 ; i++){
-        dhcpheader->options[5+i] = i;
-    }
-    // dhcpheader->options[68] = 0x00;
-    // ip address lease time
-    dhcpheader->options[69] = 0x33;
-    dhcpheader->options[70] = 0x04;
-    dhcpheader->options[71] = 0x00;
-    dhcpheader->options[72] = 0x00;
-    dhcpheader->options[73] = 0x00;
-    dhcpheader->options[74] = 0x01;
-    // end
-    dhcpheader->options[75] = 0xFF;
-    
-    fillDhcpDiscoverHeader(dhcpheader);
-    PackageRecievedDescriptor sec;
-    sec.buffersize = sizeof(struct DHCPDISCOVERHeader);
-    sec.buffer = dhcpheader;
-    int res_fs = sendEthernetPackage(sec); // send package
-    if(res_fs==0){
-        return 0;
-    }
-    PackageRecievedDescriptor prd;
-    while(1){
-        prd = getEthernetPackage(); 
-        if(prd.buffer==0){
-            return 0;
-        }
-        struct EthernetHeader *eh = (struct EthernetHeader*) prd.buffer;
-        if(eh->type==ETHERNET_TYPE_IP4){
-            struct IPv4Header *ip = (struct IPv4Header*) eh;
-            if(ip->protocol==IPV4_TYPE_UDP){
-                struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
-                if(switch_endian16(hd5->udpheader.destination_port)==68){
-                    break;
-                }
-            }
-        }
-    }
-    k_printf("[ETH] Got offer\n");
-    struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) prd.buffer;
-    uint8_t* offeredip = (uint8_t*) &hd->dhcp_offered_machine;
-    int a = 0;
-    while(1){
-        uint8_t t = hd->options[a++];
-        if(t==0xFF||t==0x00){
-            break;
-        }
-        uint8_t z = hd->options[a++];
-        if( t==0x03){ // router
-            uint8_t* re = (uint8_t*)&hd->options[a];
-            fillIP((uint8_t*)&router_ip,re);
-        }
-        if (t==0x06 ){ // dns
-            uint8_t* re = (uint8_t*)&hd->options[a];
-            fillIP((uint8_t*)&dns_ip,re);
-        }
-        if (t==54 ){ // dhcp
-            uint8_t* re = (uint8_t*)&hd->options[a];
-            fillIP((uint8_t*)&dhcp_ip,re);
-        }
-        a += z;
-    }
-
-    free(dhcpheader);
-
-    struct DHCPREQUESTHeader *dhcp2header = (struct DHCPREQUESTHeader *)malloc(sizeof(struct DHCPREQUESTHeader));
-    dhcp2header->op = 1;
-    dhcp2header->htype = 1;
-    dhcp2header->hlen = 6;
-    dhcp2header->hops = 0;
-    dhcp2header->xid = 0x2CF30339;
-    dhcp2header->timing = 0;
-    dhcp2header->flags = switch_endian16(0x8000);
-
-    fillMac((uint8_t*)&dhcp2header->client_mac_addr,(uint8_t*)&defaultEthernetDevice.mac);
-    dhcp2header->magic_cookie = 0x63538263;
-
-    // DHCP Message Type
-    dhcp2header->options[0] = 0x35;
-    dhcp2header->options[1] = 0x01;
-    dhcp2header->options[2] = 0x03;
-    // Client identifier
-    dhcp2header->options[3] = 0x3d;
-    dhcp2header->options[4] = 0x07;
-    dhcp2header->options[5] = 0x01;
-    fillMac((uint8_t*)(&dhcp2header->options)+6,(uint8_t*)&defaultEthernetDevice.mac);
-    // Requested IP addr
-    dhcp2header->options[12] = 0x32;
-    dhcp2header->options[13] = 0x04;
-    fillMac((uint8_t*)(&dhcp2header->options)+14,offeredip);
-    // DHCP Server identifier
-    dhcp2header->options[18] = 0x36;
-    dhcp2header->options[19] = 0x04;
-    fillMac((uint8_t*)(&dhcp2header->options)+20,(uint8_t*)&hd->ip_addr_of_dhcp_server);
-    dhcp2header->options[24] = 0xFF;
-
-    fillDhcpRequestHeader(dhcp2header);
-
-    PackageRecievedDescriptor s3c;
-    s3c.buffersize = sizeof(struct DHCPREQUESTHeader);
-    s3c.buffer = dhcp2header;
-    sendEthernetPackage(s3c); // send package
-    PackageRecievedDescriptor p3d;
-    while(1){
-        p3d = getEthernetPackage(); 
-        if(p3d.buffer==0){
-            return 0;
-        }
-        struct EthernetHeader *eh = (struct EthernetHeader*) p3d.buffer;
-        if(eh->type==ETHERNET_TYPE_IP4){
-            struct IPv4Header *ip = (struct IPv4Header*) eh;
-            if(ip->protocol==IPV4_TYPE_UDP){
-                struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
-                if(switch_endian16(hd5->udpheader.destination_port)==68&&hd5->op==2&&hd5->xid==dhcp2header->xid){
-                    break;
-                }
-            }
-        }
-    }
-    k_printf("[ETH] Got Approval\n");
-
-    return offeredip;
 }
 
 volatile uint16_t dnstid = 0xe0e0;
@@ -636,39 +492,163 @@ void initialise_ethernet(){
     EthernetDevice ed = getDefaultEthernetDevice();
     if(ed.is_enabled){
         k_printf("[ETH] There is a ethernet device present on the system!\n");
+        if(defaultEthernetDevice.is_online==0){
+            k_printf("[ETH] We are offline :( \n");
+            return;
+        }
         k_printf("[ETH] Asking DHCP server for our address....\n");
 
-        uint8_t *dhcpid = getIpAddressFromDHCPServer();
-        if(dhcpid){
-            fillIP((uint8_t*)&our_ip,dhcpid);
-            k_printf("[ETH] DHCP is present\n");
-        }else{
-            k_printf("[ETH] No DHCP server present here, using static address\n");
-            uint8_t dinges[SIZE_OF_IP] = {192,168,178,15};   
-            fillIP((uint8_t*)&our_ip,(uint8_t*)&dinges);
+        struct DHCPDISCOVERHeader *dhcpheader = (struct DHCPDISCOVERHeader *)malloc(sizeof(struct DHCPDISCOVERHeader));
+        memset(dhcpheader,0,sizeof(struct DHCPDISCOVERHeader));
+        dhcpheader->op = 1;
+        dhcpheader->htype = 1;
+        dhcpheader->hlen = 6;
+        dhcpheader->hops = 0;
+        dhcpheader->xid = 0x26F30339;
+        dhcpheader->timing = 0;
+        dhcpheader->flags = switch_endian16(0x8000);
+
+        fillMac((uint8_t*)&dhcpheader->client_mac_addr,(uint8_t*)&defaultEthernetDevice.mac);
+        dhcpheader->magic_cookie = 0x63538263;
+        // DHCP Message Type
+        dhcpheader->options[0] = 0x35;
+        dhcpheader->options[1] = 0x01;
+        dhcpheader->options[2] = 0x01;
+        // parameter request list
+        dhcpheader->options[3] = 0x37;
+        dhcpheader->options[4] = 0x40;
+        dhcpheader->options[5] = 0xfc;
+        for(uint8_t i = 1 ; i < 0x43 ; i++){
+            dhcpheader->options[5+i] = i;
         }
+        // dhcpheader->options[68] = 0x00;
+        // ip address lease time
+        dhcpheader->options[69] = 0x33;
+        dhcpheader->options[70] = 0x04;
+        dhcpheader->options[71] = 0x00;
+        dhcpheader->options[72] = 0x00;
+        dhcpheader->options[73] = 0x00;
+        dhcpheader->options[74] = 0x01;
+        // end
+        dhcpheader->options[75] = 0xFF;
+    
+        uint8_t destmac[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+        uint16_t size = sizeof(struct DHCPDISCOVERHeader) - sizeof(struct EthernetHeader);
+        fillUdpHeader((struct UDPHeader*)&dhcpheader->udpheader,(uint8_t*)&destmac,size,0,0xFFFFFFFF,68,67);
+        
+        PackageRecievedDescriptor sec;
+        sec.buffersize = sizeof(struct DHCPDISCOVERHeader);
+        sec.buffer = dhcpheader;
+        int res_fs = sendEthernetPackage(sec); // send package
+        if(res_fs==0){
+            return;
+        }
+        PackageRecievedDescriptor prd;
+        while(1){
+            prd = getEthernetPackage(); 
+            if(prd.buffer==0){
+                return;
+            }
+            struct EthernetHeader *eh = (struct EthernetHeader*) prd.buffer;
+            if(eh->type==ETHERNET_TYPE_IP4){
+                struct IPv4Header *ip = (struct IPv4Header*) eh;
+                if(ip->protocol==IPV4_TYPE_UDP){
+                    struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
+                    if(switch_endian16(hd5->udpheader.destination_port)==68){
+                        break;
+                    }
+                }
+            }
+        }
+        k_printf("[ETH] Got offer\n");
+        struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) prd.buffer;
+        uint8_t* offeredip = (uint8_t*) &hd->dhcp_offered_machine;
+        int a = 0;
+        while(1){
+            uint8_t t = hd->options[a++];
+            if(t==0xFF||t==0x00){
+                break;
+            }
+            uint8_t z = hd->options[a++];
+            if( t==0x03){ // router
+                uint8_t* re = (uint8_t*)&hd->options[a];
+                fillIP((uint8_t*)&router_ip,re);
+            }
+            if (t==0x06 ){ // dns
+                uint8_t* re = (uint8_t*)&hd->options[a];
+                fillIP((uint8_t*)&dns_ip,re);
+            }
+            if (t==54 ){ // dhcp
+                uint8_t* re = (uint8_t*)&hd->options[a];
+                fillIP((uint8_t*)&dhcp_ip,re);
+            }
+            a += z;
+        }
+
+        free(dhcpheader);
+
+        struct DHCPREQUESTHeader *dhcp2header = (struct DHCPREQUESTHeader *)malloc(sizeof(struct DHCPREQUESTHeader));
+        dhcp2header->op = 1;
+        dhcp2header->htype = 1;
+        dhcp2header->hlen = 6;
+        dhcp2header->hops = 0;
+        dhcp2header->xid = 0x2CF30339;
+        dhcp2header->timing = 0;
+        dhcp2header->flags = switch_endian16(0x8000);
+
+        fillMac((uint8_t*)&dhcp2header->client_mac_addr,(uint8_t*)&defaultEthernetDevice.mac);
+        dhcp2header->magic_cookie = 0x63538263;
+
+        // DHCP Message Type
+        dhcp2header->options[0] = 0x35;
+        dhcp2header->options[1] = 0x01;
+        dhcp2header->options[2] = 0x03;
+        // Client identifier
+        dhcp2header->options[3] = 0x3d;
+        dhcp2header->options[4] = 0x07;
+        dhcp2header->options[5] = 0x01;
+        fillMac((uint8_t*)(&dhcp2header->options)+6,(uint8_t*)&defaultEthernetDevice.mac);
+        // Requested IP addr
+        dhcp2header->options[12] = 0x32;
+        dhcp2header->options[13] = 0x04;
+        fillMac((uint8_t*)(&dhcp2header->options)+14,offeredip);
+        // DHCP Server identifier
+        dhcp2header->options[18] = 0x36;
+        dhcp2header->options[19] = 0x04;
+        fillMac((uint8_t*)(&dhcp2header->options)+20,(uint8_t*)&hd->ip_addr_of_dhcp_server);
+        dhcp2header->options[24] = 0xFF;
+
+        fillDhcpRequestHeader(dhcp2header);
+
+        PackageRecievedDescriptor s3c;
+        s3c.buffersize = sizeof(struct DHCPREQUESTHeader);
+        s3c.buffer = dhcp2header;
+        sendEthernetPackage(s3c); // send package
+        PackageRecievedDescriptor p3d;
+        while(1){
+            p3d = getEthernetPackage(); 
+            if(p3d.buffer==0){
+                return;
+            }
+            struct EthernetHeader *eh = (struct EthernetHeader*) p3d.buffer;
+            if(eh->type==ETHERNET_TYPE_IP4){
+                struct IPv4Header *ip = (struct IPv4Header*) eh;
+                if(ip->protocol==IPV4_TYPE_UDP){
+                    struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) eh;
+                    if(switch_endian16(hd5->udpheader.destination_port)==68&&hd5->op==2&&hd5->xid==dhcp2header->xid){
+                        break;
+                    }
+                }
+            }
+        }
+        k_printf("[ETH] Got Approval\n");
+        fillIP((uint8_t*)&our_ip,offeredip);
 
         k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
         k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
         k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
         k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
-        // for(;;);
 
-        // if(dns_ip[0]){
-        //     uint8_t* srve = getIPFromName("tftp.local");
-        //     if(srve[0]){
-        //         printf("[ETH] TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
-        //         debugf("[ETH] TFTP    IP is %d.%d.%d.%d \n",srve[0],srve[1],srve[2],srve[3]);
-        //         uint8_t ipfs[SIZE_OF_IP];
-        //         ipfs[0] = dhcp_ip[0];
-        //         ipfs[1] = dhcp_ip[1];
-        //         ipfs[2] = dhcp_ip[2];
-        //         ipfs[3] = dhcp_ip[3];
-        //         Device *dev = getNextFreeDevice();
-        //         dev->arg4 = (uint32_t)&ipfs;
-        //         dev->arg5 = (uint32_t)getMACFromIp((uint8_t*)&ipfs);
-        //         initialiseTFTP(dev);
-        //     }
-        // }
+        post_init_kernel();
     }
 }
