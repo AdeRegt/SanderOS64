@@ -107,12 +107,12 @@ EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint
 uint8_t ehci_wait_for_completion(volatile EhciTD *status)
 {
     uint8_t lstatus = 1;
-    k_printf("ehci: waiting for completion qh: ");
+    // k_printf("ehci: waiting for completion qh: ");
     int timeout = 25;
     while(1)
     {
         sleep(10);
-        k_printf("*");
+        // k_printf("*");
         volatile uint32_t tstatus = (volatile uint32_t)status->token;
         if(tstatus & (1 << 4))
         {
@@ -146,7 +146,7 @@ uint8_t ehci_wait_for_completion(volatile EhciTD *status)
         {
             // not anymore active and succesfull ended
             // k_printf("[EHCI] Transaction succeed\n");
-            k_printf("\n");
+            // k_printf("\n");
             lstatus = 1;
             break;
         }
