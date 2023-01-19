@@ -45,7 +45,6 @@ void kernel_main(BootInfo *gi){
 }
 
 void post_init_kernel(){
-    k_printf("@-> %s \n",dir("A:"));
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");
