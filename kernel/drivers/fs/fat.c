@@ -488,7 +488,8 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
     for(int i = 0 ; i < 4 ; i++){
         if(fe[i].type==0xEE){
             k_printf("mbr: efi found!\n");
-            dev->offset = fe[i].lbastart;
+            dev->offset += fe[i].lbastart;
+            k_printf("mbr: updating dev offset to %d \n",dev->offset);
             if(!device_read_raw_sector(dev,1,2,(void*)(buffer+512))){
                 k_printf("device: unable to read sector!\n");
                 return;
@@ -497,6 +498,7 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
             for(int z = 0 ; z < 8 ; z++){
                 efi_entry efit = efis[z];
                 if(efit.Partition_Type_GUID[14]==0x99&&efit.Partition_Type_GUID[15]==0xC7){
+                    k_printf("mbr: we are in the right GUID\n");
                     dev->offset = efit.StartingLBA;
                     if(!device_read_raw_sector(dev,0,1,(void*)(buffer+512+512+512))){ // take a sample offset because it doesnt mean it is what we think it is...
                         k_printf("device: unable to read sector!\n");
@@ -507,16 +509,24 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
                         found = 1;
                         continue;
                     }
+                }else{
+                    k_printf("mbr: unknown GUID %x %x \n",efit.Partition_Type_GUID[14],efit.Partition_Type_GUID[15]);
                 }
             }
             if(found){
                 continue;
             }
         }else if(fe[i].type==0x06){
-            dev->offset = fe[i].lbastart;
+            dev->offset += fe[i].lbastart;
             found = 1;
+            k_printf("mbr: fat found!\n");
+        }else if(fe[i].type==0){
+            // empty, simply ignore
+        }else{
+            k_printf("mbr: unknown type: %x \n",fe[i].type);
         }
     }
+
     if(found){
         FATBootBlock *bpb = (FATBootBlock*) requestPage();
         memset(bpb,0,sizeof(FATBootBlock));
@@ -524,6 +534,7 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
             k_printf("device: unable to read sector for the fat info!\n");
             return;
         }
+        k_printf("fat: bytes per sector: %d , oemname: %s , root entry count: %d , lbastart: %d \n",bpb->bytes_per_sector,bpb->oem_name,bpb->root_entry_count,dev->offset);
         uint32_t total_sectors = (bpb->total_sectors_16 == 0)? bpb->total_sectors_32 : bpb->total_sectors_16;
         uint32_t fat_size = (bpb->table_size_16 == 0)? bpb->table_size_16 : bpb->table_size_16;
         uint32_t root_dir_sectors = ((bpb->root_entry_count * 32) + (bpb->bytes_per_sector - 1)) / bpb->bytes_per_sector;
@@ -542,6 +553,6 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
         fss->total_sectors = total_sectors;
 
         fs->argument = fss;
+        k_printf("fat: end of initialisation\n");
     }
-    k_printf("fat: end of initialisation\n");
 }

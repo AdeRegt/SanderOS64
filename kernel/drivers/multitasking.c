@@ -10,6 +10,23 @@ static int vl = 0xF;
 static int cmt = 1;
 static Task tasks[MAX_TASKS];
 
+#ifndef __x86_64
+    uint32_t _context_eip;
+    uint32_t _context_eax;
+    uint32_t _context_cs;
+    uint32_t _context_eflags;
+    uint32_t _context_edx;
+    uint32_t _context_ecx;
+    uint32_t _context_ebx;
+    uint32_t _context_ebp;
+    uint32_t _context_edi;
+    uint32_t _context_esi;
+    uint32_t _context_gs;
+    uint32_t _context_fs;
+    uint32_t _context_es;
+    uint32_t _context_ds;
+#endif 
+
 extern void _KernelStart();
 extern void _KernelEnd();
 
@@ -116,8 +133,17 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     return cmt - 1;
 }
 
+__attribute__((interrupt)) void legacy_timer_handler(interrupt_frame* frame){
+    timerfunc();
+    interrupt_eoi();
+}
+
+void _test_handler(){
+    timerfunc();
+    return;
+}
+
 void initialise_multitasking_driver(){
     k_printf("multitasking: enabling multitasking...\n");
     setInterrupt(0,multitaskingint);
-    while(vl==0xF);
 }

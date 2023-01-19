@@ -14,9 +14,13 @@ void initialise_tty(){
     memset((void*)&wd,0,FILENAME_MAX);
     memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
 
+    char *kp = dir(wd);
+
     k_printf("SanderOS64 Buildin Command Interpeter\n");
-    k_printf("Known programs: \n");
-    k_printf("%s\n",dir(wd));
+    if(kp){
+        k_printf("Known programs: \n");
+        k_printf("%s\n",kp);
+    }
     k_printf("Commands: \n");
     k_printf("exit               - Exit the shell\n");
     k_printf("dir                - Print contents of the working directory\n");

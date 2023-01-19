@@ -117,6 +117,7 @@ char *convert(unsigned int num, int base) {
 	if(num==0){
 		ptr = &buffer[0];
 		buffer[0] = '0';
+		buffer[1] = 0;
 		return ptr;
 	}
 	
@@ -181,5 +182,5 @@ void k_printf(char* format,...){
 void initialise_graphics_driver(){
     clear_screen(0xFFFFFFFF);
     setActiveFont(getDefaultFont());
-    k_printf("Graphics driver initialised!\nBase Address: %x\nBufferSize: %x \nHeight: %x \nPixelsPerScanline: %x \nWidth: %x \n",graphics_info->BaseAddress,graphics_info->BufferSize,graphics_info->Height,graphics_info->PixelsPerScanLine,graphics_info->Width);
+    k_printf("Graphics driver initialised!\nBase Address: %x\nHeight: %x \nPixelsPerScanline: %x \nWidth: %x \n",graphics_info->BaseAddress,graphics_info->Height,graphics_info->PixelsPerScanLine,graphics_info->Width);
 }

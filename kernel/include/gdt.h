@@ -26,6 +26,7 @@ typedef struct __attribute__((packed)) __attribute((aligned(0x1000))) {
 } GDT;
 extern void LoadGDT(GDTDescriptor* gdtDescriptor);
 #else 
+extern void gdt_flush();
 struct gdt_entry{
     unsigned short limit_low;
     unsigned short base_low;

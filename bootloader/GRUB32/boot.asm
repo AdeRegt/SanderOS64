@@ -167,9 +167,7 @@ _start:
 
     jmp eol
 
-[extern nolongmodemessager]
 NoLongMode:
-    call nolongmodemessager
 eol:
 	cli
 hang:	
@@ -226,6 +224,6 @@ Realm64:
     mov fs, ax                    ; Set the F-segment to the A-register.
     mov gs, ax                    ; Set the G-segment to the A-register.
     mov ss, ax                    ; Set the stack segment to the A-register.
-    
+
     mov rdi,bootinfo
     call qword [epoint]

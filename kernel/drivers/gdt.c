@@ -43,6 +43,6 @@ void initialise_gdt_driver(){
     gdt_set_gate(0, 0, 0, 0, 0);
     gdt_set_gate(1, 0, 0xFFFFFFFF, 0x9A, 0xCF);
     gdt_set_gate(2, 0, 0xFFFFFFFF, 0x92, 0xCF);
-    asm volatile("lgdt %0" :: "m"(gp));
+    gdt_flush();
 }
 #endif 

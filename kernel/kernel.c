@@ -5,6 +5,7 @@
 #include "include/pci.h"
 #include "include/timer.h"
 #include "include/device.h"
+#include "include/ethernet.h"
 #include "include/multitasking.h"
 #include "include/tty.h"
 #include "include/comport.h"
@@ -21,6 +22,10 @@ void __stack_chk_fail(){
     for(;;);
 }
 
+void __stack_chk_fail_local(){
+    for(;;);
+}
+
 void kernel_main(BootInfo *gi){
     bi = gi;
     initialise_gdt_driver();
@@ -31,12 +36,15 @@ void kernel_main(BootInfo *gi){
     initialise_paging_driver();
     initialise_comport();
     initialise_idt_driver();
-    initialise_timer_driver();
     initialise_multitasking_driver();
     initialise_pci_driver();
     #ifndef use_driver
         initialise_drivers_from_pci();
     #endif 
+    initialise_ethernet();
+}
+
+void post_init_kernel(){
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");
