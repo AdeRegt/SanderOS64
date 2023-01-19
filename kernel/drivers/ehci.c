@@ -69,7 +69,7 @@ EhciCMD *ehci_generate_command_structure(uint8_t request, uint8_t dir, uint8_t t
     return command;
 }
 
-EhciTD *ehci_generate_transfer_descriptor(uint32_t nextlink,uint8_t type,uint8_t size,uint8_t toggle,uint32_t data)
+EhciTD *ehci_generate_transfer_descriptor(uint32_t nextlink,uint8_t type,uint16_t size,uint8_t toggle,uint32_t data)
 {
     EhciTD *command = (EhciTD*) requestPage();
     memset(command,0,sizeof(EhciTD));
@@ -85,7 +85,7 @@ EhciTD *ehci_generate_transfer_descriptor(uint32_t nextlink,uint8_t type,uint8_t
     return command;
 }
 
-EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint8_t t,uint8_t mplen,uint8_t device,uint32_t capabilities,uint32_t token)
+EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint8_t t,uint16_t mplen,uint8_t device,uint32_t capabilities,uint32_t token,uint8_t endpointid)
 {
     EhciQH *command = (EhciQH*) requestPage();
     memset(command,0,sizeof(EhciQH));
@@ -97,6 +97,7 @@ EhciQH *ehci_generate_queue_head(uint32_t next_link,uint8_t eps,uint8_t dtc,uint
     command->characteristics |= (dtc<<14);
     command->characteristics |= (t<<15);
     command->characteristics |= (mplen<<16);
+    command->characteristics |= (endpointid<<8);
     command->characteristics |= (device);
     command->capabilities = capabilities;
     command->token = token;
@@ -175,8 +176,8 @@ uint8_t ehci_request_device_addr(uint8_t wantedaddress)
     EhciCMD *command = ehci_generate_command_structure(USB2_REQUEST_SET_ADDRESS,0,0,0,0,0,wantedaddress);
     EhciTD *status = ehci_generate_transfer_descriptor(1,1,0,1,0);
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,2,8,0,(uint32_t)(upointer_t)command);
-    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,0,0x40000000,0);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,0,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
@@ -195,8 +196,8 @@ void *ehci_request_device_descriptor(uint8_t address,uint8_t type,uint8_t index,
     EhciTD *status = ehci_generate_transfer_descriptor(1,0,0,1,0);                                                                      // OK
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
     EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,8,0,(uint32_t)(upointer_t)command);       // OK 8
-    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
@@ -218,8 +219,8 @@ uint8_t ehci_set_used_config(uint8_t address,uint8_t config)
     EhciCMD *command = ehci_generate_command_structure(USB2_REQUEST_SET_CONFIGURATION,0,0,0,0,0,config);
     EhciTD *status = ehci_generate_transfer_descriptor(1,1,0,1,0);
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,2,8,0,(uint32_t)(upointer_t)command);
-    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,address,0x40000000,0);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)transfercommand,2,1,0,64,address,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
@@ -240,8 +241,8 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
     EhciTD *status = ehci_generate_transfer_descriptor(1,0,0,1,0);                                                                      // OK
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
     EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,8,0,(uint32_t)(upointer_t)command);       // OK 8
-    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     head2->curlink = (uint32_t) (upointer_t) buffer2;
@@ -256,6 +257,39 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
         return buffer;
     }else{
         return 0;
+    }
+}
+
+void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
+{
+    EhciTD *status = ehci_generate_transfer_descriptor(1,0,size,0,command);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(status);
+    freePage(head1);
+    freePage(head2);
+}
+
+void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)
+{
+    void* command = requestPage();
+    memset(command,0,size);
+    EhciTD *status = ehci_generate_transfer_descriptor(1,1,size,toggle,(uint32_t)(upointer_t)command);
+    EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
+    head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
+    head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
+    uint8_t res = ehci_offer_queuehead_to_ring((uint32_t)(upointer_t)head1,status);
+    freePage(status);
+    freePage(head1);
+    freePage(head2);
+    if(res==0){
+        return 0;
+    }else{
+        return command;
     }
 }
 
@@ -310,6 +344,13 @@ void ehci_test_port(int portno)
     device->interface = (usb_interface_descriptor*) (((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
     device->ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
     device->ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
+    if(ep1->bEndpointAddress&0x80){
+        device->epINid = ep1->bEndpointAddress&0xF;
+        device->epOUTid = ep2->bEndpointAddress&0xF;
+    }else{
+        device->epINid = ep2->bEndpointAddress&0xF;
+        device->epOUTid = ep1->bEndpointAddress&0xF;
+    }
     
     rdar = ehci_set_used_config(device_address,1);
     if(rdar==0)

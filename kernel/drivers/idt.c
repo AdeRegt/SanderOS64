@@ -87,6 +87,7 @@ void setInterrupt(int offset,void *fun){
         int_PageFault->type_attr = IDT_TA_InterruptGate;
         int_PageFault->selector = 0x08;
     #else 
+        IRQ_clear_mask(32 + offset);
         idt_set_gate(32 + (unsigned char)offset, (unsigned long)fun, 0x08, 0x8E);
     #endif 
 }
