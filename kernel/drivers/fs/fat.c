@@ -488,7 +488,7 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
     for(int i = 0 ; i < 4 ; i++){
         if(fe[i].type==0xEE){
             k_printf("mbr: efi found!\n");
-            dev->offset += fe[i].lbastart;
+            dev->offset = fe[i].lbastart;
             k_printf("mbr: updating dev offset to %d \n",dev->offset);
             if(!device_read_raw_sector(dev,1,2,(void*)(buffer+512))){
                 k_printf("device: unable to read sector!\n");
@@ -517,7 +517,7 @@ void fat_detect_and_initialise(Blockdevice *dev,void* buffer){
                 continue;
             }
         }else if(fe[i].type==0x06){
-            dev->offset += fe[i].lbastart;
+            dev->offset = fe[i].lbastart;
             found = 1;
             k_printf("mbr: fat found!\n");
         }else if(fe[i].type==0){
