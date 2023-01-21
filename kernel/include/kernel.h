@@ -46,3 +46,5 @@ void kernel_main(BootInfo *gi);
  * @return BootInfo* 
  */
 BootInfo *getBootInfo();
+
+void post_init_kernel();

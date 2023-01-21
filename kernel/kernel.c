@@ -9,6 +9,7 @@
 #include "include/multitasking.h"
 #include "include/tty.h"
 #include "include/comport.h"
+#include "include/ps2.h"
 #include "include/exec/program.h"
 #include "include/exec/module.h"
 
@@ -42,6 +43,7 @@ void kernel_main(BootInfo *gi){
         initialise_drivers_from_pci();
     #endif 
     initialise_ethernet();
+    post_init_kernel();
 }
 
 void post_init_kernel(){
@@ -50,9 +52,11 @@ void post_init_kernel(){
         k_printf("Unable to detect a valid kernel FS!\n");
         for(;;);
     }
-    loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
     #ifdef use_driver
+        loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
         initialise_drivers_from_pci();
+    #else
+        initialise_ps2_driver();
     #endif 
     initialise_tty();
     k_printf("__end of kernel!\n");
