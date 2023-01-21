@@ -98,7 +98,28 @@ uint8_t ps2_ready_to_write(){
     return 1;
 }
 
+uint8_t ps2_ready_to_read(){
+    int i = 0;
+    while(!(ps2_get_status()&PS2_MASK_NOT_READY_TO_READ)){
+        i++;
+        sleep(1);
+        if(i>10){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 uint8_t write_to_first_ps2_port(uint8_t data){
+    if(!ps2_ready_to_write()){
+        return 0;
+    }
+    outportb(PS2_DATA,data);
+    return 1;
+}
+
+uint8_t write_to_second_ps2_port(uint8_t data){
+    outportb(PS2_STATUS,0xD4);
     if(!ps2_ready_to_write()){
         return 0;
     }
@@ -169,10 +190,6 @@ uint8_t initialise_ps2_keyboard(){
     return 0;
 }
 
-uint8_t initialise_ps2_mouse(){
-    return 1;
-}
-
 void initialise_ps2_driver(){
     k_printf("ps2: ps2 driver loaded!\n");
     if(!ps2_echo_check()){
@@ -180,6 +197,5 @@ void initialise_ps2_driver(){
         return;
     }
     k_printf("ps2: ping succeed!\n");
-    if(!initialise_ps2_mouse()){}
     initialise_ps2_keyboard();
 }
