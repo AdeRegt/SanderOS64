@@ -3,7 +3,7 @@ A 64bit OS
 
 ## Target
 * Boot via UEFI :white_check_mark:
-* Boot via GRUB
+* Boot via GRUB :white_check_mark:
 * Load kernel from AHCI :white_check_mark:
 * Read filesystem from AHCI :white_check_mark:
 * Write filesystem from AHCI :white_check_mark:
