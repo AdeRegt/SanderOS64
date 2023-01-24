@@ -14,6 +14,53 @@ typedef struct{
     uint32_t reservedB;
 }__attribute__((packed)) XHCIEventRingSegmentTable;
 
+typedef struct{
+    uint32_t DataBufferPointerLo;
+    uint32_t DataBufferPointerHi;
+     uint32_t CommandCompletionParameter:24;
+     uint16_t CompletionCode:8;
+     uint8_t C:1;
+     uint16_t reserved3:9;
+     uint8_t TRBType:6;
+     uint32_t VFID:8;
+     uint32_t SlotID:8;
+}__attribute__((packed)) CommandCompletionEventTRB;
+
+typedef struct{
+    #ifdef __x86_64
+    uint64_t DataBufferPointerHiandLo;
+    #endif 
+    #ifndef __x86_64
+    uint32_t DataBufferPointerLo;
+    uint32_t DataBufferPointerHi;
+    #endif 
+    uint32_t TRBTransferLength:17;
+    uint16_t TDSize:5;
+    uint16_t InterrupterTarget:10;
+    uint16_t Cyclebit:1;
+    uint16_t EvaluateNextTRB:1;
+    uint16_t InterruptonShortPacket:1;
+    uint16_t NoSnoop:1;
+    uint16_t Chainbit:1;
+    uint16_t InterruptOnCompletion:1;
+    uint16_t ImmediateData:1;
+    uint16_t RsvdZ1:2;
+    uint16_t BlockEventInterrupt:1;
+    uint16_t TRBType:6;
+    uint16_t RsvdZ2:16;
+}__attribute__((packed))DefaultTRB;
+
+typedef struct{
+     uint32_t rsvrd1;
+     uint32_t rsvrd2;
+     uint32_t rsvrd3;
+     uint8_t CycleBit:1;
+     uint16_t RsvdZ1:9;
+     uint16_t TRBType:6;
+     uint16_t SlotType:5;
+     uint16_t RsvdZ2:11;
+}__attribute__((packed)) EnableSlotCommandTRB;
+
 void *xhci_base_addr;
 uint8_t xhci_capability_registers_length = 0;
 uint8_t xhci_number_of_ports = 0;
@@ -24,6 +71,8 @@ void *dcbaap;
 void *commandring;
 void *eventring;
 XHCIEventRingSegmentTable *segmenttable;
+
+uint8_t command_ring_pointer = 0;
 
 uint32_t xhci_get_usbcmd_reg()
 {
@@ -180,6 +229,60 @@ __attribute__((interrupt)) void irq_xhci(interrupt_frame* frame)
     asm volatile ("sti");
 }
 
+DefaultTRB *xhci_request_free_command_trb()
+{
+    DefaultTRB *dtrb = (DefaultTRB*) (commandring + (sizeof(DefaultTRB)*command_ring_pointer));
+    command_ring_pointer++;
+    return dtrb;
+}
+
+CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t doorbell_value,uint32_t checkvalue)
+{
+    ((uint32_t*)(xhci_base_addr + xhci_doorbell_offset))[doorbell_offset] = doorbell_value;
+    sleep(1);
+    while((xhci_get_iman_reg(0)&1)==0)
+    {
+        sleep(1);
+    }
+    sleep(1);
+    for(int i = 0 ; i < 15 ; i++)
+    {
+        CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
+        if(to->DataBufferPointerLo==checkvalue)
+        {
+            return to;
+        }
+    }
+    return 0;
+}
+
+uint8_t xhci_request_device_id()
+{
+    // Enable slot TRB
+    EnableSlotCommandTRB *trb1 = (EnableSlotCommandTRB*) xhci_request_free_command_trb();
+    trb1->CycleBit = 0;
+    trb1->TRBType = 9;
+
+    EnableSlotCommandTRB *trb2 = (EnableSlotCommandTRB*) xhci_request_free_command_trb();
+    trb2->CycleBit = 1;
+
+    CommandCompletionEventTRB *res = xhci_ring_and_wait(0,0,(uint32_t)(upointer_t)trb1);
+    if(res)
+    {
+        if(res->CompletionCode!=1)
+        {
+            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            return 0;
+        }
+        return res->SlotID;
+    }
+    else
+    {
+        k_printf("xhci: couldent get xhci datatoken");
+        return 0;
+    }
+}
+
 void xhci_port_install(uint8_t portid)
 {
     uint32_t portc = xhci_get_portsc_reg(portid);
@@ -187,7 +290,11 @@ void xhci_port_install(uint8_t portid)
     {
         return;
     }
-    k_printf("xhci: portid:%d porthex:%x ",portid,portc);
+    uint8_t portspeed = (portc >> 10) & 0b111;
+
+    // request next free device-id
+    uint8_t deviceid = xhci_request_device_id();
+    k_printf("xhci: slotid %d has now a deviceid of %d \n",portid,deviceid);
 }
 
 void xhci_driver_start(int bus,int slot,int function)
@@ -241,7 +348,6 @@ void xhci_driver_start(int bus,int slot,int function)
         }
         if( capid==1 && reg & 0x10000 )
         {
-            k_printf("xhci: found legacy problems\n");
             ((uint32_t*)cappointer)[0] |= 0x1000000;
             sleep(1);
             continue;
@@ -395,9 +501,15 @@ void xhci_driver_start(int bus,int slot,int function)
     // Write the USBCMD (5.4.1) to turn the host controller ON via setting the
     // Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin
     // accepting doorbell references.
+    #ifdef ENABLE_INTERRUPTS
     xhci_set_usbcmd_reg(5);
+    #else
+    xhci_set_usbcmd_reg(1);
+    #endif 
 
-    k_printf("xhci: OK\n");
+    // Set all pointers to zero
+    command_ring_pointer = 0;
+
     sleep(5);
     for(uint8_t i = 1 ; i < xhci_number_of_ports ; i++){
         xhci_port_install(i);
