@@ -391,11 +391,6 @@ CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t 
             return to;
         }
     }
-    for(int i = 0 ; i < 15 ; i++)
-    {
-        CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
-        k_printf("%d:%x[%d] | ",i,to->DataBufferPointerLo,to->CompletionCode);
-    }
     return 0;
 }
 
@@ -478,12 +473,64 @@ void *xhci_request_device_descriptor(USBDevice *device)
     trb1->ImmediateData = 1;
     trb1->TRBType = 2;
     trb1->TRT = 3;
-    trb1->InterruptOnCompletion = 1;
 
     DataStageTRB *trb2 = (DataStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
     trb2->Address1 = (uint32_t)(upointer_t) data;
     trb2->Address2 = 0;
     trb2->TRBTransferLength = 8;
+    trb2->Cyclebit = 1;
+    trb2->TRBType = 3;
+    trb2->Direction = 1;
+
+    StatusStageTRB *trb3 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
+    trb3->Cyclebit = 1;
+    trb3->InterruptOnCompletion = 1;
+    trb3->Direction = 1;
+    trb3->TRBType = 4;
+
+    StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex];
+    trb4->Cyclebit = 0;
+
+    CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,1,(uint32_t)(upointer_t)trb3);
+    if(res)
+    {
+        if(res->CompletionCode!=1)
+        {
+            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            return 0;
+        }
+        return data;
+    }
+    else
+    {
+        k_printf("xhci: couldent get xhci datatoken\n");
+        return 0;
+    }
+}
+
+void *xhci_request_device_configuration(USBDevice *device)
+{
+    uint32_t expectedsize = sizeof(usb_config_descriptor) + sizeof(usb_interface_descriptor) +(sizeof(EHCI_DEVICE_ENDPOINT)*2);
+    void* data = requestPage();
+
+    SetupStageTRB *trb1 = (SetupStageTRB*) ((DefaultTRB*)(device->localring+(device->localringindex++*sizeof(DefaultTRB))));
+    trb1->usbcmd.bRequestType = 0x80;
+    trb1->usbcmd.bRequest = 6;
+    trb1->usbcmd.wValue = 0x200;
+    trb1->usbcmd.wIndex = 0;
+    trb1->usbcmd.wLength = expectedsize;
+    trb1->TRBTransferLength = 8;
+    trb1->InterrupterTarget = 0;
+    trb1->Cyclebit = 1;
+    trb1->ImmediateData = 1;
+    trb1->TRBType = 2;
+    trb1->TRT = 3;
+    trb1->InterruptOnCompletion = 1;
+
+    DataStageTRB *trb2 = (DataStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
+    trb2->Address1 = (uint32_t)(upointer_t) data;
+    trb2->Address2 = 0;
+    trb2->TRBTransferLength = expectedsize;
     trb2->Cyclebit = 1;
     trb2->TRBType = 3;
     trb2->Direction = 1;
@@ -497,8 +544,6 @@ void *xhci_request_device_descriptor(USBDevice *device)
 
     StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex];
     trb4->Cyclebit = 0;
-
-    k_printf("xhci : %x %x %x \n",trb1,trb2,trb3);
 
     CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,1,(uint32_t)(upointer_t)trb3);
     if(res)
@@ -557,12 +602,14 @@ void xhci_port_install(uint8_t portid)
     infostructures->epc.MaxPacketSize = calculatedportspeed;
     infostructures->epc.TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4 ;
     infostructures->epc.DequeueCycleState = 1;
+    // now do the call
     if(xhci_request_device_address(deviceid,infostructures)==0)
     {
         goto failure;
     }
     k_printf("xhci: port has now a address!\n");
 
+    // this seems to go well....
     USBDevice *device = getFreeUSBDeviceClass();
     device->physport = portid;
     device->protocol = 3;
@@ -570,11 +617,24 @@ void xhci_port_install(uint8_t portid)
     device->localring = localring;
     device->localringindex = 0;
 
+    // fetch some data to test...
     uint8_t* did = (uint8_t*)xhci_request_device_descriptor(device);
     if(did==0)
     {
         goto failure;
     }
+    k_printf("xhci: first port communication went well!\n");
+
+    // get some advanced configurations
+    uint8_t* cinforaw = (uint8_t*)xhci_request_device_configuration(device);
+    if(cinforaw==0)
+    {
+        goto failure;
+    }
+    usb_interface_descriptor* desc = (usb_interface_descriptor*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor));
+    EHCI_DEVICE_ENDPOINT *ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
+    EHCI_DEVICE_ENDPOINT *ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
+    k_printf("xhci: port %d has a class of %d and a sublclass of %d \n",portid,desc->bInterfaceClass,desc->bInterfaceSubClass);
     return;
 
     failure:

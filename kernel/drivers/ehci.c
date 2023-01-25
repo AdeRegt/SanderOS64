@@ -340,13 +340,9 @@ void ehci_test_port(int portno)
         goto failed;
     }
     usb_interface_descriptor* desc = (usb_interface_descriptor*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
-    // k_printf("ehci-%d: There are %d endpoints available!\n",portno,desc->bNumEndpoints);
     EHCI_DEVICE_ENDPOINT *ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
     EHCI_DEVICE_ENDPOINT *ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
-    // k_printf("ehci-%d: EP1 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep1->bLength,ep1->bDescriptorType,ep1->bEndpointAddress&0x80?'I':'O',ep1->bEndpointAddress&0xF,ep1->wMaxPacketSize&0x7FF);
-    // k_printf("ehci-%d: EP2 size=%x type=%x dir=%c num=%x epsize=%x \n",portno,ep2->bLength,ep2->bDescriptorType,ep2->bEndpointAddress&0x80?'I':'O',ep2->bEndpointAddress&0xF,ep2->wMaxPacketSize&0x7FF);
-    // k_printf("ehci-%d: class=%x subclass=%x \n",portno,desc->bInterfaceClass,desc->bInterfaceSubClass);
-
+    
     device->config = (usb_config_descriptor*) devicedescriptor;
     device->interface = (usb_interface_descriptor*) (((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor));
     device->ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)devicedescriptor)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
