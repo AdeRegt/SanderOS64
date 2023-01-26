@@ -634,7 +634,22 @@ void xhci_port_install(uint8_t portid)
     usb_interface_descriptor* desc = (usb_interface_descriptor*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor));
     EHCI_DEVICE_ENDPOINT *ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
     EHCI_DEVICE_ENDPOINT *ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
+
+    device->config = (usb_config_descriptor*) cinforaw;
+    device->interface = (usb_interface_descriptor*) (((unsigned long)cinforaw)+sizeof(usb_config_descriptor));
+    device->ep1 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor));
+    device->ep2 = (EHCI_DEVICE_ENDPOINT*)(((unsigned long)cinforaw)+sizeof(usb_config_descriptor)+sizeof(usb_interface_descriptor)+7);
+    if(ep1->bEndpointAddress&0x80){
+        device->epINid = ep1->bEndpointAddress&0xF;
+        device->epOUTid = ep2->bEndpointAddress&0xF;
+    }else{
+        device->epINid = ep2->bEndpointAddress&0xF;
+        device->epOUTid = ep1->bEndpointAddress&0xF;
+    }
+
     k_printf("xhci: port %d has a class of %d and a sublclass of %d \n",portid,desc->bInterfaceClass,desc->bInterfaceSubClass);
+    
+    install_usb_device(device);
     return;
 
     failure:
