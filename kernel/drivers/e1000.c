@@ -14,6 +14,7 @@ int rx_cur;
 int tx_cur;
 volatile struct e1000_rx_desc *rx_descs[E1000_NUM_RX_DESC];
 volatile struct e1000_tx_desc *tx_descs[E1000_NUM_TX_DESC];
+static uint8_t is_online = 0;
 
 extern void e1000irq();
 
@@ -51,6 +52,7 @@ __attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
         k_printf("[E1000] Transmit queue empty!\n");
     }else if(to&0x04){
         k_printf("[E1000] Link change!\n");
+		ethernet_set_link_status(1);
     }else if(to&0x80){
         k_printf("[E1000] Package recieved!\n");
         PackageRecievedDescriptor prd;
@@ -100,6 +102,7 @@ void e1000_link_up(){
     unsigned long ty = e1000_read_in_space(0);
     e1000_write_in_space(0, ty | 0x40);
     k_printf("[E1000] Link is up!\n");
+    ethernet_set_link_status(1);
 }
 
 PackageRecievedDescriptor e1000_recieve_package(){
@@ -221,10 +224,11 @@ void e1000_driver_start(int bus,int slot,int function){
 
     //
     // set interrupts
-    e1000_enable_int();
+    // e1000_enable_int();
     e1000_link_up();
 
     //
     // register driver
     register_ethernet_device(e1000_send_package,e1000_recieve_package,mac_address);
+	ethernet_set_link_status(is_online);
 }

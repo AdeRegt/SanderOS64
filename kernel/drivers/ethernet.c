@@ -492,10 +492,6 @@ void initialise_ethernet(){
     EthernetDevice ed = getDefaultEthernetDevice();
     if(ed.is_enabled){
         k_printf("[ETH] There is a ethernet device present on the system!\n");
-        if(defaultEthernetDevice.is_online==0){
-            k_printf("[ETH] We are offline :( \n");
-            return;
-        }
         k_printf("[ETH] Asking DHCP server for our address....\n");
 
         struct DHCPDISCOVERHeader *dhcpheader = (struct DHCPDISCOVERHeader *)malloc(sizeof(struct DHCPDISCOVERHeader));

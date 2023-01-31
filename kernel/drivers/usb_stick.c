@@ -33,9 +33,9 @@ typedef struct {
 
 void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
 {
-    ehci_send_bulk_data(device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
-    void* res = ehci_recieve_bulk_data(device->deviceaddres,device->epINid,512,0);
-    CommandStatusWrapper *cq = ehci_recieve_bulk_data(device->deviceaddres,device->epINid,13,1);
+    usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
+    void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,512,0);
+    CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,1);
     if(cq->signature!=0x53425355)
     {
         k_printf("__commandstatuswrapper: invalidsignature\n");
@@ -116,9 +116,10 @@ void install_usb_stick(USBDevice *device)
         k_printf("usb-%d: Unknown protocol type\n",device->physport);
         return;
     }
-    uint8_t* luns = ehci_request_normal_data(USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1,device->deviceaddres);
+    uint8_t* luns = usb_request_normal_data(device,USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1,device->deviceaddres);
     if(luns==0){
         k_printf("usb-%d: cant get lun!\n",device->physport);
+        return;
     }
     uint8_t lun = luns[0];
 
