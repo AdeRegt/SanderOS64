@@ -134,7 +134,6 @@ void initialise_pci_driver(){
                     }else if(classc==0x0C && sublca==0x03 && subsub==0x20 ){
                         ehci_driver_start(bus,slot,function);
                     }
-                    
                 }
             }
         }
