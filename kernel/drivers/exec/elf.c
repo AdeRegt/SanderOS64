@@ -176,6 +176,7 @@ upointer_t elf_load_image(void *programmem){
     return elfheader->e_entry;
     #endif 
     #ifndef __x86_64
+    k_printf("elf: Im here!\n");
     return 0;
     #endif 
 }

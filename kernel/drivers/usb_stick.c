@@ -33,9 +33,24 @@ typedef struct {
 
 void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
 {
-    usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
+    uint8_t g = usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
+    if(g==0)
+    {
+        k_printf("__block: datablok0 failed!\n");
+        return 0;
+    }
     void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,512,0);
+    if(res==0)
+    {
+        k_printf("__block: datablok1 failed!\n");
+        return 0;
+    }
     CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,1);
+    if(cq==0)
+    {
+        k_printf("__block: csw failed!\n");
+        return 0;
+    }
     if(cq->signature!=0x53425355)
     {
         k_printf("__commandstatuswrapper: invalidsignature\n");
@@ -93,6 +108,7 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
         ep->data[6] = 0;
         ep->data[7] = 0;
         ep->data[8] = 1;
+
         uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
         freePage(ep);
         if(cq==0){

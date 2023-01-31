@@ -157,9 +157,9 @@ uint8_t ps2_scancode_to_char(uint8_t ps){
 
 __attribute__((interrupt)) void irq_keyboard(interrupt_frame* frame){
     uint8_t key = inportb(PS2_DATA);
-    if(key==42){
+    if(key==42||key==54){
         shift_pressed = 1;
-    }else if(key==170){
+    }else if(key==170||key==182){
         shift_pressed = 0;
     }else if(key&0x80){
         last_pressed_key = ps2_scancode_to_char(key);

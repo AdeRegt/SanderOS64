@@ -17,16 +17,17 @@ void *usb_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, u
     }
 }
 
-void usb_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
+uint8_t usb_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
     if(device->protocol==2)
     {
-        ehci_send_bulk_data(address,command,endpoint,size);
+        return ehci_send_bulk_data(address,command,endpoint,size);
     }
     else
     {
         k_printf("usb: function usb_send_bulk_data is not available for this device type!\n");
     }
+    return 0;
 }
 
 void *usb_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)

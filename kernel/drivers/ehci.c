@@ -260,7 +260,7 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
     }
 }
 
-void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
+uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
     EhciTD *status2 = ehci_generate_transfer_descriptor(1,0,0,1,0);
     EhciTD *status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,0,size,0,command);
@@ -272,6 +272,7 @@ void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t
     freePage(status);
     freePage(head1);
     freePage(head2);
+    return res;
 }
 
 void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)

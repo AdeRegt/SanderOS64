@@ -33,14 +33,19 @@ void initialise_tty(){
         if(memcmp(tw,"exit",4)==0){
             break;
         }else if(memcmp(tw,"dir",3)==0){
-            k_printf("%s\n",dir(wd));
+            char *dirinfo = dir(wd);
+            if(dirinfo){
+                k_printf("%s\n",dirinfo);
+            }else{
+                k_printf("Unable to read directory!\n");
+            }
         }else if(memcmp(tw,"cd ",3)==0){
             char *strpath = (char*) (tw+3);
             if(strpath[1]==':'){
                 memset((void*)&wd,0,50);
                 memcpy((void*)&wd,strpath,strlen(strpath));
             }else{
-                if(strlen((char*)&wd)>2){
+                if(strlen((char*)&wd)>3){
                     memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),"/",1);
                 }
                 memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
