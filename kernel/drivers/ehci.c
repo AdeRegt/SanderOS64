@@ -275,7 +275,7 @@ uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int
     return res;
 }
 
-void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)
+void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
 {
     void* command = requestPage();
     memset(command,0,size);
@@ -283,7 +283,7 @@ void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint
     EhciTD *current = 0;
     EhciTD *lastone = 0;
     
-    uint16_t pointer = 0;
+    uint32_t pointer = 0;
     uint16_t packagel = size<512?size:512;
     uint16_t i = 0;
     while(1)

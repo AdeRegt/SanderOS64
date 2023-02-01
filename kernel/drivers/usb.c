@@ -30,7 +30,7 @@ uint8_t usb_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,i
     return 0;
 }
 
-void *usb_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)
+void *usb_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
 {
     if(device->protocol==2)
     {
