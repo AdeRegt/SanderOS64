@@ -282,15 +282,7 @@ void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint
     EhciTD *status = 0;
     EhciTD *current = 0;
     EhciTD *lastone = 0;
-    // if(toggle){
-    //     EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
-    //     status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
-    // }else{
-    //     EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
-    //     status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
-    // }
-    // k_printf("debug: alt:%d buffer:%d extbuffer:%d nextlink:%d token:%d \n",status->altlink,status->buffer[0],status->extbuffer,status->nextlink,status->token);
-
+    
     uint16_t pointer = 0;
     uint16_t packagel = size<512?size:512;
     uint16_t i = 0;

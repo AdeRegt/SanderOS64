@@ -39,7 +39,7 @@ void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
         k_printf("__block: datablok0 failed!\n");
         return 0;
     }
-    void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,512,0);
+    void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,cbw->transferlength,0);
     if(res==0)
     {
         k_printf("__block: datablok1 failed!\n");
@@ -88,7 +88,7 @@ CommandBlockWrapper* usb_stick_generate_pointer()
 uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
 {
     CommandBlockWrapper *ep = usb_stick_generate_pointer();
-    ep->transferlength = 512;
+    ep->transferlength = 512 * counter;
     ep->flags = 0x80;
     ep->command_len = 10;
     // command READ(0x12)
