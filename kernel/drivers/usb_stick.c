@@ -87,37 +87,31 @@ CommandBlockWrapper* usb_stick_generate_pointer()
 
 uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
 {
-    upointer_t buffervoid = (upointer_t)buffer;
-    for(uint32_t i = 0 ; i < counter ; i++)
-    {
-        upointer_t calculatedaddress = sector + i ;
-        CommandBlockWrapper *ep = usb_stick_generate_pointer();
-        ep->transferlength = 512;
-        ep->flags = 0x80;
-        ep->command_len = 10;
-        // command READ(0x12)
-        ep->data[0] = 0x28;
-        // reserved
-        ep->data[1] = 0;
-        // lba
-        ep->data[2] = (uint8_t) ((calculatedaddress >> 24) & 0xFF);
-        ep->data[3] = (uint8_t) ((calculatedaddress >> 16) & 0xFF);
-        ep->data[4] = (uint8_t) ((calculatedaddress >> 8) & 0xFF);
-        ep->data[5] = (uint8_t) ((calculatedaddress) & 0xFF);
-        // counter
-        ep->data[6] = 0;
-        ep->data[7] = 0;
-        ep->data[8] = 1;
+    CommandBlockWrapper *ep = usb_stick_generate_pointer();
+    ep->transferlength = 512;
+    ep->flags = 0x80;
+    ep->command_len = 10;
+    // command READ(0x12)
+    ep->data[0] = 0x28;
+    // reserved
+    ep->data[1] = 0;
+    // lba
+    ep->data[2] = (uint8_t) ((sector >> 24) & 0xFF);
+    ep->data[3] = (uint8_t) ((sector >> 16) & 0xFF);
+    ep->data[4] = (uint8_t) ((sector >> 8) & 0xFF);
+    ep->data[5] = (uint8_t) ((sector) & 0xFF);
+    // counter
+    ep->data[6] = 0;
+    ep->data[7] = (uint8_t) ((counter >> 8) & 0xFF);
+    ep->data[8] = (uint8_t) ((counter) & 0xFF);
 
-        uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
-        freePage(ep);
-        if(cq==0){
-            return 0;
-        }
-        memcpy((void*)buffervoid,cq,512);
-        freePage(cq);
-        buffervoid += 512;
+    uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
+    freePage(ep);
+    if(cq==0){
+        return 0;
     }
+    memcpy((void*)buffer,cq,512*counter);
+    freePage(cq);
     return 1;
 }
 

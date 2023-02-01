@@ -111,7 +111,7 @@ uint8_t ehci_wait_for_completion(volatile EhciTD *status)
     int timeout = 25;
     while(1)
     {
-        sleep(5);
+        sleep(2);
         // k_printf("*");
         volatile uint32_t tstatus = (volatile uint32_t)status->token;
         if(tstatus & (1 << 4))
@@ -279,13 +279,42 @@ void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint
 {
     void* command = requestPage();
     memset(command,0,size);
-    EhciTD *status;
-    if(toggle){
-        EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
-        status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
-    }else{
-        status = ehci_generate_transfer_descriptor(1,1,size,toggle,(uint32_t)(upointer_t)command);
+    EhciTD *status = 0;
+    EhciTD *current = 0;
+    EhciTD *lastone = 0;
+    // if(toggle){
+    //     EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
+    //     status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
+    // }else{
+    //     EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
+    //     status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
+    // }
+    // k_printf("debug: alt:%d buffer:%d extbuffer:%d nextlink:%d token:%d \n",status->altlink,status->buffer[0],status->extbuffer,status->nextlink,status->token);
+
+    uint16_t pointer = 0;
+    uint16_t packagel = size<512?size:512;
+    uint16_t i = 0;
+    while(1)
+    {
+        current = ehci_generate_transfer_descriptor(1,1,packagel,toggle,(uint32_t)(upointer_t)command);
+        if(status==0)
+        {
+            status = current;
+        }
+        if(lastone!=0)
+        {
+            lastone->nextlink = (uint32_t)(upointer_t)current;
+        }
+        toggle = toggle==0;
+        lastone = current;
+        pointer += packagel;
+        if(pointer==size)
+        {
+            break;
+        }
+        i++;
     }
+
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
     EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
