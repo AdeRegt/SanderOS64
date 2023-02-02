@@ -12,7 +12,11 @@ void initialise_tty(){
     clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
     memset((void*)&wd,0,FILENAME_MAX);
-    memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
+    #ifdef __x86_64
+        memcpy((void*)&wd,"A:PROGRAMS/64BIT",strlen("A:PROGRAMS/64BIT"));
+    #else
+        memcpy((void*)&wd,"A:PROGRAMS/32BIT",strlen("A:PROGRAMS/32BIT"));
+    #endif
 
     char *kp = dir(wd);
 

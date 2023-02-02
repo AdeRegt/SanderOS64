@@ -20,4 +20,4 @@ all:
 	cd .. 
 	rm -r SANDEROS64
 	cd ../..
-	cp ./fasm.bin ../../bin/programs/fasm.bin
+	cp ./fasm.bin ../../bin/programs/64bit/fasm.bin
