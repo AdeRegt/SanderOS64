@@ -22,7 +22,7 @@ char getc(){
     return buffer[0];
 }
 
-long unsigned int strlen(const char *ert){
+upointer_t strlen(const char *ert){
     char len = 0;
     while(ert[len++]);
     len--;
@@ -172,22 +172,22 @@ int printf( const char* format,...){
     va_end(arg);
 }
 
-void* memcpy( void *dest, const void *src, uint64_t count ){
-    for(uint64_t i = 0 ; i < count ; i++){
-        *(unsigned char*)((uint64_t)dest + i) = *(unsigned char*)((uint64_t)src + i);
+void* memcpy( void *dest, const void *src, upointer_t count ){
+    for(upointer_t i = 0 ; i < count ; i++){
+        *(unsigned char*)((upointer_t)dest + i) = *(unsigned char*)((upointer_t)src + i);
     }
 }
 
 int fclose( FILE *stream ){
     int modus = 3;
-    uint64_t res = 0;
+    upointer_t res = 0;
     __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) );
     return res;
 }
 
-uint64_t fread( void *buffer, uint64_t size, uint64_t count, FILE *stream ){
+upointer_t fread( void *buffer, upointer_t size, upointer_t count, FILE *stream ){
     int modus = 0;
-    uint64_t res = 0;
+    upointer_t res = 0;
     __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) , "S" (buffer) , "d" (count) );
     return res;
 }
@@ -215,7 +215,7 @@ FILE *fopen( const char *filename, const char *mode ){
     return res;
 }
 
-void* malloc( uint64_t size ){
+void* malloc( upointer_t size ){
     int mode = 400;
     void* res = 0;
 	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "d" (size) );
@@ -234,8 +234,8 @@ void *draw_pixel(int x,int y,int z){
 }
 
 void *memset(void *start, int value, long unsigned int num){
-    for(uint64_t i = 0 ; i < num ; i++){
-        *(unsigned char*)((uint64_t)start + i) = value;
+    for(upointer_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((upointer_t)start + i) = value;
     }
     return start;
 }

@@ -7,4 +7,4 @@ stdlib64.o: stdlib.c
 	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c stdlib.c -o stdlib64.o
 
 stdlib32.o: stdlib.c 
-	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c stdlib.c -o stdlib32.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c stdlib.c -o stdlib32.o

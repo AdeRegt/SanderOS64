@@ -45,7 +45,8 @@ void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
         k_printf("__block: datablok1 failed!\n");
         return 0;
     }
-    CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,1);
+    uint32_t oc = (cbw->transferlength/512)&2;
+    CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,oc==2?0:1);
     if(cq==0)
     {
         k_printf("__block: csw failed!\n");

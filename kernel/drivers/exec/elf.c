@@ -14,7 +14,11 @@ uint8_t is_elf(void *programmem){
     Elf64_Ehdr* elfheader = (Elf64_Ehdr*) programmem;
 
     // check elfheader
+    #ifdef __x86_64
     if(!(elfheader->e_ident[0]==0x7F && elfheader->e_ident[1]=='E' && elfheader->e_ident[2]=='L' && elfheader->e_ident[3]=='F' && elfheader->e_ident[4]==2 )){
+    #else 
+    if(!(elfheader->e_ident[0]==0x7F && elfheader->e_ident[1]=='E' && elfheader->e_ident[2]=='L' && elfheader->e_ident[3]=='F' && elfheader->e_ident[4]==1 )){
+    #endif
         return 0;
     }
     return 1;

@@ -278,6 +278,9 @@ uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int
 void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
 {
     void* command = requestPage();
+    for(upointer_t i = 0 ; i < size ; i+=0x1000){
+        requestPage();
+    }
     memset(command,0,size);
     EhciTD *status = 0;
     EhciTD *current = 0;
@@ -288,7 +291,7 @@ void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint32_t size,uint
     uint16_t i = 0;
     while(1)
     {
-        current = ehci_generate_transfer_descriptor(1,1,packagel,toggle,(uint32_t)(upointer_t)command);
+        current = ehci_generate_transfer_descriptor(1,1,packagel,toggle,(uint32_t)(upointer_t)command + pointer);
         if(status==0)
         {
             status = current;

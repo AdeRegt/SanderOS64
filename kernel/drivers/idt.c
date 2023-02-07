@@ -292,6 +292,8 @@ void initialise_idt_driver(){
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
         setRawInterrupt(i,GeneralFault_Handler);
     }
+    setRawInterrupt(0x80,isrint);
+    setRawInterrupt(0x81,isr2int);
     __asm__ volatile ("lidt %0" : : "m"(idtr));
     __asm__ volatile ("sti");
     return;

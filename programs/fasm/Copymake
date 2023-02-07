@@ -1,0 +1,10 @@
+all:
+	fasm ./fasm.asm
+	$(CC) -T ./linker.ld fasm.o -o ./fasmexec  -nostdlib -lgcc -ffreestanding
+	cp ./fasmexec ../../../../fasm64.bin
+	rm ./fasm.asm 
+	rm ./fasm.o
+	rm ./fasmexec 
+	rm ./linker.ld 
+	rm ./modes.inc 
+	rm ./system.inc 
