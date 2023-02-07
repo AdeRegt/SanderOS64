@@ -65,16 +65,14 @@ int exec(uint8_t *path,char *argv){
         if(!address){
             return -1;
         }
+    }else if(use_paging){
+        return addTask(buffer,buffer,fz,argstock);
     }else{
-        if(use_paging){
-            return addTask(buffer,buffer,fz,argstock);
-        }else{
-            memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
-            address = EXTERNAL_PROGRAM_ADDRESS;
-        }
+        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
+        address = EXTERNAL_PROGRAM_ADDRESS;
     }
 
     // call!
-    int (*callProgram)(int argc,char* argv) = (void*)address;
-    return callProgram(0,0);
+    int (*callProgram)(int argc,char** argv) = (void*)address;
+    return callProgram(0,argstock);
 }

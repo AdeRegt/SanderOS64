@@ -300,7 +300,6 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==401){
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
-    k_printf("EOI");
             ((uint32_t*)ix->rdi)[0] = (uint32_t)((upointer_t)us);
         }else{
             ((uint32_t*)ix->rdi)[0] = 0;
