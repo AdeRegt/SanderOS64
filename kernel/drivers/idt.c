@@ -116,8 +116,44 @@ typedef struct{
   long tv_usec;	/* Microseconds.  */
 }__attribute__((packed)) timeval;
 
+
+
+#ifndef __x86_64
+    uint32_t _inti_eip;
+    uint32_t _inti_eax;
+    uint32_t _inti_cs;
+    uint32_t _inti_eflags;
+    uint32_t _inti_edx;
+    uint32_t _inti_ecx;
+    uint32_t _inti_ebx;
+    uint32_t _inti_ebp;
+    uint32_t _inti_edi;
+    uint32_t _inti_esi;
+    uint32_t _inti_gs;
+    uint32_t _inti_fs;
+    uint32_t _inti_es;
+    uint32_t _inti_ds;
+
+    stack_registers uv;
+#endif 
+
 // http://faculty.nps.edu/cseagle/assembly/sys_call.html
+#ifndef __x86_64
+void isrhandler(){
+    stack_registers *ix = (stack_registers*)&uv;
+    ix->cs      = _inti_cs;
+    ix->rax     = _inti_eax;
+    ix->rbp     = _inti_ebp;
+    ix->rbx     = _inti_ebx;
+    ix->rcx     = _inti_ecx;
+    ix->rdi     = _inti_edi;
+    ix->rdx     = _inti_edx;
+    ix->rflags  = _inti_eflags;
+    ix->rip     = _inti_eip;
+    ix->rsi     = _inti_esi;
+#else 
 void isrhandler(stack_registers *ix){
+#endif 
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
     if(ix->rax==1){
@@ -137,11 +173,39 @@ void isrhandler(stack_registers *ix){
             k_printf("%c",z[i]);
         }
     }else{
-        k_printf("isr: Unknown isr code!\n");for(;;);
+        k_printf("isr: Unknown isr code: %d !\n",ix->rax);for(;;);
     }
+    #ifndef __x86_64
+    _inti_cs = ix->cs;
+    _inti_eax = ix->rax;
+    _inti_ebp = ix->rbp;
+    _inti_ebx = ix->rbx;
+    _inti_ecx = ix->rcx;
+    _inti_edi = ix->rdi;
+    _inti_edx = ix->rdx;
+    _inti_eflags = ix->rflags;
+    _inti_eip = ix->rip;
+    _inti_esi = ix->rsi;
+    #endif
 }
 
+#ifndef __x86_64
+void isr2handler(){
+    stack_registers *ix = (stack_registers*)&uv;
+    ix->cs      = _inti_cs;
+    ix->rax     = _inti_eax;
+    ix->rbp     = _inti_ebp;
+    ix->rbx     = _inti_ebx;
+    ix->rcx     = _inti_ecx;
+    ix->rdi     = _inti_edi;
+    ix->rdx     = _inti_edx;
+    ix->rflags  = _inti_eflags;
+    ix->rip     = _inti_eip;
+    ix->rsi     = _inti_esi;
+#else 
 void isr2handler(stack_registers *ix){
+#endif 
+    // k_printf("isr2: yield eax=%x ebx=%x ecx=%x edx=%x \n",ix->rax,ix->rbx,ix->rcx,ix->rdx);
     if(ix->rax==0){
         // k_printf("isr2:request read\n");
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
@@ -261,6 +325,18 @@ void isr2handler(stack_registers *ix){
     }
     eot:
     interrupt_eoi();
+    #ifndef __x86_64
+    _inti_cs = ix->cs;
+    _inti_eax = ix->rax;
+    _inti_ebp = ix->rbp;
+    _inti_ebx = ix->rbx;
+    _inti_ecx = ix->rcx;
+    _inti_edi = ix->rdi;
+    _inti_edx = ix->rdx;
+    _inti_eflags = ix->rflags;
+    _inti_eip = ix->rip;
+    _inti_esi = ix->rsi;
+    #endif
 }
 
 void initialise_idt_driver(){

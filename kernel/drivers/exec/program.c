@@ -7,7 +7,11 @@
 #include "../../include/graphics.h"
 #include "../../include/exec/debugger.h"
 
+#ifdef __x86_64
 int use_paging = 1;
+#else 
+int use_paging = 0;
+#endif
 
 int exec(uint8_t *path,char *argv){
 
