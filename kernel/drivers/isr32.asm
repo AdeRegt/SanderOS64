@@ -54,7 +54,7 @@ isrint:
     mov fs, ax 
     mov gs, ax 
     mov ss, ax 
-    mov eax, __new_stack_end 
+    mov eax, __new2_stack_end 
     mov esp, eax
 
     pushad
@@ -136,11 +136,13 @@ isr2int:
     mov fs, ax 
     mov gs, ax 
     mov ss, ax 
-    mov eax, __new_stack_end 
+    mov eax, __new2_stack_end 
     mov esp, eax
 
     pushad
+    sti
     call isr2handler
+    cli
     popad
 
     mov eax,0
@@ -177,3 +179,8 @@ isr2int:
     ; now, restore the inti
     sti
     iretd
+
+global __new_stack
+__new2_stack:
+    times (32*1024) db 0
+__new2_stack_end:

@@ -6,6 +6,7 @@
 #include "../include/device.h"
 #include "../include/paging.h"
 #include "../include/timer.h"
+#include "../include/ethernet.h"
 
 static IDTR idtr;
 uint8_t idtoffsetcode = 0;
@@ -315,6 +316,13 @@ void isr2handler(stack_registers *ix){
         char* u = (char*) ix->rbx;
         u[0] = 0;
         u[0] = getch(1);
+    }else if(ix->rax==405){
+        uint8_t *name = (uint8_t*) ix->rbx;
+        k_printf("isr2: request ip for name %s \n",name);
+        ix->rax = (upointer_t)getIPFromName(name);
+    }else if(ix->rax==406){
+        uint8_t *name = (uint8_t*) ix->rbx;
+        ix->rax = (upointer_t)getMACFromIp(name);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

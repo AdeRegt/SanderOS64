@@ -253,7 +253,42 @@ uint8_t* getIPFromName(char* name){
     int str = strlen(name);
     int ourheadersize = sizeof(struct DNSREQUESTHeader)+str+2+4;
     struct DNSREQUESTHeader *dnsreqheader = (struct DNSREQUESTHeader*) malloc(ourheadersize);
-    uint8_t *destmac = getMACFromIp((uint8_t*)&dns_ip);
+
+    struct ARPHeader* arpie = (struct ARPHeader*)malloc(sizeof(struct ARPHeader));
+    uint8_t everyone[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+    uint8_t empty[SIZE_OF_MAC] = {0x00,0x00,0x00,0x00,0x00,0x00};
+    uint8_t prefip[SIZE_OF_IP] = {192,168,5,5};
+    fillEthernetHeader((struct EthernetHeader*) &arpie->ethernetheader,everyone,ETHERNET_TYPE_ARP);
+    arpie->hardware_type = 0x0100;
+    arpie->protocol_type = 0x0008;
+    arpie->hardware_address_length = SIZE_OF_MAC;
+    arpie->protocol_address_length = SIZE_OF_IP;
+    arpie->operation = 0x0100;
+
+    fillMac((uint8_t*)&arpie->source_mac,(uint8_t*)&defaultEthernetDevice.mac);
+    fillIP((uint8_t*)&arpie->source_ip,(uint8_t*)&prefip);
+
+    fillMac((uint8_t*)&arpie->dest_mac,(uint8_t*)&empty);
+    fillIP((uint8_t*)&arpie->dest_ip,dns_ip);
+    
+    PackageRecievedDescriptor sec2;
+    sec2.buffersize = sizeof(struct ARPHeader);
+    sec2.buffer = arpie;
+
+    sendEthernetPackage(sec2);
+    struct ARPHeader* ah;
+    while(1){
+        PackageRecievedDescriptor prd = getEthernetPackage();
+        struct EthernetHeader *eh = (struct EthernetHeader*) prd.buffer;
+        if(eh->type==ETHERNET_TYPE_ARP){
+            ah = (struct ARPHeader*) prd.buffer;
+            if(ah->operation==0x0200){
+                break;
+            }
+        }
+    }
+    uint8_t *destmac = ah->source_mac;
+
     uint16_t size = ourheadersize - sizeof(struct EthernetHeader);
     dnsreqheader->transaction_id = dnstid++;
     dnsreqheader->flags = 0x1;

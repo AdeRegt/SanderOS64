@@ -254,6 +254,20 @@ unsigned char wait_for_character(){
     return res[0];
 }
 
+void *get_ip_from_name(uint8_t *name){
+    int mode = 405;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (name) );
+    return res;
+}
+
+void *get_mac_from_ip(uint8_t *name){
+    int mode = 406;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (name) );
+    return res;
+}
+
 void __stack_chk_fail(){
     for(;;);
 }

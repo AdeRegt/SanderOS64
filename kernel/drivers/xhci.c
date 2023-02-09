@@ -440,13 +440,13 @@ uint8_t xhci_request_device_id()
     }
 }
 
-uint8_t xhci_request_device_address(uint8_t device_id,void* data)
+uint8_t xhci_request_device_address(uint8_t device_id,void* data,uint8_t bsr )
 {
     // Enable slot TRB
     SetAddressCommandTRB *trb1 = (SetAddressCommandTRB*) xhci_request_free_command_trb(1);
     trb1->CycleBit = xhci_command_ring_get_switch();
     trb1->TRBType = 11;
-    trb1->BSR = 0;
+    trb1->BSR = bsr;
     trb1->DataBufferPointerLo = (uint32_t) (upointer_t) data;
     trb1->DataBufferPointerHi = 0;
     trb1->SlotID = device_id;
@@ -660,19 +660,12 @@ void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8
         infostructures->epx[id-1].EPType = 2;
     }
     infostructures->epx[id-1].Cerr = 3;
-    infostructures->epx[id-1].MaxPacketSize = endpoint->wMaxPacketSize;
+    infostructures->epx[id-1].MaxPacketSize = 512;
     infostructures->epx[id-1].Interval = endpoint->bInterval;
     infostructures->epx[id-1].TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4 ;
     infostructures->epx[id-1].DequeueCycleState = 1;
-
-    // infostructures->icc.Aregisters = 2;
-    // infostructures->slotcontext.RootHubPortNumber = portid;
-    // infostructures->slotcontext.ContextEntries = 1;
-    // infostructures->epc.EPType = 4;
-    // infostructures->epc.Cerr = 3;
-    // infostructures->epc.MaxPacketSize = 512;
-    // infostructures->epc.TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4 ;
-    // infostructures->epc.DequeueCycleState = 1;
+    infostructures->epx[id-1].LSA = 1;
+    infostructures->epx[id-1].AverageTRBLength = 8;
 
     xhci_request_configure_endpoint_command(device,infostructures);
     return 0;
@@ -745,14 +738,17 @@ void xhci_port_install(uint8_t portid)
     infostructures->icc.Aregisters = 3;
     infostructures->slotcontext.RootHubPortNumber = portid;
     infostructures->slotcontext.ContextEntries = 1;
+    infostructures->slotcontext.Speed = portspeed;
+    infostructures->epc.LSA = 1;
     infostructures->epc.EPType = 4;
     infostructures->epc.Cerr = 3;
     infostructures->epc.MaxPacketSize = calculatedportspeed;
     infostructures->epc.TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4 ;
     infostructures->epc.DequeueCycleState = 1;
+    infostructures->epc.AverageTRBLength = 8;
 
     // now do the call
-    if(xhci_request_device_address(deviceid,infostructures)==0)
+    if(xhci_request_device_address(deviceid,infostructures,0)==0)
     {
         goto failure;
     }
@@ -881,7 +877,7 @@ void xhci_driver_start(int bus,int slot,int function)
         }
         if( capid==1 && reg & 0x10000 )
         {
-            ((uint32_t*)cappointer)[0] |= 0x1000000;
+            ((volatile uint32_t*)cappointer)[0] |= 0x1000000;
             sleep(1);
             continue;
         }
