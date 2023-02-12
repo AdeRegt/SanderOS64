@@ -232,7 +232,7 @@ uint8_t ehci_set_used_config(uint8_t address,uint8_t config)
     return res;
 }
 
-void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address)
+void *ehci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size)
 {
     void *buffer2 = requestPage();
     memset(buffer2,0,sizeof(EhciQH));
@@ -242,7 +242,7 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
     EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,8,0,(uint32_t)(upointer_t)command);       // OK 8
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,device->deviceaddres,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     head2->curlink = (uint32_t) (upointer_t) buffer2;

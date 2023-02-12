@@ -677,6 +677,62 @@ void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8
     return 0;
 }
 
+void *xhci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size)
+{
+    void* data = requestPage();
+
+    SetupStageTRB *trb1 = (SetupStageTRB*) ((DefaultTRB*)(device->localring+(device->localringindex++*sizeof(DefaultTRB))));
+    trb1->usbcmd.bRequest = request;
+    trb1->usbcmd.bRequestType = 0;
+    trb1->usbcmd.bRequestType |= dir; // dir is out
+    trb1->usbcmd.bRequestType |= (type<<5); // type is standard
+    trb1->usbcmd.bRequestType |= recieve; // recieve 
+    trb1->usbcmd.wValue = wvalue;
+    trb1->usbcmd.wIndex = windex;
+    trb1->usbcmd.wLength = wlength;
+    trb1->TRBTransferLength = 8;
+    trb1->InterrupterTarget = 0;
+    trb1->Cyclebit = 1;
+    trb1->ImmediateData = 1;
+    trb1->TRBType = 2;
+    trb1->TRT = 3;
+    trb1->InterruptOnCompletion = 1;
+
+    DataStageTRB *trb2 = (DataStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
+    trb2->Address1 = (uint32_t)(upointer_t) data;
+    trb2->Address2 = 0;
+    trb2->TRBTransferLength = wlength;
+    trb2->Cyclebit = 1;
+    trb2->TRBType = 3;
+    trb2->Direction = 1;
+    trb2->InterruptOnCompletion = 1;
+
+    StatusStageTRB *trb3 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
+    trb3->Cyclebit = 1;
+    trb3->InterruptOnCompletion = 1;
+    trb3->Direction = 1;
+    trb3->TRBType = 4;
+
+    StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex];
+    trb4->Cyclebit = 0;
+
+    CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,1,(uint32_t)(upointer_t)trb3);
+    if(res)
+    {
+        if(res->CompletionCode!=1)
+        {
+            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            return 0;
+        }
+        return data;
+    }
+    else
+    {
+        k_printf("xhci: couldent get xhci datatoken\n");
+        return 0;
+    }
+}
+
 void xhci_port_install(uint8_t portid)
 {
     uint32_t portc = xhci_get_portsc_reg(portid);

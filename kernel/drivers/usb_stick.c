@@ -127,7 +127,7 @@ void install_usb_stick(USBDevice *device)
         k_printf("usb-%d: Unknown protocol type\n",device->physport);
         return;
     }
-    uint8_t* luns = usb_request_normal_data(device,USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1,device->deviceaddres);
+    uint8_t* luns = usb_request_normal_data(device,USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1);
     if(luns==0){
         k_printf("usb-%d: cant get lun!\n",device->physport);
         return;

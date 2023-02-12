@@ -89,9 +89,10 @@ typedef struct {
 USBDevice *getFreeUSBDeviceClass();
 void install_usb_device(USBDevice *device);
 void install_usb_stick(USBDevice *device);
-void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address);
+void *ehci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size);
+void *xhci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size);
 uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size);
 void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle);
-void *usb_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address);
+void *usb_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size);
 uint8_t usb_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size);
 void *usb_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle);
