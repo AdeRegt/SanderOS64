@@ -6,6 +6,8 @@
 #include "../include/timer.h"
 #include "../include/usb.h"
 
+#define XHCI_EVENT_RING_SIZE 32
+
 typedef struct{
     uint32_t ring_segment_base_address_low;
     uint32_t ring_segment_base_address_high;
@@ -397,7 +399,7 @@ CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t 
         sleep(1);
     }
     sleep(2);
-    for(int i = 0 ; i < 15 ; i++)
+    for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
     {
         CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
         if(to->DataBufferPointerLo==checkvalue)
@@ -410,7 +412,7 @@ CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t 
 
 uint8_t xhci_command_ring_get_switch()
 {
-    return 0;
+    return 1;
 }
 
 uint8_t xhci_request_device_id()
@@ -590,7 +592,6 @@ uint8_t xhci_request_set_config(USBDevice *device,uint8_t configid)
     trb1->ImmediateData = 1;
     trb1->TRBType = 2;
     trb1->TRT = 3;
-    trb1->InterruptOnCompletion = 1;
 
     StatusStageTRB *trb3 = (StatusStageTRB*) & ((DefaultTRB*)device->localring)[device->localringindex++];
     trb3->Cyclebit = 1;
@@ -645,15 +646,18 @@ uint8_t xhci_request_configure_endpoint_command(USBDevice *device,void *data)
     }
 }
 
-void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8_t id)
+void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8_t id,XHCIInputContextBuffer *backup)
 {
     XHCIInputContextBuffer *infostructures = requestPage();
     void *localring = requestPage();
     memset(infostructures,0,sizeof(XHCIInputContextBuffer));
     memset(localring,0,0x1000);
+    memcpy(infostructures,backup,sizeof(XHCIInputContextBuffer));
 
     // then the rest of all the info...
-    infostructures->icc.Aregisters = (1<<(id+1));
+    infostructures->icc.Aregisters = 0;
+    infostructures->icc.Dregisters = 0;
+    infostructures->icc.Aregisters = (1<<(id+1)) | 1;
     if(endpoint->bEndpointAddress&0x80){
         infostructures->epx[id-1].EPType = 6;
     }else{
@@ -667,7 +671,10 @@ void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8
     infostructures->epx[id-1].LSA = 1;
     infostructures->epx[id-1].AverageTRBLength = 8;
 
-    xhci_request_configure_endpoint_command(device,infostructures);
+    uint8_t info = xhci_request_configure_endpoint_command(device,infostructures);
+    if(info==1){
+        return localring;
+    }
     return 0;
 }
 
@@ -798,14 +805,16 @@ void xhci_port_install(uint8_t portid)
     {
         k_printf("xhci: port %d situation as expected\n",portid);
 
-        void *ep_ring_1 = xhci_setup_endpoint(device,ep1,1);
-        void *ep_ring_2 = xhci_setup_endpoint(device,ep2,2);
+        void *ep_ring_1 = xhci_setup_endpoint(device,ep1,1,infostructures);
+        void *ep_ring_2 = xhci_setup_endpoint(device,ep2,2,infostructures);
 
         if(ep_ring_1==0||ep_ring_2==0)
         {
             k_printf("xhci: port %d unable to create valid endpoints\n",portid);
             goto failure;
         }
+        k_printf("xhci: port %d endpoint 1 ring at %x \n",portid,ep_ring_1);
+        k_printf("xhci: port %d endpoint 2 ring at %x \n",portid,ep_ring_2);
 
         uint8_t littleresult = xhci_request_set_config(device,1);
         if(littleresult==0)
@@ -979,11 +988,11 @@ void xhci_driver_start(int bus,int slot,int function)
     // the starting address of the first TRB of the Command Ring.
     commandring = requestPage();
     memset(commandring,0,0x1000);
-    xhci_set_crcr_reg((uint32_t)(upointer_t)commandring);
+    xhci_set_crcr_reg((uint32_t)((upointer_t)commandring)|1);
 
     // Allocate and initialize the Event Ring Segment(s).
     eventring = requestPage();
-    memset(eventring,0,0x1000);
+    memset(eventring,0,XHCI_EVENT_RING_SIZE * sizeof(CommandCompletionEventTRB));
 
     // Allocate the Event Ring Segment Table (ERST)
     // (section 6.5). Initialize ERST table entries to point
@@ -992,7 +1001,7 @@ void xhci_driver_start(int bus,int slot,int function)
     segmenttable = (XHCIEventRingSegmentTable*) requestPage();
     memset(segmenttable,0,sizeof(XHCIEventRingSegmentTable));
     segmenttable->ring_segment_base_address_low = (uint32_t)(upointer_t)eventring;
-    segmenttable->ring_segment_size = 16;
+    segmenttable->ring_segment_size = XHCI_EVENT_RING_SIZE;
 
     // Program the Interrupter Event Ring Segment Table
     // Size (ERSTSZ) register (5.5.2.3.1) with the number
