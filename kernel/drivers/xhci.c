@@ -581,7 +581,6 @@ void *xhci_request_device_configuration(USBDevice *device)
 uint8_t xhci_request_set_config(USBDevice *device,uint8_t configid)
 {
     SetupStageTRB *trb1 = (SetupStageTRB*) ((DefaultTRB*)(device->localring+(device->localringindex++*sizeof(DefaultTRB))));
-    trb1->usbcmd.bRequestType = 0x80;
     trb1->usbcmd.bRequest = USB2_REQUEST_SET_CONFIGURATION;
     trb1->usbcmd.wValue = configid;
     trb1->usbcmd.wIndex = 0;
