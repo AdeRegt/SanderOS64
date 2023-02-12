@@ -80,6 +80,10 @@ typedef struct {
     uint8_t epOUTid;
     void *localring;
     uint8_t localringindex;
+    void *localringin;
+    uint8_t localringindexin;
+    void *localringout;
+    uint8_t localringindexout;
 } USBDevice;
 
 USBDevice *getFreeUSBDeviceClass();

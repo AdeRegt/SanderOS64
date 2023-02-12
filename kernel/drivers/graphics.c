@@ -52,7 +52,7 @@ void putc(char deze){
         com_write_debug_serial(deze);
     }
     if(graphics_info->strategy==1){
-        if(pointerY>graphics_info->Height){
+        if(pointerY>(graphics_info->Height-50)){
             clear_screen(0xFFFFFFFF);
             pointerX = 50;
             pointerY = 50;

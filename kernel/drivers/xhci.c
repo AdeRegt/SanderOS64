@@ -820,6 +820,18 @@ void xhci_port_install(uint8_t portid)
         {
             goto failure;
         }
+        k_printf("xhci: port %d device accepted set configuration!\n",portid);
+
+        if(ep1->bEndpointAddress&0x80)
+        {
+            device->localringin = ep_ring_1;
+            device->localringout = ep_ring_2;
+        }
+        else
+        {
+            device->localringin = ep_ring_2;
+            device->localringout = ep_ring_1;
+        }
     }
     else
     {
