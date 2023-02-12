@@ -42,5 +42,5 @@ ehci (usb2) | :x: | :x: | :question: | :white_check_mark:
 ps2 keyboard | :white_check_mark: | :white_check_mark: | :question: | :white_check_mark:
 rtl | :question: | :bug: | :question: | :white_check_mark:
 usb MSD | :question: | :question: | :question: | :white_check_mark:
-xhci (usb3) | :x: | :x: | :question: | :bug: 
+xhci (usb3) | :x: | :bug: | :question: | :bug: 
 fs: fat32 | :white_check_mark: | :white_check_mark: | :question: | :white_check_mark:
