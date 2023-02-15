@@ -145,5 +145,9 @@ void _test_handler(){
 
 void initialise_multitasking_driver(){
     k_printf("multitasking: enabling multitasking...\n");
+    int divisor = 1193180 / 100;       /* Calculate our divisor */
+	outportb(0x43, 0x36);             /* Set our command byte 0x36 */
+	outportb(0x40, divisor & 0xFF);   /* Set low byte of divisor */
+	outportb(0x40, divisor >> 8);     /* Set high byte of divisor */
     setInterrupt(0,multitaskingint);
 }

@@ -25,7 +25,11 @@ uint8_t usb_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,i
 {
     if(device->protocol==2)
     {
-        return ehci_send_bulk_data(address,command,endpoint,size);
+        return ehci_send_bulk_data(device,address,command,endpoint,size);
+    }
+    else if(device->protocol==3)
+    {
+        return xhci_send_bulk_data(device,address,command,endpoint,size);
     }
     else
     {
@@ -38,7 +42,11 @@ void *usb_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,
 {
     if(device->protocol==2)
     {
-        return ehci_recieve_bulk_data(address,endpoint,size,toggle);
+        return ehci_recieve_bulk_data(device,address,endpoint,size,toggle);
+    }
+    else if(device->protocol==3)
+    {
+        return xhci_recieve_bulk_data(device,address,endpoint,size,toggle);
     }
     else
     {

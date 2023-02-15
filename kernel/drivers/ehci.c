@@ -260,7 +260,7 @@ void *ehci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, 
     }
 }
 
-uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
+uint8_t ehci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
     EhciTD *status2 = ehci_generate_transfer_descriptor(1,0,0,1,0);
     EhciTD *status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,0,size,0,command);
@@ -275,7 +275,7 @@ uint8_t ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int
     return res;
 }
 
-void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
+void *ehci_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
 {
     void* command = requestPage();
     for(upointer_t i = 0 ; i < size ; i+=0x1000){
