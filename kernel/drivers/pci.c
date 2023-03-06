@@ -101,11 +101,13 @@ void initialise_drivers_from_pci(){
                     }else if( classc==0x02 && sublca==0x00 && (device==0x8168||device==0x8139)&&vendor==0x10ec ){
                         #ifdef use_driver
                         loadModule("A:SANDEROS/DRIVERS/RTL.SYS",(PCIInfo*)&pi);
-                        #else
+                        #elif enable_ethernet
                         rtl_driver_start(bus,slot,function);
                         #endif
                     }else if( classc==0x02 && sublca==0x00 && (device==0x100e||device==0x153A||device==0x10EA||vendor==0x8086)){
+                        #ifdef enable_ethernet
                         e1000_driver_start(bus,slot,function);
+                        #endif
                     }
                 }
             }
