@@ -78,7 +78,7 @@ void initialise_tty(){
             int rt = exec(pd,pd2);
             if(rt==-1){
                 k_printf("Unable to run program!\n");
-            }else if(rt<1000){
+            }else if(rt && rt<1000){
                 k_printf("Program is running in the background\n");
                 waitForPid(rt);
             }else{

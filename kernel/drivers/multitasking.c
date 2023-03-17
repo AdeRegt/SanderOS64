@@ -6,7 +6,7 @@
 #include "../include/idt.h"
 #include "../include/timer.h"
 
-static int vl = 0xF;
+static int vl = 0;
 static int cmt = 1;
 static Task tasks[MAX_TASKS];
 
@@ -117,18 +117,32 @@ void multitaskinghandler(stack_registers *ix){
 
 int addTask(void *task,void *cr3,upointer_t size,char** args){
     // fill the registry
-    tasks[cmt].sessionregs.rip = (upointer_t)new_program_starter;
+    // tasks[cmt].sessionregs.rip = (upointer_t)task;
+    // tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
+    // #ifndef __x86_64
+    // tasks[cmt].sessionregs.rax = 0;
+    // tasks[cmt].sessionregs.rax = 0x10;
+    // tasks[cmt].sessionregs.ds = tasks[cmt].sessionregs.rsp;
+    // tasks[cmt].sessionregs.es = tasks[cmt].sessionregs.rsp;
+    // tasks[cmt].sessionregs.fs = tasks[cmt].sessionregs.rsp;
+    // tasks[cmt].sessionregs.gs = tasks[cmt].sessionregs.rsp;
+    // tasks[cmt].sessionregs.ss = tasks[cmt].sessionregs.rsp;
+    // #endif
+    // tasks[cmt].cr3 = (upointer_t)cr3;
+    // tasks[cmt].size = (upointer_t)size;
+    // tasks[cmt].files[0].available = 1;
+    // tasks[cmt].files[1].available = 1;
+    // tasks[cmt].files[2].available = 1;
+    // tasks[cmt].files[3].available = 1;
+    // tasks[cmt].files[4].available = 1;
+    // tasks[cmt].task_running = 1;
+    // tasks[cmt].arguments = args;
+    memcpy(&tasks[cmt],&tasks[0],sizeof(Task));
+    tasks[cmt].sessionregs.rip = (upointer_t)task;
     tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
-    // tasks[cmt].sessionregs.ss = (upointer_t)requestPage();
-    tasks[cmt].cr3 = (upointer_t)cr3;
-    tasks[cmt].size = (upointer_t)size;
-    tasks[cmt].files[0].available = 1;
-    tasks[cmt].files[1].available = 1;
-    tasks[cmt].files[2].available = 1;
-    tasks[cmt].files[3].available = 1;
-    tasks[cmt].files[4].available = 1;
-    tasks[cmt].task_running = 1;
-    tasks[cmt].arguments = args;
+    #ifndef __x86_64
+    tasks[cmt].sessionregs.ss = tasks[cmt].sessionregs.rsp;
+    #endif
     cmt++;
     return cmt - 1;
 }
@@ -139,6 +153,51 @@ __attribute__((interrupt)) void legacy_timer_handler(interrupt_frame* frame){
 }
 
 void _test_handler(){
+    #ifndef __x86_64
+    if(tasks[vl].task_running){
+        tasks[vl].sessionregs.rip       = _context_eip;
+        tasks[vl].sessionregs.rax       =  _context_eax;
+        tasks[vl].sessionregs.cs        =  _context_cs;
+        tasks[vl].sessionregs.rflags    =  _context_eflags;
+        tasks[vl].sessionregs.rdx       =  _context_edx;
+        tasks[vl].sessionregs.rcx       =  _context_ecx;
+        tasks[vl].sessionregs.rbx       =  _context_ebx;
+        tasks[vl].sessionregs.rbp       =  _context_ebp;
+        tasks[vl].sessionregs.rdi       =  _context_edi;
+        tasks[vl].sessionregs.rsi       =  _context_esi;
+        tasks[vl].sessionregs.gs        =  _context_gs;
+        tasks[vl].sessionregs.fs        =  _context_fs;
+        tasks[vl].sessionregs.es        =  _context_es;
+        tasks[vl].sessionregs.ds        =  _context_ds;
+    }
+    int tf = 0;
+    for(int i = vl ; i < MAX_TASKS ; i++){
+        if(tasks[i].task_running){
+            vl = i;
+            tf = 1;
+            break;
+        }
+    }
+    if(tf==0){
+        vl = 0;
+    }
+    if(tasks[vl].task_running){
+        _context_eip                    = tasks[vl].sessionregs.rip;
+        _context_eax                    = tasks[vl].sessionregs.rax;
+        _context_cs                     = tasks[vl].sessionregs.cs;
+        _context_eflags                 = tasks[vl].sessionregs.rflags;
+        _context_edx                    = tasks[vl].sessionregs.rdx;
+        _context_ecx                    = tasks[vl].sessionregs.rcx;
+        _context_ebx                    = tasks[vl].sessionregs.rbx;
+        _context_ebp                    = tasks[vl].sessionregs.rbp;
+        _context_edi                    = tasks[vl].sessionregs.rdi;
+        _context_esi                    = tasks[vl].sessionregs.rsi;
+        _context_gs                     = tasks[vl].sessionregs.gs;
+        _context_fs                     = tasks[vl].sessionregs.fs;
+        _context_es                     = tasks[vl].sessionregs.es;
+        _context_ds                     = tasks[vl].sessionregs.ds;
+    }
+    #endif 
     timerfunc();
     return;
 }
@@ -149,5 +208,8 @@ void initialise_multitasking_driver(){
 	outportb(0x43, 0x36);             /* Set our command byte 0x36 */
 	outportb(0x40, divisor & 0xFF);   /* Set low byte of divisor */
 	outportb(0x40, divisor >> 8);     /* Set high byte of divisor */
+    memset(tasks,0,sizeof(Task)*MAX_TASKS);
+    tasks[0].task_running = 1;
     setInterrupt(0,multitaskingint);
+    sleep(5);
 }

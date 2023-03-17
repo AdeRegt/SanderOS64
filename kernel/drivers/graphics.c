@@ -4,6 +4,12 @@
 
 GraphicsInfo *graphics_info;
 
+unsigned int* getMouseCoordinates();
+
+void repaint(){
+    
+}
+
 void set_graphics_info(GraphicsInfo *gi){
     graphics_info = gi;
 }
@@ -25,6 +31,7 @@ unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned c
 }
 
 void clear_screen(unsigned int colour){
+    asm volatile("cli");
     if(graphics_info->strategy==1){
         unsigned int BBP = 4;
         for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
@@ -45,6 +52,7 @@ void clear_screen(unsigned int colour){
         pointerX = 0;
         pointerY = 0;
     }
+    asm volatile("sti");
 }
 
 void putc(char deze){

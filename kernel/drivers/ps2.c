@@ -172,88 +172,71 @@ uint8_t ps2_scancode_to_char(uint8_t ps)
     return (shift_pressed == 1 ? KBDUS : kbdus)[ts];
 }
 
-volatile int mouse_cycle = 0;
-volatile char mouse_byte[5];
-volatile char mousetype = 0;
-volatile int ccr_x = 50;
-volatile int ccr_y = 50;
-volatile int clck = 0;
+static uint8_t mouse_cycle = 0;
+static uint8_t mouse_1 = 0;
+static uint8_t mouse_2 = 0;
+static uint8_t mouse_3 = 0;
+static unsigned int mouse_x = 50;
+static unsigned int mouse_y = 50;
+
+unsigned int mousecoordinatesbuffer[2];
+
+unsigned int* getMouseCoordinates(){
+    mousecoordinatesbuffer[0] = mouse_x;
+    mousecoordinatesbuffer[1] = mouse_y;
+    return (unsigned int*)&mousecoordinatesbuffer;
+}
 
 __attribute__((interrupt)) void irq_mouse(interrupt_frame *frame)
 {
-    unsigned char status = inportb(0x64);
+    uint8_t status = inportb(0x64);
     if (status & 1)
     {
-        char sts = inportb(0x60);
-        if (sts & 0x20)
-        {
-            switch (mouse_cycle)
-            {
-            case 0:
-                mouse_byte[0] = sts;
-                ++mouse_cycle;
-                break;
-            case 1:
-                mouse_byte[1] = sts;
-                ++mouse_cycle;
-                break;
-            case 2:
-                mouse_byte[2] = sts;
-                mouse_cycle = 0;
-                if (mousetype == 0)
-                {
-                    if (mouse_byte[0] == 0x08)
-                    {
-                        mousetype = 1;
-                    }
-                    else if (mouse_byte[1] == 0x08)
-                    {
-                        mousetype = 2;
-                    }
-                }
-                if (mousetype)
-                {
-                    if (mousetype == 1)
-                    {
-                        ccr_x += mouse_byte[1];
-                        ccr_y += mouse_byte[2];
-                        if (mouse_byte[0] & 0x01)
-                        {
-                            clck = 1;
-                        }
-                        if (mouse_byte[0] & 0x02)
-                        {
-                            clck = 2;
-                        }
-                        if (mouse_byte[0] & 0x04)
-                        {
-                            clck = 3;
-                        }
-                    }
-                    else
-                    {
-                        ccr_x += mouse_byte[0];
-                        ccr_y += mouse_byte[2];
-                        if (mouse_byte[1] & 0x01)
-                        {
-                            clck = 1;
-                        }
-                        if (mouse_byte[1] & 0x02)
-                        {
-                            clck = 2;
-                        }
-                        if (mouse_byte[1] & 0x04)
-                        {
-                            clck = 3;
-                        }
-                    }
-                    k_printf("moving %d %d ",ccr_x,ccr_y);
-                }
-                break;
+        uint8_t sts = inportb(0x60);
+        if(mouse_cycle==0){
+            mouse_1 = sts;
+            mouse_cycle = 1;
+        }else if(mouse_cycle==1){
+            mouse_2 = sts;
+            mouse_cycle = 2;
+        }else if(mouse_cycle==2){
+            mouse_3 = sts;
+            mouse_cycle = 0;
+            if(mouse_1&0x4){
+                k_printf("mouse: Middle button\n");
+            }else if(mouse_1&0x2){
+                k_printf("mouse: Right button\n");
+            }else if(mouse_1&0x1){
+                k_printf("mouse: Left button\n");
+            }
+            if(mouse_1&0x10){
+                mouse_x -= 1;
+            }else if(mouse_2){
+                mouse_x += 1;
+            }
+            if(mouse_1&0x20){
+                mouse_y += 1;
+            }else if(mouse_3){
+                mouse_y -= 1;
             }
         }
     }
-    draw_pixel_at(ccr_x,ccr_y,0x00000000);
+    
+    if(mouse_x<10){
+        mouse_x = 10;
+    }
+    if(mouse_y<10){
+        mouse_y = 10;
+    }
+    if(mouse_x>get_graphics_info()->Width){
+        mouse_x = get_graphics_info()->Width;
+    }
+    if(mouse_y>get_graphics_info()->Height){
+        mouse_y = get_graphics_info()->Height;
+    }
+
+    repaint();
+
     // EOI
     outportb(0x20, 0x20);
     outportb(0xA0, 0x20);
@@ -311,10 +294,9 @@ uint8_t initialise_ps2_mouse()
     ps2_wait_for_result(PS2_DATA_RESULT_ACK);
 
     setInterrupt(12, irq_mouse);
+    k_printf("ps2: initialisation of ps2-mouse succeed\n");
     return 1;
 
-error:
-    return 0;
 }
 
 uint8_t initialise_ps2_keyboard()

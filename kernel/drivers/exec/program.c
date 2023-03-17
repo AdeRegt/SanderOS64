@@ -6,6 +6,7 @@
 #include "../../include/multitasking.h"
 #include "../../include/graphics.h"
 #include "../../include/exec/debugger.h"
+#include "../../include/exec/sxe.h"
 
 #ifdef __x86_64
 int use_paging = 1;
@@ -65,6 +66,8 @@ int exec(uint8_t *path,char *argv){
         if(!address){
             return -1;
         }
+    }else if(is_sxe(buffer)){
+        return sxe_run(buffer);
     }else if(use_paging){
         return addTask(buffer,buffer,fz,argstock);
     }else{

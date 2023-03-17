@@ -41,6 +41,7 @@ void kernel_main(BootInfo *gi){
     initialise_pci_driver();
     #ifndef use_driver
         initialise_drivers_from_pci();
+        initialise_ps2_driver();
     #endif 
     initialise_ethernet();
     post_init_kernel();
@@ -55,8 +56,6 @@ void post_init_kernel(){
     #ifdef use_driver
         loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
         initialise_drivers_from_pci();
-    #else
-        initialise_ps2_driver();
     #endif 
     initialise_tty();
     k_printf("__end of kernel!\n");

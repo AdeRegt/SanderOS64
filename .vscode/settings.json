@@ -27,7 +27,8 @@
         "bootboot.h": "c",
         "compare": "c",
         "multiboot.h": "c",
-        "ethernet.h": "c"
+        "ethernet.h": "c",
+        "sxe.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

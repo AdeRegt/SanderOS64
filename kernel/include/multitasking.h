@@ -13,6 +13,11 @@ typedef struct{
     upointer_t r10;
     upointer_t r9;
     upointer_t r8;
+    #else 
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
     #endif
     upointer_t rdi;
     upointer_t rsi;
