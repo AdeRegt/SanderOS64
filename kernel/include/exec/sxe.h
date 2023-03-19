@@ -57,7 +57,8 @@
 // JNE [ADDR]
 #define SXE_OPCODE_JNE 0x1
 
-#define SXE_OPCODE_NONE1 0x0  
+// NOOPCODE
+#define SXE_OPCODE_NOP 0x0  
 
 typedef struct __attribute ((packed)) {
     uint8_t signature[SXE_SIGNATURE_SIZE];

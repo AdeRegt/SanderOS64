@@ -186,6 +186,10 @@ int sxe_run(void *programmem)
                 cpu->memorypointer++;
             }
         }
+        else if(opcode==SXE_OPCODE_NOP)
+        {
+            cpu->memorypointer++;
+        }
         else
         {
             k_printf("sxe: invalid opcode %x with argument %x at mempointer %x \n",opcode,argument,cpu->memorypointer);
