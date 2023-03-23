@@ -52,7 +52,6 @@ int sxe_run(void *programmem)
         }
         else if(opcode==SXE_OPCODE_DEBUG)
         {
-            
             cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_SYSCALL)
@@ -71,12 +70,7 @@ int sxe_run(void *programmem)
         }
         else if(opcode==SXE_OPCODE_RETURN)
         {
-            if(cpu->callstackpointer==0)
-            {
-                return 0;
-            }
-            cpu->callstackpointer--;
-            cpu->memorypointer = cpu->callstack[cpu->callstackpointer];
+            cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_CALL)
         {
@@ -114,49 +108,64 @@ int sxe_run(void *programmem)
             if(argument==1){
                 bufferlocal = cpu->A+cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==2){
                 bufferlocal = cpu->A-cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==3){
                 bufferlocal = cpu->A/cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==4){
                 bufferlocal = cpu->A*cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==5){
                 bufferlocal = cpu->A^cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==6){
                 bufferlocal = cpu->A | cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==7){
                 bufferlocal = cpu->A & cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==8){
                 bufferlocal = ~cpu->A;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==9){
                 bufferlocal = cpu->A >> cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==10){
                 bufferlocal = cpu->A << cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==11){
                 bufferlocal = cpu->A && cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==12){
                 bufferlocal = cpu->A || cpu->B;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==13){
                 bufferlocal = cpu->A++;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==14){
                 bufferlocal = cpu->A--;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==15){
                 bufferlocal = cpu->B;
                 cpu->B = cpu->A;
                 cpu->A = bufferlocal;
+                cpu->memorypointer++;
             }else if(argument==16){
                 k_printf("sxe: --DEBUG--\n");
                 k_printf("sxe: mempointer: %x callstackpointer:%d \n",cpu->memorypointer,cpu->callstackpointer);
@@ -168,8 +177,15 @@ int sxe_run(void *programmem)
                 }
                 k_printf("\nsxe: press any key to continue\n");
                 getch(1);
+                cpu->memorypointer++;
+            }else if(argument==17){
+                if(cpu->callstackpointer==0)
+                {
+                    return 0;
+                }
+                cpu->callstackpointer--;
+                cpu->memorypointer = cpu->callstack[cpu->callstackpointer];
             }
-            cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_JE)
         {
