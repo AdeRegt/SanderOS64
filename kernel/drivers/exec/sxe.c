@@ -47,7 +47,8 @@ int sxe_run(void *programmem)
         uint16_t argument = pointer & 0x0FFF;
         if(opcode==SXE_OPCODE_EXIT)
         {
-            return argument;
+            k_printf("sxe: Program ended normally with %d as returncode \n",argument);
+            return 0;
         }
         else if(opcode==SXE_OPCODE_DEBUG)
         {
@@ -65,7 +66,16 @@ int sxe_run(void *programmem)
         }
         else if(opcode==SXE_OPCODE_SYSCALL)
         {
-            k_printf("sxe: syscall!\n");
+            uint16_t syscallid = header->buffer[argument];
+            if(syscallid==1)
+            {
+                char* data = (char*)&header->buffer[argument+1];
+                k_printf(" %s \n",data);
+            }
+            else
+            {
+                k_printf("sxe: Invalid syscall ID: %d \n",syscallid);
+            }
             cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_RETURN)
