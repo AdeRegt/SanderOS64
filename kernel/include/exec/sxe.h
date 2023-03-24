@@ -16,13 +16,13 @@
 #define SXE_OPCODE_EXIT 0xF
 
 // DEBUG nothing
-#define SXE_OPCODE_DEBUG 0xE
+#define SXE_OPCODE_V2RB 0xE
 
 // SYSCALL [ADDR] 
 #define SXE_OPCODE_SYSCALL 0xD
 
-// RETURN nothing
-#define SXE_OPCODE_RETURN 0xC
+// V2RA nothing
+#define SXE_OPCODE_V2RA 0xC
 
 // CALL [ADDR]
 #define SXE_OPCODE_CALL 0xB

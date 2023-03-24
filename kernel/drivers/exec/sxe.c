@@ -50,8 +50,9 @@ int sxe_run(void *programmem)
             k_printf("sxe: Program ended normally with %d as returncode \n",argument);
             return 0;
         }
-        else if(opcode==SXE_OPCODE_DEBUG)
+        else if(opcode==SXE_OPCODE_V2RB)
         {
+            cpu->B = argument;
             cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_SYSCALL)
@@ -60,7 +61,7 @@ int sxe_run(void *programmem)
             if(syscallid==1)
             {
                 char* data = (char*)&header->buffer[argument+1];
-                k_printf(" %s \n",data);
+                k_printf("%s\n",data);
             }
             else
             {
@@ -68,8 +69,9 @@ int sxe_run(void *programmem)
             }
             cpu->memorypointer++;
         }
-        else if(opcode==SXE_OPCODE_RETURN)
+        else if(opcode==SXE_OPCODE_V2RA)
         {
+            cpu->A = argument;
             cpu->memorypointer++;
         }
         else if(opcode==SXE_OPCODE_CALL)
