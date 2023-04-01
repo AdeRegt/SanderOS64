@@ -185,8 +185,10 @@ int sxe_run(void *programmem)
                 {
                     return 0;
                 }
+                cpu->callstack[cpu->callstackpointer] = 0;
                 cpu->callstackpointer--;
                 cpu->memorypointer = cpu->callstack[cpu->callstackpointer];
+                cpu->callstack[cpu->callstackpointer] = 0;
             }
         }
         else if(opcode==SXE_OPCODE_JE)
