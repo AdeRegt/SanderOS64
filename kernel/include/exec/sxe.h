@@ -72,6 +72,8 @@ typedef struct __attribute ((packed)) {
     uint16_t memorypointer;
     uint16_t callstack[SXE_CALL_STACK_SIZE];
     uint8_t callstackpointer;
+    uint16_t stack[SXE_CALL_STACK_SIZE];
+    uint8_t stackpointer;
     uint16_t A;
     uint16_t B;
     SXE_HEADER *memory;

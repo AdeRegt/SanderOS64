@@ -40,6 +40,12 @@ int sxe_run(void *programmem)
     {
         cpu->callstack[i] = 0;
     }
+    cpu->callstackpointer = 0;
+    for(int i = 0 ; i < SXE_CALL_STACK_SIZE ; i++)
+    {
+        cpu->stack[i] = 0;
+    }
+    cpu->stackpointer = 0;
     while(cpu->memorypointer<SXE_MEMORY_SIZE)
     {
         uint16_t pointer = header->buffer[cpu->memorypointer];
@@ -189,6 +195,20 @@ int sxe_run(void *programmem)
                 cpu->callstackpointer--;
                 cpu->memorypointer = cpu->callstack[cpu->callstackpointer];
                 cpu->callstack[cpu->callstackpointer] = 0;
+            }else if(argument==18){
+                cpu->stack[cpu->stackpointer] = cpu->A;
+                cpu->stackpointer++;
+            }else if(argument==19){
+                cpu->stack[cpu->stackpointer] = cpu->B;
+                cpu->stackpointer++;
+            }else if(argument==20){
+                cpu->stack[cpu->stackpointer] = 0;
+                cpu->A = cpu->stack[cpu->stackpointer];
+                cpu->stackpointer++;
+            }else if(argument==21){
+                cpu->stack[cpu->stackpointer] = 0;
+                cpu->B = cpu->stack[cpu->stackpointer];
+                cpu->stackpointer++;
             }
         }
         else if(opcode==SXE_OPCODE_JE)
