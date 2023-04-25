@@ -5,6 +5,7 @@
 #include "../include/exec/module.h"
 #include "../include/device.h"
 #include "../include/ethernet.h"
+#include "../include/ide.h"
 
 unsigned long getPCIConfiguration(int bus,int slot,int function){
 	return getBARaddress(bus,slot,function,0x04) & 0x0000FFFF;
@@ -135,6 +136,8 @@ void initialise_pci_driver(){
                         xhci_driver_start(bus,slot,function);
                     }else if(classc==0x0C && sublca==0x03 && subsub==0x20 ){
                         ehci_driver_start(bus,slot,function);
+                    }else if(classc==0x01 && sublca==0x01 ){
+                        ide_driver_start(bus,slot,function);
                     }
                 }
             }

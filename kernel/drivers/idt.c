@@ -373,7 +373,8 @@ void initialise_idt_driver(){
         // setRawInterrupt(i,(unsigned long)GeneralFault_Handler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
-        setRawInterrupt(i,GeneralFault_Handler);
+        // IRQ_clear_mask(i);
+        idt_set_gate(i,(unsigned long)GeneralFault_Handler,0x08,0x8F);
     }
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);

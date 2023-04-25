@@ -647,23 +647,25 @@ void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8
     memset(infostructures,0,sizeof(XHCIInputContextBuffer));
     memset(localring,0,0x1000);
     memcpy(infostructures,backup,sizeof(XHCIInputContextBuffer));
+    k_printf("endpoint info: %x %x %x %x %x %x \n",endpoint->bDescriptorType,endpoint->bEndpointAddress,endpoint->bInterval,endpoint->bLength,endpoint->bmAttributes,endpoint->wMaxPacketSize);
 
     // then the rest of all the info...
     infostructures->icc.Aregisters = 0;
     infostructures->icc.Dregisters = 0;
-    infostructures->icc.Aregisters = (1<<(id+1)) | 1;
-    if(endpoint->bEndpointAddress&0x80){
+    infostructures->icc.Aregisters = 1<<id | 1;//(1<<(id+1)) | 1;
+    if(!endpoint->bEndpointAddress&0x80){
         infostructures->epx[id-1].EPType = 6;
     }else{
         infostructures->epx[id-1].EPType = 2;
     }
     infostructures->epx[id-1].Cerr = 3;
-    infostructures->epx[id-1].MaxPacketSize = endpoint->wMaxPacketSize;
-    infostructures->epx[id-1].Interval = endpoint->bInterval;
-    infostructures->epx[id-1].TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4 ;
+    infostructures->epx[id-1].MaxPacketSize = endpoint->wMaxPacketSize & 0x3FF;
+    // infostructures->epx[id-1].Interval = endpoint->bInterval;
+    infostructures->epx[id-1].TRDequeuePointerLow = ((uint32_t) (upointer_t) localring) >> 4 ;
     infostructures->epx[id-1].DequeueCycleState = 1;
     infostructures->epx[id-1].LSA = 0;
-    infostructures->epx[id-1].AverageTRBLength = 3000;
+    infostructures->epx[id-1].MaxPStreams = 0;
+    // infostructures->epx[id-1].HID = 1;
 
     uint8_t info = xhci_request_configure_endpoint_command(device,infostructures);
     if(info==1){
@@ -790,6 +792,7 @@ void xhci_port_install(uint8_t portid)
     portc = xhci_get_portsc_reg(portid);
     if((portc&3)!=3)
     {
+        k_printf("xhci: port %d is not ready yet!\n",portid);
         return;
     }
     
@@ -898,6 +901,14 @@ void xhci_port_install(uint8_t portid)
     {
         k_printf("xhci: port %d situation as expected\n",portid);
 
+        uint8_t littleresult = xhci_request_set_config(device,1);
+        if(littleresult==0)
+        {
+            goto failure;
+        }
+
+        k_printf("xhci: port %d device accepted set configuration!\n",portid);
+
         void *ep_ring_1 = xhci_setup_endpoint(device,ep1,1,infostructures);
         void *ep_ring_2 = xhci_setup_endpoint(device,ep2,2,infostructures);
 
@@ -908,13 +919,6 @@ void xhci_port_install(uint8_t portid)
         }
         k_printf("xhci: port %d endpoint 1 ring at %x \n",portid,ep_ring_1);
         k_printf("xhci: port %d endpoint 2 ring at %x \n",portid,ep_ring_2);
-
-        uint8_t littleresult = xhci_request_set_config(device,1);
-        if(littleresult==0)
-        {
-            goto failure;
-        }
-        k_printf("xhci: port %d device accepted set configuration!\n",portid);
 
         if(ep1->bEndpointAddress&0x80)
         {
@@ -1161,13 +1165,14 @@ void xhci_driver_start(int bus,int slot,int function)
     #else
     xhci_set_usbcmd_reg(1);
     #endif 
+    clear_screen(0xF0F0F0F0);
 
     // Set all pointers to zero
     command_ring_pointer = 0;
 
-    sleep(5);
+    sleep(10);
     for(uint8_t i = 1 ; i < xhci_number_of_ports ; i++){
         xhci_port_install(i);
     }
-    
+    for(;;);
 }

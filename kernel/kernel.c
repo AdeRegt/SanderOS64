@@ -30,13 +30,13 @@ void __stack_chk_fail_local(){
 void kernel_main(BootInfo *gi){
     bi = gi;
     initialise_gdt_driver();
+    initialise_idt_driver();
     set_graphics_info(gi->graphics_info);
     set_memory_info(gi->memory_info);
     initialise_graphics_driver();
     initialise_memory_driver();
     initialise_paging_driver();
     initialise_comport();
-    initialise_idt_driver();
     initialise_multitasking_driver();
     initialise_pci_driver();
     #ifndef use_driver
