@@ -133,6 +133,7 @@ void install_usb_stick(USBDevice *device)
         return;
     }
     uint8_t lun = luns[0];
+    k_printf("usb-%d: we have a lun of %d \n",device->physport,lun);
 
     Blockdevice* bdev = registerBlockDevice(512, usb_stick_read, usb_stick_write, 0, device);
 
