@@ -652,13 +652,30 @@ void* xhci_setup_endpoint(USBDevice *device,EHCI_DEVICE_ENDPOINT *endpoint,uint8
     infostructures->icc.Aregisters = (1<<(id+1));
     infostructures->icc.ConfigurationValue = device->config->bConfigurationValue;
     infostructures->slotcontext.ContextEntries = id+2;
-    infostructures->epx[id-1].EPType = 2;
-    infostructures->epx[id-1].MaxPacketSize = 512;
+    infostructures->epx[id-1].EPType = endpoint->bEndpointAddress&0x80?6:2;
+    infostructures->epx[id-1].MaxPacketSize = endpoint->wMaxPacketSize & 0x3FFF;
     infostructures->epx[id-1].TRDequeuePointerLow = ((uint32_t) (upointer_t) localring)>>4;
     infostructures->epx[id-1].DequeueCycleState = 1;
 
     uint8_t info = xhci_request_configure_endpoint_command(device,infostructures);
     if(info==1){
+
+        // lets check if the ring is working or not...
+        DefaultTRB *trb1 = (DefaultTRB*) ((DefaultTRB*)(localring+(0*sizeof(DefaultTRB))));
+        trb1->Cyclebit = 1;
+        trb1->TRBType = 8;
+        trb1->InterruptOnCompletion = 1;
+
+        StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)localring)[1];
+        trb4->Cyclebit = 0;
+
+        CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,id+1,(uint32_t)(upointer_t)trb1);
+        if(!res){
+            return 0;
+        }
+        if(res->CompletionCode!=1){
+            return 0;
+        }
         return localring;
     }
     return 0;
