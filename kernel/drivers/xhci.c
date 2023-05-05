@@ -937,6 +937,8 @@ void xhci_port_install(uint8_t portid)
             device->localringin = ep_ring_2;
             device->localringout = ep_ring_1;
         }
+        device->localringindexin = 1;
+        device->localringindexout = 1;
     }
     else
     {
