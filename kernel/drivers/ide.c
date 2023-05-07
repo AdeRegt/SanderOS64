@@ -7,7 +7,7 @@
 #include "../include/pci.h"
 #include "../include/timer.h"
 #include "../include/device.h"
-#include "../include/fs/fat.h"
+#include "../include/fs/mbr.h"
 
 unsigned short ide_port_primary = 0;
 unsigned short ide_port_secondary = 0;
@@ -262,7 +262,7 @@ void init_ide_device(IDEDevice device)
 		if (getIDEError(device) == 0)
 		{
 			k_printf("ide: device is ATAPI\n");
-			unsigned char *identbuffer = (unsigned char *) malloc(sizeof(IDE_IDENTIFY));
+			unsigned char *identbuffer = (unsigned char *) requestPage();
 			for (int i = 0; i < 256; i++)
 			{
 				unsigned short datapart = inportw(device.command);
@@ -279,7 +279,7 @@ void init_ide_device(IDEDevice device)
             void* buffer = (void*) requestPage();
             uint8_t res = ide_atapi_read(regdev,0,1,buffer);
 			if(res){
-				fat_detect_and_initialise(regdev,(void*)(buffer));
+				initialise_fs(regdev,(void*)(buffer));
 			}
 		}
 	}

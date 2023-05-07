@@ -1,12 +1,11 @@
 #include "../include/ethernet.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
-
-uint16_t switch_endian16(uint16_t nb) {
+unsigned short switch_endian16(unsigned short nb) {
     return (nb>>8) | (nb<<8);
 }
 
-uint32_t switch_endian32(uint32_t num) {
+unsigned long switch_endian32(unsigned long num) {
     return ((num>>24)&0xff) | // move byte 3 to byte 0
     ((num<<8)&0xff0000) | // move byte 1 to byte 2
     ((num>>8)&0xff00) | // move byte 2 to byte 1
@@ -19,11 +18,11 @@ unsigned char router_ip[SIZE_OF_IP];
 unsigned char dns_ip[SIZE_OF_IP];
 unsigned char dhcp_ip[SIZE_OF_IP];
 
-void ethernet_set_link_status(uint32_t a){
+void ethernet_set_link_status(unsigned long a){
     defaultEthernetDevice.is_online = a;
 }
 
-void register_ethernet_device(void *sendPackage,void *recievePackage,unsigned char mac[8]){
+void register_ethernet_device(unsigned long sendPackage,unsigned long recievePackage,unsigned char mac[8]){
     defaultEthernetDevice.recievePackage = recievePackage;
     defaultEthernetDevice.sendPackage = sendPackage;
     defaultEthernetDevice.is_enabled = 1;
@@ -91,15 +90,16 @@ unsigned char* getMACFromIp(unsigned char* ip){
     struct ARPHeader* ah;
     while(1){
         PackageRecievedDescriptor prd = getEthernetPackage();
-        struct EthernetHeader *eh = (struct EthernetHeader*) (upointer_t) prd.low_buf;
+        struct EthernetHeader *eh = (struct EthernetHeader*) prd.low_buf;
         if(eh->type==ETHERNET_TYPE_ARP){
-            ah = (struct ARPHeader*) (upointer_t) prd.low_buf;
+            ah = (struct ARPHeader*) prd.low_buf;
             if(ah->operation==0x0200){
                 break;
             }
         }
     }
     k_printf("[ETH] %d.%d.%d.%d is at %x:%x:%x:%x:%x:%x \n",ip[0],ip[1],ip[2],ip[3],ah->source_mac[0],ah->source_mac[1],ah->source_mac[2],ah->source_mac[3],ah->source_mac[4],ah->source_mac[5]);
+    freePage(arpie);
     return ah->source_mac;
 }
 
@@ -138,7 +138,7 @@ void fillIpv4Header(struct IPv4Header *ipv4header, unsigned char* destmac, unsig
     ipv4header->checksum = switch_endian16((unsigned short) (~checksum));
 }
 
-void fillUdpHeader(struct UDPHeader *udpheader, uint8_t *destmac, uint16_t size,uint32_t from, uint32_t to,uint16_t source_port, uint16_t destination_port){
+void fillUdpHeader(struct UDPHeader *udpheader, unsigned char *destmac, unsigned short size,unsigned long from, unsigned long to,unsigned short source_port, unsigned short destination_port){
     fillIpv4Header((struct IPv4Header*)&udpheader->ipv4header,destmac,size,IPV4_TYPE_UDP,from,to);
 
     udpheader->length = switch_endian16(size - (sizeof(struct IPv4Header)-sizeof(struct EthernetHeader)));
@@ -193,7 +193,7 @@ unsigned short net_checksum(const unsigned char *start, const unsigned char *end
 
 unsigned long taaaX = 0;
 unsigned long taaaY = 0;
-void fillTcpHeader(struct TCPHeader *tcpheader,uint8_t *destmac,uint16_t size,uint32_t from,uint32_t to,uint16_t from_port,uint16_t to_port,uint32_t sequence_number,uint32_t acknowledge_number,uint8_t header_length,uint16_t flags,uint16_t window){
+void fillTcpHeader(struct TCPHeader *tcpheader,unsigned char *destmac,unsigned short size,unsigned long from,unsigned long to,unsigned short from_port,unsigned short to_port,unsigned long sequence_number,unsigned long acknowledge_number,unsigned char header_length,unsigned short flags,unsigned short window){
     fillIpv4Header((struct IPv4Header*)&tcpheader->header,destmac,size,IPV4_TYPE_TCP,from,to);
     if(sequence_number==0x1010&&acknowledge_number==0x1010){
         sequence_number = taaaX;
@@ -295,16 +295,16 @@ unsigned char* getIpAddressFromDHCPServer(){
         if(prd.low_buf==0){
             return 0;
         }
-        struct EthernetHeader *eh = (struct EthernetHeader*) (upointer_t) prd.low_buf;
+        struct EthernetHeader *eh = (struct EthernetHeader*) prd.low_buf;
         if(eh->type==ETHERNET_TYPE_IP4){
-            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) (upointer_t) prd.low_buf;
+            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) prd.low_buf;
             if(hd5->options[2]==2&&hd5->xid==dhcpheader->xid&&hd5->op==2){
                 break;
             }
         }
     }
     k_printf("[ETH] Got offer\n");
-    struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) (upointer_t) prd.low_buf;
+    struct DHCPDISCOVERHeader *hd = ( struct DHCPDISCOVERHeader*) prd.low_buf;
     unsigned char* offeredip = (unsigned char*) &hd->dhcp_offered_machine;
     int a = 0;
     while(1){
@@ -328,7 +328,7 @@ unsigned char* getIpAddressFromDHCPServer(){
         a += z;
     }
 
-    free(dhcpheader);
+    freePage(dhcpheader);
 
     struct DHCPREQUESTHeader *dhcp2header = (struct DHCPREQUESTHeader *)requestPage();
     dhcp2header->op = 1;
@@ -371,9 +371,9 @@ unsigned char* getIpAddressFromDHCPServer(){
     PackageRecievedDescriptor p3d;
     while(1){
         p3d = getEthernetPackage(); 
-        struct EthernetHeader *eh = (struct EthernetHeader*) (upointer_t) p3d.low_buf;
+        struct EthernetHeader *eh = (struct EthernetHeader*) p3d.low_buf;
         if(eh->type==ETHERNET_TYPE_IP4){
-            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) (upointer_t) p3d.low_buf;
+            struct DHCPDISCOVERHeader *hd5 = ( struct DHCPDISCOVERHeader*) p3d.low_buf;
             if(hd5->options[2]==5&&hd5->xid==dhcp2header->xid&&hd5->op==2){
                 break;
             }
@@ -388,12 +388,12 @@ volatile unsigned short dnstid = 0xe0e0;
 unsigned char* getIPFromName(char* name){
     k_printf("[ETH] Looking for IP of %s \n",name);
     int str = strlen(name);
-    int ourheadersize = sizeof(struct DNSREQUESTHeader)+str+2+4;
+    int ourheadersize = sizeof(struct DNSREQUESTHeader)+str+2+3;
     struct DNSREQUESTHeader *dnsreqheader = (struct DNSREQUESTHeader*) requestPage();
     unsigned char *destmac = getMACFromIp((unsigned char*)&dns_ip);
     unsigned short size = ourheadersize - sizeof(struct EthernetHeader);
     dnsreqheader->transaction_id = dnstid++;
-    dnsreqheader->flags = 0x1;
+    dnsreqheader->flags = 1;
     dnsreqheader->question_count = 0x100;
     unsigned char *t4 = (unsigned char*)(dnsreqheader);
     t4[sizeof(struct DNSREQUESTHeader)] = 0;
@@ -414,8 +414,8 @@ unsigned char* getIPFromName(char* name){
         t4[sizeof(struct DNSREQUESTHeader)+i] = z;
         i += z + 1;
     }
-    t4[sizeof(struct DNSREQUESTHeader)+str+3] = 1;
-    t4[sizeof(struct DNSREQUESTHeader)+str+5] = 1;
+    t4[sizeof(struct DNSREQUESTHeader)+str+2] = 1;
+    t4[sizeof(struct DNSREQUESTHeader)+str+4] = 1;
     
     fillUdpHeader((struct UDPHeader*)&dnsreqheader->udpheader,destmac,size,((unsigned long*)&our_ip)[0],((unsigned long*)&dns_ip)[0],56331,53);
     
@@ -433,7 +433,7 @@ unsigned char* getIPFromName(char* name){
             k_printf("[ETH] IP of %s cannot be found \n",name);
             return targetip;
         }
-        de = (struct DNSREQUESTHeader*) (upointer_t) ep.low_buf;
+        de = (struct DNSREQUESTHeader*) ep.low_buf;
         if(de->transaction_id==dnsreqheader->transaction_id){
             break;
         }
@@ -446,6 +446,7 @@ unsigned char* getIPFromName(char* name){
         targetip[3] = ((unsigned char*)de + (ep.buffersize-1))[0];
     }
     k_printf("[ETH] IP of %s is %d.%d.%d.%d \n",name,targetip[0],targetip[1],targetip[2],targetip[3]);
+    freePage(dnsreqheader);
     return targetip; 
 }
 
@@ -455,7 +456,7 @@ void setTcpHandler(unsigned short port,unsigned long func){
     ethjmplist[port] = func;
 }
 
-void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t to_port, uint32_t func){
+void create_tcp_session(unsigned long from, unsigned long to, unsigned short from_port, unsigned short to_port, unsigned long func){
     unsigned long sizetype = sizeof(struct TCPHeader);
     struct TCPHeader* tcp1 = (struct TCPHeader*) requestPage();
     unsigned char* destmac;
@@ -476,14 +477,15 @@ void create_tcp_session(uint32_t from, uint32_t to, uint16_t from_port, uint16_t
     sec.high_buf = 0;
     sec.low_buf = (unsigned long)tcp1;
     sendEthernetPackage(sec);
+    freePage(tcp1);
 }
 
 int ethernet_handle_package(PackageRecievedDescriptor desc){
-    struct EthernetHeader *eh = (struct EthernetHeader*) (upointer_t) desc.low_buf;
+    struct EthernetHeader *eh = (struct EthernetHeader*) desc.low_buf;
     if(eh->type==ETHERNET_TYPE_ARP){
-        struct ARPHeader *ah = (struct ARPHeader*) (upointer_t) desc.low_buf;
+        struct ARPHeader *ah = (struct ARPHeader*) desc.low_buf;
         if( ah->operation==0x0100 && memcmp((char*) ah->dest_ip,(char*) &our_ip, SIZE_OF_IP)==0 ){
-            k_printf("[ETH] ARP recieved with our IP\n");
+            // k_printf("[ETH] ARP recieved with our IP\n");
 
             struct ARPHeader* arpie = (struct ARPHeader*)requestPage();
             unsigned char everyone[SIZE_OF_MAC] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -506,6 +508,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
             sec.low_buf = (unsigned long)arpie;
 
             sendEthernetPackage(sec);
+            freePage(arpie);
             return 1;
         }else if(ah->operation==0x0100){
             return 1;
@@ -514,7 +517,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         struct IPv4Header* ip = (struct IPv4Header*) eh;
         if(ip->protocol==IPV4_TYPE_UDP){
             struct UDPHeader* udp = (struct UDPHeader*) eh;
-            k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
+            // k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
             if(udp->destination_port==switch_endian16(50618)){
                 // TFTP, automatic ACK
                 struct TFTPAcknowledgeHeader* tftp_old = (struct TFTPAcknowledgeHeader*)eh;
@@ -532,15 +535,15 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 sec.low_buf = (unsigned long)tftp;
 
                 sendEthernetPackage(sec);
-
+                freePage(tftp);
             }
         }else if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             unsigned short fx = switch_endian16(tcp->flags);
-            k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
+            // k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");
             if(((switch_endian16(tcp->flags) & TCP_PUS)||(switch_endian16(tcp->flags) & TCP_SYN)||(switch_endian16(tcp->flags) & TCP_FIN)) && (switch_endian16(tcp->flags) & TCP_ACK)){
                 // TCP auto accept ACK SYN
-                k_printf("[ETH] TCP package handled\n");
+                // k_printf("[ETH] TCP package handled\n");
                 unsigned long from = tcp->header.dest_addr; 
                 unsigned long to = tcp->header.source_addr; 
                 unsigned short from_port = switch_endian16(tcp->destination_port); 
@@ -565,6 +568,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 sec.high_buf = 0;
                 sec.low_buf = (unsigned long)tcp1;
                 sendEthernetPackage(sec);
+                freePage(tcp1);
 
                 if(switch_endian16(tcp->flags) & TCP_PUS){
                     unsigned long addr = desc.low_buf + sizeof(struct TCPHeader);
@@ -587,7 +591,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }else if(ip->protocol==IPV4_TYPE_ICMP){
             struct ICMPHeader *icmp = (struct ICMPHeader*) ip;
             if(icmp->type==8){
-                k_printf("[ETH] ICMP ping request found!\n");
+                // k_printf("[ETH] ICMP ping request found!\n");
 
                 int prefsiz = desc.buffersize - sizeof(struct ICMPHeader);
                 struct ICMPHeader *newicmp = (struct ICMPHeader*) requestPage();
@@ -609,6 +613,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 sec.high_buf = 0;
                 sec.low_buf = (unsigned long)newicmp;
                 sendEthernetPackage(sec);
+                freePage(newicmp);
                 return 1;
             }
         }
@@ -616,8 +621,8 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
     return 0;
 }
 
-uint32_t getOurIpAsLong(){
-    return ((uint32_t*)&our_ip)[0];
+unsigned long getOurIpAsLong(){
+    return ((unsigned long*)&our_ip)[0];
 }
 
 void exsend(unsigned long addr,unsigned long count){

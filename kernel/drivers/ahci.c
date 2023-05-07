@@ -4,7 +4,7 @@
 #include "../include/memory.h"
 #include "../include/idt.h"
 #include "../include/ports.h"
-#include "../include/fs/fat.h"
+#include "../include/fs/mbr.h"
 
 #define	SATA_SIG_ATA	0x00000101	// SATA drive
 #define	SATA_SIG_ATAPI	0xEB140101	// SATAPI drive
@@ -306,7 +306,7 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 				char xu1 = ahci_read_sector(port,0,1,(void*)buffer);
 				if(xu1){
 					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, ahci_ata_write, 3, port);
-					fat_detect_and_initialise(dev,buffer);
+					initialise_fs(dev,buffer);
 				}else{
 					k_printf("AHCI: Failed to read testsector!\n");
 				}

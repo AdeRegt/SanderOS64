@@ -8,13 +8,12 @@
 
 unsigned long base_addr;
 unsigned char is_eeprom;
-unsigned char mac_address[6];
+unsigned char mac_address[8];
 unsigned volatile long e1000_package_recieved_ack = 0;
 int rx_cur;
 int tx_cur;
 volatile struct e1000_rx_desc *rx_descs[E1000_NUM_RX_DESC];
 volatile struct e1000_tx_desc *tx_descs[E1000_NUM_TX_DESC];
-static uint8_t is_online = 0;
 
 extern void e1000irq();
 
@@ -42,27 +41,26 @@ unsigned char e1000_is_eeprom(){
     return 0;
 }
 
-__attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
-	// k_printf("[E1000] Interrupt detected\n");
+__attribute__((interrupt)) void irq_e1000(interrupt_frame *frame){
     e1000_write_in_space(0xD0,1);
     unsigned long to = e1000_read_in_space(0xC0);
     if(to&0x01){
-        k_printf("[E1000] Transmit completed!\n");
+        // k_printf("[E1000] Transmit completed!\n");
     }else if(to&0x02){
         k_printf("[E1000] Transmit queue empty!\n");
     }else if(to&0x04){
         k_printf("[E1000] Link change!\n");
-		ethernet_set_link_status(1);
     }else if(to&0x80){
-        k_printf("[E1000] Package recieved!\n");
+        // k_printf("[E1000] Package recieved!\n");
         PackageRecievedDescriptor prd;
 		for(int i = 0 ; i < E1000_NUM_RX_DESC ; i++){
             if((rx_descs[i]->status & 0x1))
             {
-                unsigned char *buf = (unsigned char *)rx_descs[i]->addr;
+                unsigned char *buf = (unsigned char *)rx_descs[i]->addr_1;
                 unsigned short len = rx_descs[i]->length;
                 prd.buffersize = len;
-                prd.low_buf = (uint32_t) (upointer_t) buf;
+                prd.high_buf = 0;
+                prd.low_buf = (unsigned long)buf;
                 if(ethernet_handle_package(prd)){
                     rx_descs[i]->status &= ~1;
                     e1000_write_in_space(REG_RXDESCTAIL, i );
@@ -80,14 +78,14 @@ __attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
 
 int e1000_send_package(PackageRecievedDescriptor desc){
     int old = tx_cur;
-    tx_descs[tx_cur]->addr = desc.low_buf;
+    tx_descs[tx_cur]->addr_1 = (unsigned long)desc.low_buf;
+    tx_descs[tx_cur]->addr_2 = (unsigned long)desc.high_buf;
     tx_descs[tx_cur]->length = desc.buffersize;
     tx_descs[tx_cur]->cmd = CMD_EOP | CMD_IFCS | CMD_RS;
     tx_descs[tx_cur]->status = 0;
     tx_cur = (tx_cur + 1) % E1000_NUM_TX_DESC;
     e1000_write_in_space(REG_TXDESCTAIL, tx_cur);
     while(!tx_descs[old]->status);
-	k_printf("[E1000] Package send!\n");
     return 1;
 }
 
@@ -102,7 +100,6 @@ void e1000_link_up(){
     unsigned long ty = e1000_read_in_space(0);
     e1000_write_in_space(0, ty | 0x40);
     k_printf("[E1000] Link is up!\n");
-    ethernet_set_link_status(1);
 }
 
 PackageRecievedDescriptor e1000_recieve_package(){
@@ -111,10 +108,11 @@ PackageRecievedDescriptor e1000_recieve_package(){
         for(int i = 0 ; i < E1000_NUM_RX_DESC ; i++){
             if((rx_descs[i]->status & 0x1))
             {
-                unsigned char *buf = (unsigned char *)rx_descs[i]->addr;
+                unsigned char *buf = (unsigned char *)rx_descs[i]->addr_1;
                 unsigned short len = rx_descs[i]->length;
                 prd.buffersize = len;
-                prd.low_buf = (uint32_t) (upointer_t)buf;
+                prd.high_buf = 0;
+                prd.low_buf = (unsigned long)buf;
 
                 rx_descs[i]->status &= ~1;
                 e1000_write_in_space(REG_RXDESCTAIL, i );
@@ -176,7 +174,7 @@ void e1000_driver_start(int bus,int slot,int function){
     for(int i = 0; i < E1000_NUM_RX_DESC; i++)
     {
         rx_descs[i] = (struct e1000_rx_desc *)((unsigned char *)descs + i*16);
-        rx_descs[i]->addr = (unsigned long)(unsigned char *)(malloc(8192 + 16));
+        rx_descs[i]->addr_1 = (unsigned long)(unsigned char *)requestPage();
         rx_descs[i]->status = 0;
         rx_descs[i]->length = 0x3000;
     }
@@ -198,13 +196,13 @@ void e1000_driver_start(int bus,int slot,int function){
     // sending
     unsigned char *  ptr2;
     struct e1000_tx_desc *descs2;
-    ptr2 = (unsigned char *)(malloc(sizeof(struct e1000_tx_desc)*E1000_NUM_TX_DESC + 16));
+    ptr2 = (unsigned char *)requestPage();
  
     descs2 = (struct e1000_tx_desc *)ptr2;
     for(int i = 0; i < E1000_NUM_TX_DESC; i++)
     {
         tx_descs[i] = (struct e1000_tx_desc *)((unsigned char*)descs2 + i*16);
-        tx_descs[i]->addr = (unsigned long)malloc(0x3000);
+        tx_descs[i]->addr_1 = (unsigned long)requestPage();
         tx_descs[i]->cmd = 0;
         tx_descs[i]->length = 0x3000;
         tx_descs[i]->status = TSTA_DD;
@@ -229,6 +227,5 @@ void e1000_driver_start(int bus,int slot,int function){
 
     //
     // register driver
-    register_ethernet_device(e1000_send_package,e1000_recieve_package,mac_address);
-	ethernet_set_link_status(is_online);
+    register_ethernet_device((unsigned long)&e1000_send_package,(unsigned long)&e1000_recieve_package,mac_address);
 }

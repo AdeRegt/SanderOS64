@@ -7,7 +7,6 @@
 #include "../include/pci.h"
 #include "../include/timer.h"
 
-#define SIZE_OF_MAC 6
 #define SIZE_OF_IP 4
 //
 // FROM: https://wiki.osdev.org/RTL8169
@@ -234,7 +233,7 @@ void rtl_driver_start(int bus,int slot,int function){
 	outportb(bar1 + 0x37, 0x0C); /* Enable Rx/Tx in the Command register */
 	outportb(bar1 + 0x50, 0x00); /* Lock config registers */
 	
-	register_ethernet_device(rtl_sendPackage,rtl_recievePackage,macaddress);
+	register_ethernet_device((unsigned long)&rtl_sendPackage,(unsigned long)&rtl_recievePackage,macaddress);
 	ethernet_set_link_status(is_online);
 	k_printf("[RTL81] Setup finished\n");
 }

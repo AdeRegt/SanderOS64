@@ -20,3 +20,4 @@ typedef struct{
 }__attribute__((packed)) efi_entry;
 
 mbr_entry* getMBRRecordsFromBuffer(void *buffer);
+void initialise_fs(Blockdevice *dev,void* buffer);

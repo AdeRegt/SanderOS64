@@ -2,7 +2,7 @@
 #include "../include/graphics.h"
 #include "../include/memory.h"
 #include "../include/device.h"
-#include "../include/fs/fat.h"
+#include "../include/fs/mbr.h"
 
 #define USB_STICK_REQUEST_LUN 0xFE
 
@@ -140,6 +140,6 @@ void install_usb_stick(USBDevice *device)
     void *cq = requestPage();
     uint8_t g = usb_stick_read(bdev,0,1,cq);
     if(g){
-        fat_detect_and_initialise(bdev,cq);
+        initialise_fs(bdev,cq);
     }
 }
