@@ -65,7 +65,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 		for(int z = 0 ; z < 100 ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
 				prd.buffersize = Rx_Descriptors[z].command & 0x3FFF;
-				prd.buffer = Rx_Descriptors[z].buffer;
+				prd.low_buf = (uint32_t) (upointer_t) Rx_Descriptors[z].buffer;
 				if(ethernet_handle_package(prd)){
 					Rx_Descriptors[z].command |= OWN;
 				}
@@ -92,7 +92,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame* frame){
 int rtl_sendPackage(PackageRecievedDescriptor desc){
 	uint32_t ms1 = 0x80000000 | 0x40000000 | 0x40000 | 0x20000000 | 0x10000000 | (desc.buffersize & 0x3FFF); // 0x80000000 | ownbit=yes | firstsegment | lastsegment | length
 	uint32_t ms2 = 0 ;
-	void *ms3 = desc.buffer;
+	void *ms3 = (void*) (upointer_t) desc.low_buf;
 	
 	volatile struct Descriptor *desz;
 	desz = ((volatile struct Descriptor*)(Tx_Descriptors+(sizeof(struct Descriptor)*tx_pointer)));
@@ -139,7 +139,7 @@ PackageRecievedDescriptor rtl_recievePackage(){
 			if(!(Rx_Descriptors[z].command & OWN)){
 				Rx_Descriptors[z].command |= OWN;
 				prd.buffersize = Rx_Descriptors[z].command & 0x3FFF;
-				prd.buffer = Rx_Descriptors[z].buffer;
+				prd.low_buf = (uint32_t) (upointer_t) Rx_Descriptors[z].buffer;
 				i = z;
 				break;
 			}
@@ -158,7 +158,8 @@ void rtl_test(){
 	
 	PackageRecievedDescriptor resx;
 	resx.buffersize = res.buffersize;
-	resx.buffer = res.buffer;
+	resx.low_buf = res.low_buf;
+	resx.high_buf = res.high_buf;
 	rtl_sendPackage(resx);
 	k_printf("[RTL81] Package send\n");
 }

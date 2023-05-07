@@ -21,7 +21,8 @@
 
 typedef struct{
 	uint32_t buffersize;
-	void* buffer;
+	uint32_t low_buf;
+	uint32_t high_buf;
 }PackageRecievedDescriptor;
 
 typedef struct{

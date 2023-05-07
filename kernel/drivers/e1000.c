@@ -62,7 +62,7 @@ __attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
                 unsigned char *buf = (unsigned char *)rx_descs[i]->addr;
                 unsigned short len = rx_descs[i]->length;
                 prd.buffersize = len;
-                prd.buffer = (void*)buf;
+                prd.low_buf = (uint32_t) (upointer_t) buf;
                 if(ethernet_handle_package(prd)){
                     rx_descs[i]->status &= ~1;
                     e1000_write_in_space(REG_RXDESCTAIL, i );
@@ -80,7 +80,7 @@ __attribute__((interrupt)) void irq_e1000(interrupt_frame* frame){
 
 int e1000_send_package(PackageRecievedDescriptor desc){
     int old = tx_cur;
-    tx_descs[tx_cur]->addr = (unsigned long)desc.buffer;
+    tx_descs[tx_cur]->addr = desc.low_buf;
     tx_descs[tx_cur]->length = desc.buffersize;
     tx_descs[tx_cur]->cmd = CMD_EOP | CMD_IFCS | CMD_RS;
     tx_descs[tx_cur]->status = 0;
@@ -114,7 +114,7 @@ PackageRecievedDescriptor e1000_recieve_package(){
                 unsigned char *buf = (unsigned char *)rx_descs[i]->addr;
                 unsigned short len = rx_descs[i]->length;
                 prd.buffersize = len;
-                prd.buffer = (void*)buf;
+                prd.low_buf = (uint32_t) (upointer_t)buf;
 
                 rx_descs[i]->status &= ~1;
                 e1000_write_in_space(REG_RXDESCTAIL, i );
@@ -151,11 +151,11 @@ void e1000_driver_start(int bus,int slot,int function){
     }
     k_printf("[E1000] MAC: %x:%x:%x:%x:%x:%x \n",mac_address[0],mac_address[1],mac_address[2],mac_address[3],mac_address[4],mac_address[5]);
 
-    // if(!(getBARaddress(bus,slot,function,0x04)&0x04)){
-    //     unsigned long to = pciConfigReadWord(bus,slot,function,0x04) | 0x04;
-    //     pciConfigWriteWord(bus,slot,function,0x04,to);
-    //     k_printf("[E1000] Busmastering was not enabled, but now it is!\n");
-    // }
+    if(!(getBARaddress(bus,slot,function,0x04)&0x04)){
+        unsigned long to = pciConfigReadWord(bus,slot,function,0x04) | 0x04;
+        pciConfigWriteWord(bus,slot,function,0x04,to);
+        k_printf("[E1000] Busmastering was not enabled, but now it is!\n");
+    }
 
 
     // no multicast
@@ -224,7 +224,7 @@ void e1000_driver_start(int bus,int slot,int function){
 
     //
     // set interrupts
-    // e1000_enable_int();
+    e1000_enable_int();
     e1000_link_up();
 
     //
