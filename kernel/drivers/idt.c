@@ -318,11 +318,12 @@ void isr2handler(stack_registers *ix){
         u[0] = getch(1);
     }else if(ix->rax==405){
         uint8_t *name = (uint8_t*) ix->rbx;
-        k_printf("isr2: request ip for name %s \n",name);
         ix->rax = (upointer_t)getIPFromName(name);
     }else if(ix->rax==406){
         uint8_t *name = (uint8_t*) ix->rbx;
         ix->rax = (upointer_t)getMACFromIp(name);
+    }else if(ix->rax==407){
+        create_tcp_session(getOurIpAsLong(),((unsigned long*)ix->rbx)[0],ix->rcx,ix->rcx,ix->rdx);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

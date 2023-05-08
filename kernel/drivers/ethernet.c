@@ -98,7 +98,6 @@ unsigned char* getMACFromIp(unsigned char* ip){
             }
         }
     }
-    k_printf("[ETH] %d.%d.%d.%d is at %x:%x:%x:%x:%x:%x \n",ip[0],ip[1],ip[2],ip[3],ah->source_mac[0],ah->source_mac[1],ah->source_mac[2],ah->source_mac[3],ah->source_mac[4],ah->source_mac[5]);
     freePage(arpie);
     return ah->source_mac;
 }
@@ -380,13 +379,13 @@ unsigned char* getIpAddressFromDHCPServer(){
         } 
     }
     k_printf("[ETH] Got Approval\n");
+    freePage(dhcp2header);
 
     return offeredip;
 }
 
 volatile unsigned short dnstid = 0xe0e0;
 unsigned char* getIPFromName(char* name){
-    k_printf("[ETH] Looking for IP of %s \n",name);
     int str = strlen(name);
     int ourheadersize = sizeof(struct DNSREQUESTHeader)+str+2+3;
     struct DNSREQUESTHeader *dnsreqheader = (struct DNSREQUESTHeader*) requestPage();
@@ -445,7 +444,6 @@ unsigned char* getIPFromName(char* name){
         targetip[2] = ((unsigned char*)de + (ep.buffersize-2))[0];
         targetip[3] = ((unsigned char*)de + (ep.buffersize-1))[0];
     }
-    k_printf("[ETH] IP of %s is %d.%d.%d.%d \n",name,targetip[0],targetip[1],targetip[2],targetip[3]);
     freePage(dnsreqheader);
     return targetip; 
 }
@@ -468,7 +466,8 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
         destmac = getMACFromIp((unsigned char*)&router_ip);
     }
     unsigned short size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
-    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1,0,5,TCP_SYN,0xffd7);
+    
+    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1,0,5,TCP_SYN,64800);
 
     setTcpHandler(to_port,func);
 
@@ -643,6 +642,7 @@ void initialise_ethernet(){
         unsigned char *dhcpid = getIpAddressFromDHCPServer();
         if(dhcpid){
             fillIP((unsigned char*)&our_ip,dhcpid);
+            freePage(dhcpid);
             k_printf("[ETH] DHCP is present\n");
         }else{
             k_printf("[ETH] No DHCP server present here, using static address\n");

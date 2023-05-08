@@ -9,7 +9,6 @@ char wd[FILENAME_MAX];
 char pd[FILENAME_MAX];
 
 void initialise_tty(){
-    clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
 
     memset((void*)&wd,0,FILENAME_MAX);
     #ifdef __x86_64

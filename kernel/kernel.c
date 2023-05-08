@@ -44,10 +44,6 @@ void kernel_main(BootInfo *gi){
         initialise_ps2_driver();
     #endif 
     initialise_ethernet();
-    post_init_kernel();
-}
-
-void post_init_kernel(){
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");
@@ -58,6 +54,5 @@ void post_init_kernel(){
         initialise_drivers_from_pci();
     #endif 
     initialise_tty();
-    k_printf("__end of kernel!\n");
-    for(;;);
+    halt("__end of kernel!\n");
 }
