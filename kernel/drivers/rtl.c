@@ -59,7 +59,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame *frame){
 				prd.low_buf = Rx_Descriptors[z].low_buf;
 				prd.high_buf = Rx_Descriptors[z].high_buf;
 				if(ethernet_handle_package(prd)){
-					Rx_Descriptors[z].command |= OWN;
+					Rx_Descriptors[z].command |= OWN ;
 				}
 			}
 		}
@@ -72,11 +72,6 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame *frame){
 	}
 	outportw(bar1 + 0x3E,status);
 	
-	status = inportw(bar1 + 0x3E);
-	if(status!=0x00){
-		k_printf("[RTL81] Unresolved interrupt: %x \n",status);
-	}
-	
 	outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
@@ -88,9 +83,7 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 	unsigned long ms4 = desc.high_buf;
 	
 	volatile struct Descriptor *desz = ((volatile struct Descriptor*)(Tx_Descriptors+(sizeof(struct Descriptor)*tx_pointer)));
-	if(desz->command!=0x80000064){ // a check if we somehow lost the count
-		k_printf("[RTL81] Unexpected default value: %x \n",desz->command);
-	}
+	
 	desz->high_buf = ms4;
 	desz->low_buf = ms3;
 	desz->vlan = ms2;
@@ -154,8 +147,14 @@ void rtl_driver_start(int bus,int slot,int function){
 	unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
 	setInterrupt(usbint,irq_rtl8169);
 
+	if(!(getBARaddress(bus,slot,function,0x04)&0x04)){
+        unsigned long to = pciConfigReadWord(bus,slot,function,0x04) | 0x04;
+        pciConfigWriteWord(bus,slot,function,0x04,to);
+        k_printf("[E1000] Busmastering was not enabled, but now it is!\n");
+    }
+
 	// enable device
-	// outportb( bar1 + 0x52, 0x0);
+	outportb( bar1 + 0x52, 0x0);
 	
 	//
 	// trigger reset
@@ -182,9 +181,9 @@ void rtl_driver_start(int bus,int slot,int function){
 		unsigned long rx_buffer_len = 100;
 		unsigned long packet_buffer_address = (unsigned long)requestPage();
 		if(i == (num_of_rx_descriptors - 1)){
-			Rx_Descriptors[i].command = (OWN | EOR | (rx_buffer_len & 0x3FFF));
+			Rx_Descriptors[i].command = (OWN | EOR | 0x64);//(rx_buffer_len & 0x3FFF));
 		}else{
-			Rx_Descriptors[i].command = (OWN | (rx_buffer_len & 0x3FFF));
+			Rx_Descriptors[i].command = (OWN | 0x64);// (rx_buffer_len & 0x3FFF));
 		}
 		Rx_Descriptors[i].low_buf = (unsigned int)packet_buffer_address;
 		Rx_Descriptors[i].high_buf = 0;

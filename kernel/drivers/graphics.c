@@ -23,6 +23,11 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
     *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress) = colour;
 }
 
+unsigned int get_pixel_at(unsigned int x,unsigned int y){
+    unsigned int BBP = 4;
+    return *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress);
+}
+
 unsigned long pointerX = 50;
 unsigned long pointerY = 50;
 

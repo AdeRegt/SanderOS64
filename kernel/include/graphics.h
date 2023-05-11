@@ -13,6 +13,7 @@ void set_graphics_info(GraphicsInfo *gi);
 GraphicsInfo *get_graphics_info();
 void clear_screen(unsigned int colour);
 void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour);
+unsigned int get_pixel_at(unsigned int x,unsigned int y);
 void printString(char* message);
 void k_printf(char* format,...);
 void initialise_graphics_driver();
