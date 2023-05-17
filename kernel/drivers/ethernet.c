@@ -149,10 +149,10 @@ void fillUdpHeader(struct UDPHeader *udpheader, unsigned char *destmac, unsigned
 
 // checksum for tcp by https://github.com/nelsoncole/sirius-x86-64/blob/main/kernel/driver/net/checksum.c 
 struct tcp_checksum_header{
-    unsigned int src;
-    unsigned int dst;
-    unsigned char rsved;
+    unsigned long src;
+    unsigned long dst;
     unsigned char protocol;
+    unsigned char rsved;
     unsigned short len;
     unsigned short source_port;
     unsigned short destination_port;
@@ -167,27 +167,19 @@ struct tcp_checksum_header{
 unsigned short net_checksum(const unsigned char *start, const unsigned char *end)
 {
 
-    unsigned int checksum = 0;
-    unsigned int len = end - start;
-    unsigned short *p = (unsigned short *)start;
-
-    // acc
-    while (len > 1) {
-        checksum += *p++;
-        len -= 2;
-    }
-
-    if (len != 0) {
-        checksum += *(unsigned char *)p;
+    unsigned int tmp = end-start;
+    unsigned short *crawler = (unsigned short*) start;
+    unsigned long tu = 0;
+    for(unsigned int i = 0 ; i < tmp/2 ; i++){
+        tu += crawler[i];
     }
 
 
-    checksum = (checksum & 0xffff) + (checksum >> 16);
-    checksum += (checksum >> 16);
+    unsigned long checksum = (tu & 0xffff) + (tu >> 16);
 
     unsigned short final = ~checksum;
 
-    return switch_endian16(final);
+    return final - 1;
 }
 
 unsigned long taaaX = 0;
@@ -202,35 +194,50 @@ void fillTcpHeader(struct TCPHeader *tcpheader,unsigned char *destmac,unsigned s
         taaaX = sequence_number;
         taaaY = acknowledge_number;
     }
+    tcpheader->source_port          = switch_endian32(from_port);
+    tcpheader->destination_port     = switch_endian32(to_port);
+    tcpheader->sequence_number      = switch_endian32(sequence_number);
+    tcpheader->acknowledge_number   = switch_endian32(acknowledge_number);
+    tcpheader->flags                = switch_endian32(flags) + (header_length<<4);
+    tcpheader->window_size          = switch_endian32(window);
+    tcpheader->checksum             = 0;
+    tcpheader->urgent_pointer       = 0;
+
+    int payload = ( size - sizeof(struct IPv4Header) ) + sizeof(struct tcp_checksum_header) ;
+    unsigned char *start = (unsigned char*)requestPage();
+    memset(start,0,0x1000);
+
+    unsigned char *end = start;
+    end += payload;
+    struct tcp_checksum_header* trx = (struct tcp_checksum_header*)start;
+    trx->dst = switch_endian32(to);
+    trx->src = switch_endian32(from);
+    trx->len = 0x27;
+    trx->protocol = IPV4_TYPE_TCP;
+    trx->source_port          = (from_port);
+    trx->destination_port     = (to_port);
+    trx->sequence_number      = (sequence_number);
+    trx->acknowledge_number   = (acknowledge_number);
+    trx->flags                = (flags) + (header_length<<12);
+    trx->window_size          = (window);
+    trx->checksum             = 0;
+    trx->urgent_pointer       = 0;
+
+    uint16_t *cx = (uint16_t*) (((uint8_t*)start) + sizeof(struct tcp_checksum_header));
+    uint16_t *ux = (uint16_t*) (((uint8_t*)tcpheader) + sizeof(struct TCPHeader));
+    for(int i = 0 ; i < payload/2 ; i++){
+        cx[i] = switch_endian16(ux[i]);
+    }
+
+    tcpheader->checksum = switch_endian16(net_checksum(start, end));
+
     tcpheader->source_port          = switch_endian16(from_port);
     tcpheader->destination_port     = switch_endian16(to_port);
     tcpheader->sequence_number      = switch_endian32(sequence_number);
     tcpheader->acknowledge_number   = switch_endian32(acknowledge_number);
     tcpheader->flags                = switch_endian16(flags) + (header_length<<4);
     tcpheader->window_size          = switch_endian16(window);
-    tcpheader->checksum             = 0;
     tcpheader->urgent_pointer       = 0;
-
-    int payload = ( size - (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader)) );
-    unsigned char *start = (unsigned char*)requestPage();
-    unsigned char *end = start;
-    end += (sizeof(struct tcp_checksum_header));
-
-    struct tcp_checksum_header* trx = (struct tcp_checksum_header*)start;
-    trx->dst = (to);
-    trx->src = (from);
-    trx->len = switch_endian16(20 + payload);
-    trx->protocol = IPV4_TYPE_TCP;
-    trx->source_port          = switch_endian16(from_port);
-    trx->destination_port     = switch_endian16(to_port);
-    trx->sequence_number      = switch_endian32(sequence_number);
-    trx->acknowledge_number   = switch_endian32(acknowledge_number);
-    trx->flags                = switch_endian16(flags) + (header_length<<4);
-    trx->window_size          = switch_endian16(window);
-    trx->checksum             = 0;
-    trx->urgent_pointer       = 0;
-
-    tcpheader->checksum = switch_endian16(net_checksum(start, end));
 }
 
 void fillDhcpDiscoverHeader(struct DHCPDISCOVERHeader *dhcpheader){
@@ -455,8 +462,9 @@ void setTcpHandler(unsigned short port,unsigned long func){
 }
 
 void create_tcp_session(unsigned long from, unsigned long to, unsigned short from_port, unsigned short to_port, unsigned long func){
-    unsigned long sizetype = sizeof(struct TCPHeader);
+    unsigned long sizetype = sizeof(struct TCPHeader) + 20;
     struct TCPHeader* tcp1 = (struct TCPHeader*) requestPage();
+    memset(tcp1,0,0x1000);
     unsigned char* destmac;
     unsigned char* t4 = (unsigned char*)&to;
 
@@ -465,9 +473,31 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     }else{
         destmac = getMACFromIp((unsigned char*)&router_ip);
     }
-    unsigned short size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
+    unsigned short size = sizetype - sizeof(struct EthernetHeader);
+
+    uint8_t *tv = (uint8_t*) ( ((upointer_t) tcp1) + sizeof(struct TCPHeader));
+    tv[0] = 0x02; 
+    tv[1] = 0x04;
+    tv[2] = 0x05;
+    tv[3] = 0xa0;
+    tv[4] = 0x04;
+    tv[5] = 0x02;
+    tv[6] = 0x08;
+    tv[7] = 0x0a;
+    tv[8] = 0x04;
+    tv[9] = 0xea;
+    tv[10] = 0x5a;
+    tv[11] = 0x53;
+    tv[12] = 0x00;
+    tv[13] = 0x00;
+    tv[14] = 0x00;
+    tv[15] = 0x00;
+    tv[16] = 0x01;
+    tv[17] = 0x03; 
+    tv[18] = 0x03;
+    tv[19] = 0x07;
     
-    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1,0,5,TCP_SYN,64800);
+    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1291004734,0,10,TCP_SYN,64800);
 
     setTcpHandler(to_port,func);
 
