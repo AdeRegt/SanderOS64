@@ -275,6 +275,13 @@ void *start_tcp_session(uint8_t *ip,uint16_t port,void *functionp){
     return res;
 }
 
+unsigned int sleep(unsigned int seconds){
+    unsigned int modus = 408;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (seconds) );
+    return res;
+}
+
 void __stack_chk_fail(){
     for(;;);
 }

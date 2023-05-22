@@ -178,7 +178,6 @@ unsigned short net_checksum(const unsigned char *start, const unsigned char *end
     unsigned long checksum = (tu & 0xffff) + (tu >> 16);
 
     unsigned short final = ~checksum;
-
     return final - 1;
 }
 
@@ -212,7 +211,8 @@ void fillTcpHeader(struct TCPHeader *tcpheader,unsigned char *destmac,unsigned s
     struct tcp_checksum_header* trx = (struct tcp_checksum_header*)start;
     trx->dst = switch_endian32(to);
     trx->src = switch_endian32(from);
-    trx->len = 0x27;
+    trx->len = payload - 19;
+
     trx->protocol = IPV4_TYPE_TCP;
     trx->source_port          = (from_port);
     trx->destination_port     = (to_port);
@@ -577,10 +577,11 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 unsigned long to = tcp->header.source_addr; 
                 unsigned short from_port = switch_endian16(tcp->destination_port); 
                 unsigned short to_port = switch_endian16(tcp->source_port);
-                unsigned long sizetype = sizeof(struct TCPHeader);
+                unsigned long sizetype = sizeof(struct TCPHeader) + 12;
                 struct TCPHeader* tcp1 = (struct TCPHeader*) requestPage();
+                memset(tcp1,0,0x1000);
                 unsigned char* destmac = (unsigned char*)tcp->header.ethernetheader.from;
-                unsigned short size = sizeof(struct TCPHeader) - sizeof(struct EthernetHeader);
+                unsigned short size = (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader)) + 12;
                 unsigned long sid = switch_endian32(tcp->sequence_number);
                 if(switch_endian16(tcp->flags) & TCP_PUS){
                     unsigned long tr = desc.buffersize - sizeof(struct TCPHeader);
@@ -590,7 +591,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 }else if(switch_endian16(tcp->flags) & TCP_FIN){
                     sid++;
                 }
-                fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,switch_endian32(tcp->acknowledge_number),sid,5,TCP_ACK,512);
+                fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,switch_endian32(tcp->acknowledge_number),sid,8,TCP_ACK,507);
 
                 PackageRecievedDescriptor sec;
                 sec.buffersize = sizetype;
@@ -603,9 +604,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                     unsigned long addr = desc.low_buf + sizeof(struct TCPHeader);
                     unsigned long count = desc.buffersize-sizeof(struct TCPHeader);
                     unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
-                    k_printf("[ETH] TCP message reieved: size=%x string=%s \n",count,(unsigned char*)addr);
                     if(func){
-                        k_printf("[ETH] function handler is about to get called\n");
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(addr,count);
                     }else{

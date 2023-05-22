@@ -47,6 +47,19 @@ void initialise_tty(){
             if(strpath[1]==':'){
                 memset((void*)&wd,0,50);
                 memcpy((void*)&wd,strpath,strlen(strpath));
+            }else if(strpath[0]=='.'&&strpath[1]=='.'){
+                upointer_t imax = strlen(wd);
+                for(upointer_t i = 0 ; i < imax ; i++){
+                    char thisone = wd[imax-i];
+                    if(thisone=='/'){
+                        wd[imax-i] = 0;
+                        break;
+                    }
+                    if(thisone==':'){
+                        break;
+                    }
+                    wd[imax-i] = 0;
+                }
             }else{
                 if(strlen((char*)&wd)>3){
                     memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),"/",1);

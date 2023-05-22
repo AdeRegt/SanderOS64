@@ -324,6 +324,8 @@ void isr2handler(stack_registers *ix){
         ix->rax = (upointer_t)getMACFromIp(name);
     }else if(ix->rax==407){
         create_tcp_session(getOurIpAsLong(),((unsigned long*)ix->rbx)[0],ix->rcx,ix->rcx,ix->rdx);
+    }else if(ix->rax==408){
+        sleep(ix->rbx);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

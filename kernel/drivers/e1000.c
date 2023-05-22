@@ -44,6 +44,8 @@ unsigned char e1000_is_eeprom(){
 __attribute__((interrupt)) void irq_e1000(interrupt_frame *frame){
     e1000_write_in_space(0xD0,1);
     unsigned long to = e1000_read_in_space(0xC0);
+	outportb(0xA0,0x20);
+	outportb(0x20,0x20);
     if(to&0x01){
         // k_printf("[E1000] Transmit completed!\n");
     }else if(to&0x02){
@@ -72,8 +74,6 @@ __attribute__((interrupt)) void irq_e1000(interrupt_frame *frame){
     }else{
         k_printf("[E1000] Unknown interrupt: %x !\n",to);
     }
-	outportb(0xA0,0x20);
-	outportb(0x20,0x20);
 }
 
 int e1000_send_package(PackageRecievedDescriptor desc){
