@@ -121,6 +121,7 @@ void initialise_pci_driver(){
 		for(int slot = 0 ; slot < 32 ; slot++){
 			for(int function = 0 ; function <= 7 ; function++){
 				unsigned short vendor = pciConfigReadWord(bus,slot,function,0);
+                unsigned short device = pciConfigReadWord(bus,slot,function,2);
 				if(vendor != 0xFFFF){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
@@ -136,6 +137,8 @@ void initialise_pci_driver(){
                         ehci_driver_start(bus,slot,function);
                     }else if(classc==0x01 && sublca==0x01 ){
                         ide_driver_start(bus,slot,function);
+                    }else if(vendor==0x80EE && device==0xCAFE){
+                        vbox_driver_start(bus,slot,function);
                     }
                 }
             }

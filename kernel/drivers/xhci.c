@@ -410,6 +410,58 @@ uint8_t xhci_command_ring_get_switch()
     return 1;
 }
 
+uint8_t xhci_resultcode_explained(CommandCompletionEventTRB* res)
+{
+    const char * cc[] = {
+        "Invalid",
+        "Success",
+        "Data Buffer Error",
+        "Babble Detected Error",
+        "USB Transaction Error",
+        "TRB Error",
+        "Stall Error",
+        "Resource Error",
+        "Bandwidth Error",
+        "No Slots Available Error",
+        "Invalid Stream Type Error",
+        "Slot Not Enabled Error",
+        "Endpoint Not Enabled Error",
+        "Short Packet",
+        "Ring Underrun",
+        "Ring Overrun",
+        "VF Event Ring Full Error",
+        "Parameter Error",
+        "Bandwidth Overrun Error",
+        "Context State Error",
+        "No Ping Response Error",
+        "Event Ring Full Error",
+        "Incompatible Device Error",
+        "Missed Service Error",
+        "Command Ring Stopped",
+        "Command Aborted",
+        "Stopped",
+        "Stopped - Length Invalid",
+        "Stopped - Short Packet",
+        "Max Exit Latency Too Large Error",
+        "Reserved",
+        "Isoch Buffer Overrun",
+        "Event Lost Error",
+        "Undefined Error",
+        "Invalid Stream ID Error",
+        "Secondary Bandwidth Error",
+        "Split Transaction Error"
+    };
+    k_printf("xhci: resultcode: (%x) %s \n",res->CompletionCode,cc[res->CompletionCode]);
+    if(res->CompletionCode==1)
+    {
+        return res->SlotID;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 uint8_t xhci_request_device_id()
 {
     // Enable slot TRB
@@ -425,8 +477,7 @@ uint8_t xhci_request_device_id()
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
-            return 0;
+            return xhci_resultcode_explained(res);
         }
         return res->SlotID;
     }
@@ -454,12 +505,7 @@ uint8_t xhci_request_device_address(uint8_t device_id,void* data,uint8_t bsr )
     CommandCompletionEventTRB *res = xhci_ring_and_wait(0,0,(uint32_t)(upointer_t)trb1);
     if(res)
     {
-        if(res->CompletionCode!=1)
-        {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
-            return 0;
-        }
-        return res->SlotID;
+        return xhci_resultcode_explained(res);
     }
     else
     {
@@ -507,7 +553,7 @@ void *xhci_request_device_descriptor(USBDevice *device)
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            xhci_resultcode_explained(res);
             return 0;
         }
         return data;
@@ -561,7 +607,7 @@ void *xhci_request_device_configuration(USBDevice *device)
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            xhci_resultcode_explained(res);
             return 0;
         }
         return data;
@@ -598,8 +644,7 @@ uint8_t xhci_request_set_config(USBDevice *device,uint8_t configid)
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
-            return 0;
+            return xhci_resultcode_explained(res);
         }
         return 1;
     }
@@ -629,8 +674,7 @@ uint8_t xhci_request_configure_endpoint_command(USBDevice *device,void *data)
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
-            return 0;
+            return xhci_resultcode_explained(res);
         }
         return res->SlotID;
     }
@@ -725,7 +769,7 @@ void *xhci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, 
     {
         if(res->CompletionCode!=1)
         {
-            k_printf("xhci: resultcode: %d \n",res->CompletionCode);
+            xhci_resultcode_explained(res);
             return 0;
         }
         return data;
@@ -783,14 +827,12 @@ void xhci_port_install(uint8_t portid)
     {
         k_printf("xhci: port %d is a USB3.0 connection!\n",portid);
     }
-    #ifdef ENABLE_USB2_ON_XHCI
     else if(portc&1)
     {
         k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
         xhci_set_portsc_reg(portid,xhci_get_portsc_reg(portid) | 0b1000010000);
-        sleep(2);
+        sleep(10);
     }
-    #endif
     else
     {
         return;
