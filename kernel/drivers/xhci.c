@@ -859,7 +859,7 @@ void xhci_port_install(uint8_t portid)
     }
     else
     {
-        k_printf("xhci: port %d , unknown portspeed: %d \n",portid,portspeed);for(;;);
+        k_printf("xhci: port %d , unknown portspeed: %d \n",portid,portspeed);
         return;
     }
 
@@ -992,7 +992,7 @@ void xhci_port_install(uint8_t portid)
     return;
 
     failure:
-    k_printf("xhci: The installing of port %d failed misserably!\n",portid);for(;;);
+    k_printf("xhci: The installing of port %d failed misserably!\n",portid);
 }
 
 void xhci_driver_start(int bus,int slot,int function)

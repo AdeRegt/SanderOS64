@@ -76,6 +76,7 @@ int exec(uint8_t *path,char *argv){
     }
 
     // call!
-    int (*callProgram)(int argc,char** argv) = (void*)address;
-    return callProgram(0,argstock);
+    k_printf("exec: running BIN program at %x \n",address);
+    int (*callProgram)() = (void*)address;
+    return callProgram();
 }
