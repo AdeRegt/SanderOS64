@@ -184,3 +184,51 @@ global __new_stack
 __new2_stack:
     times (32*1024) db 0
 __new2_stack_end:
+
+
+
+global isrpanic
+extern GeneralFault_Handler
+isrpanic:
+    ; make sure interrupts do not happen when we are playing..
+    cli
+
+    ; we have a stackframe which we can recieve by popping the right values from the stack...
+    pop dword [_inti_eip]
+    pop dword [_inti_cs]
+    pop dword [_inti_eflags]
+
+    ; save the general registers
+    mov dword [_inti_edx], edx
+    mov dword [_inti_ecx], ecx
+    mov dword [_inti_ebx], ebx
+    mov dword [_inti_eax], eax
+    mov dword [_inti_ebp], ebp
+    mov dword [_inti_edi], edi
+    mov dword [_inti_esi], esi
+
+    ; save the segments registers
+    mov eax,0
+    mov ax, gs 
+    mov word [_inti_gs], gs
+    mov ax, fs 
+    mov word [_inti_fs], fs
+    mov ax, es 
+    mov word [_inti_es], es
+    mov ax, ds 
+    mov word [_inti_ds], ds
+
+    ; set the right segment register for the current state
+    ; this is also to switch to kernel mode
+    mov eax, 0
+    mov ax, word 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax 
+    mov gs, ax 
+    mov ss, ax 
+    mov eax, __new2_stack_end 
+    mov esp, eax
+
+    pushad
+    call GeneralFault_Handler

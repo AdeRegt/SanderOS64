@@ -13,13 +13,57 @@ uint8_t idtoffsetcode = 0;
 __attribute__ ((aligned(0x10))) static IDTDescEntry idt[256];
 extern void* isr_stub_table[];
 
+
+
+#ifndef __x86_64
+    uint32_t _inti_eip;
+    uint32_t _inti_eax;
+    uint32_t _inti_cs;
+    uint32_t _inti_eflags;
+    uint32_t _inti_edx;
+    uint32_t _inti_ecx;
+    uint32_t _inti_ebx;
+    uint32_t _inti_ebp;
+    uint32_t _inti_edi;
+    uint32_t _inti_esi;
+    uint32_t _inti_gs;
+    uint32_t _inti_fs;
+    uint32_t _inti_es;
+    uint32_t _inti_ds;
+
+    stack_registers uv;
+#endif 
+
 void interrupt_eoi(){
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
 
+#ifndef __x86_64
+extern void isrpanic();
+void GeneralFault_Handler(){
+    clear_screen(0xFF000D);
+    k_printf("===================================================\n");
+    k_printf("             K E R N E L   P A N I C \n");
+    k_printf("===================================================\n");
+    k_printf("EIP        : %x \n",_inti_eip);
+    k_printf("EAX        : %x \n",_inti_eax);
+    k_printf("CS         : %x \n",_inti_cs);
+    k_printf("EFLAGS     : %x \n",_inti_eflags);
+    k_printf("EDX        : %x \n",_inti_edx);
+    k_printf("ECX        : %x \n",_inti_ecx);
+    k_printf("EBX        : %x \n",_inti_ebx);
+    k_printf("EBP        : %x \n",_inti_ebp);
+    k_printf("EDI        : %x \n",_inti_edi);
+    k_printf("ESI        : %x \n",_inti_esi);
+    k_printf("GS         : %x \n",_inti_gs);
+    k_printf("FS         : %x \n",_inti_fs);
+    k_printf("ES         : %x \n",_inti_es);
+    k_printf("DS         : %x \n",_inti_ds);
+#else 
 __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
     k_printf("\nInterrupt: error cs:%x flags:%x ip:%x sp:%x ss:%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+#endif
 	asm volatile("cli\nhlt");
 }
 
@@ -116,27 +160,6 @@ typedef struct{
   long tv_sec;		/* Seconds.  */
   long tv_usec;	/* Microseconds.  */
 }__attribute__((packed)) timeval;
-
-
-
-#ifndef __x86_64
-    uint32_t _inti_eip;
-    uint32_t _inti_eax;
-    uint32_t _inti_cs;
-    uint32_t _inti_eflags;
-    uint32_t _inti_edx;
-    uint32_t _inti_ecx;
-    uint32_t _inti_ebx;
-    uint32_t _inti_ebp;
-    uint32_t _inti_edi;
-    uint32_t _inti_esi;
-    uint32_t _inti_gs;
-    uint32_t _inti_fs;
-    uint32_t _inti_es;
-    uint32_t _inti_ds;
-
-    stack_registers uv;
-#endif 
 
 // http://faculty.nps.edu/cseagle/assembly/sys_call.html
 #ifndef __x86_64
@@ -377,7 +400,11 @@ void initialise_idt_driver(){
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
         // IRQ_clear_mask(i);
+        #ifndef __x86_64
+        idt_set_gate(i,(unsigned long)isrpanic,0x08,0x8F);
+        #else 
         idt_set_gate(i,(unsigned long)GeneralFault_Handler,0x08,0x8F);
+        #endif
     }
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
