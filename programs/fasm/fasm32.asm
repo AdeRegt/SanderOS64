@@ -1,22 +1,48 @@
 
-; flat assembler interface for Linux
+; flat assembler interface for Unix/libc
 ; Copyright (c) 1999-2022, Tomasz Grysztar.
 ; All rights reserved.
 
 	format	ELF
-	;entry	start
+	public	main
 
-; segment readable executable
+macro ccall proc,[arg]
+  { common
+     local size 
+     size = 0 
+     mov ebp,esp
+     if ~ arg eq
+    forward
+     size = size + 4
+    common
+     sub esp,size
+     end if
+     and esp,-16
+     if ~ arg eq
+     add esp,size
+    reverse
+     pushd arg
+    common
+     end if
+     call proc 
+     mov esp,ebp }
 
-start:
+extrn gettimeofday
+
+section '.text' executable align 16
+
+main:
+	mov	ecx,[esp+4]
+	mov	[argc],ecx
+	mov	ebx,[esp+8]
+	mov	[argv],ebx
+	push	ebp
+	mov	[stack_frame],esp
+
 	mov	[con_handle],1
 	mov	esi,_logo
 	call	display_string
 
-	mov	[command_line],esp
-	mov	ecx,[esp]
-	lea	ebx,[esp+4+ecx*4+4]
-	mov	[environment],ebx
 	call	get_params
 	jc	information
 
@@ -33,10 +59,7 @@ start:
 	mov	esi,_memory_suffix
 	call	display_string
 
-	mov	eax,78
-	mov	ebx,buffer
-	xor	ecx,ecx
-	int	0x80
+	ccall	gettimeofday,buffer,0
 	mov	eax,dword [buffer]
 	mov	ecx,1000
 	mul	ecx
@@ -59,10 +82,7 @@ start:
 	call	display_number
 	mov	esi,_passes_suffix
 	call	display_string
-	mov	eax,78
-	mov	ebx,buffer
-	xor	ecx,ecx
-	int	0x80
+	ccall	gettimeofday,buffer,0
 	mov	eax,dword [buffer]
 	mov	ecx,1000
 	mul	ecx
@@ -105,14 +125,15 @@ information:
 	jmp	exit_program
 
 get_params:
-	mov	ebx,[command_line]
 	mov	[input_file],0
 	mov	[output_file],0
 	mov	[symbols_file],0
 	mov	[memory_setting],0
 	mov	[passes_limit],100
-	mov	ecx,[ebx]
-	add	ebx,8
+
+	mov	ecx,[argc]
+	mov	ebx,[argv]
+	add	ebx,4
 	dec	ecx
 	jz	bad_params
 	mov	[definitions_pointer],predefinitions
@@ -224,6 +245,8 @@ get_params:
 	lodsb
 	cmp	al,20h
 	je	option_value_ok
+	cmp	al,0Dh
+	je	option_value_ok
 	or	al,al
 	jz	option_value_ok
 	sub	al,30h
@@ -318,18 +341,17 @@ include '..\AVX.INC'
 include '..\TABLES.INC'
 include '..\MESSAGES.INC'
 
-; segment readable writeable
-
-align 4
+section '.bss' writeable align 4
 
 include '..\VARIABLE.INC'
 
-command_line dd ?
+argc dd ?
+argv dd ?
+stack_frame dd ?
 memory_setting dd ?
 definitions_pointer dd ?
-environment dd ?
-timestamp dq ?
 start_time dd ?
+timestamp dq ?
 con_handle dd ?
 displayed_count dd ?
 last_displayed db ?

@@ -7,6 +7,7 @@
 #include "../include/paging.h"
 #include "../include/timer.h"
 #include "../include/ethernet.h"
+#include "../include/tty.h"
 
 static IDTR idtr;
 uint8_t idtoffsetcode = 0;
@@ -60,6 +61,13 @@ void GeneralFault_Handler(){
     k_printf("FS         : %x \n",_inti_fs);
     k_printf("ES         : %x \n",_inti_es);
     k_printf("DS         : %x \n",_inti_ds);
+    struct stackframe *stk = (struct stackframe *)_inti_ebp;
+    k_printf("\n\nStack trace:\n");
+    for(unsigned int frame = 0; stk && frame < 10; ++frame){
+        // Unwind to previous stack frame
+        k_printf("%d          :%x\n", frame, stk->eip);
+        stk = stk->ebp;
+    }
 #else 
 __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
     k_printf("\nInterrupt: error cs:%x flags:%x ip:%x sp:%x ss:%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
@@ -152,8 +160,9 @@ extern void isrint();
 extern void isr2int();
 
 void end_of_program(){
-    k_printf("Program with pid %d ended!\n",getPid());
-    for(;;);
+    k_printf("Program with pid %d ended!\n\n",getPid());
+    tty_inner_loop();
+    // for(;;);
 }
 
 typedef struct{
@@ -178,6 +187,7 @@ void isrhandler(){
 #else 
 void isrhandler(stack_registers *ix){
 #endif 
+    // k_printf("isr: yield eax=%x ebx=%x ecx=%x edx=%x \n",ix->rax,ix->rbx,ix->rcx,ix->rdx);
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
     if(ix->rax==1){
@@ -320,7 +330,7 @@ void isr2handler(stack_registers *ix){
         tv->tv_usec = 10000;
         ix->rax = 0;
     }else if(ix->rax==400){
-        ix->rax = (upointer_t) malloc(ix->rdx);
+        ix->rax = (upointer_t) requestPage();
     }else if(ix->rax==401){
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];

@@ -42,6 +42,11 @@ typedef struct{
     upointer_t ss;
 }interrupt_frame;
 
+struct stackframe {
+  struct stackframe* ebp;
+  uint32_t eip;
+};
+
 void initialise_idt_driver();
 void setInterrupt(int offset,void *fun);
 void interrupt_eoi();

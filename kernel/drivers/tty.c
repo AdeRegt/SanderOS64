@@ -8,27 +8,7 @@
 char wd[FILENAME_MAX];
 char pd[FILENAME_MAX];
 
-void initialise_tty(){
-
-    memset((void*)&wd,0,FILENAME_MAX);
-    #ifdef __x86_64
-        memcpy((void*)&wd,"A:PROGRAMS/64BIT",strlen("A:PROGRAMS/64BIT"));
-    #else
-        memcpy((void*)&wd,"A:PROGRAMS/32BIT",strlen("A:PROGRAMS/32BIT"));
-    #endif
-
-    char *kp = dir(wd);
-
-    k_printf("SanderOS64 Buildin Command Interpeter\n");
-    if(kp){
-        k_printf("Known programs: \n");
-        k_printf("%s\n",kp);
-    }
-    k_printf("Commands: \n");
-    k_printf("exit               - Exit the shell\n");
-    k_printf("dir                - Print contents of the working directory\n");
-    k_printf("cd        [path]   - Change working directory\n");
-    k_printf("\n");
+void tty_inner_loop(){
     while(1){
         k_printf("%s > ",wd);
         uint8_t *tw = scanLine(50);
@@ -99,4 +79,28 @@ void initialise_tty(){
         }
         free(tw);
     }
+}
+
+void initialise_tty(){
+
+    memset((void*)&wd,0,FILENAME_MAX);
+    #ifdef __x86_64
+        memcpy((void*)&wd,"A:PROGRAMS/64BIT",strlen("A:PROGRAMS/64BIT"));
+    #else
+        memcpy((void*)&wd,"A:PROGRAMS/32BIT",strlen("A:PROGRAMS/32BIT"));
+    #endif
+
+    char *kp = dir(wd);
+
+    k_printf("SanderOS64 Buildin Command Interpeter\n");
+    if(kp){
+        k_printf("Known programs: \n");
+        k_printf("%s\n",kp);
+    }
+    k_printf("Commands: \n");
+    k_printf("exit               - Exit the shell\n");
+    k_printf("dir                - Print contents of the working directory\n");
+    k_printf("cd        [path]   - Change working directory\n");
+    k_printf("\n");
+    tty_inner_loop();
 }

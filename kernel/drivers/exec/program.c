@@ -77,6 +77,8 @@ int exec(uint8_t *path,char *argv){
 
     // call!
     k_printf("exec: running BIN program at %x \n",address);
-    int (*callProgram)() = (void*)address;
-    return callProgram();
+    int (*callProgram)(int,char**) = (void*)address;
+    char *data[] = {path, argv};
+    char **dictionary = data;
+    return callProgram(1 + (strlen(argv)>0),dictionary);
 }

@@ -32,3 +32,4 @@ typedef __UINT64_TYPE__ uint64_t;
         typedef uint32_t upointer_t;
     #endif
 #endif 
+typedef unsigned long long size_t;

@@ -223,7 +223,7 @@ void* malloc( upointer_t size ){
 }
 
 void free( void* ptr ){
-    hang("free");
+    // hang("free");
 }
 
 void *draw_pixel(int x,int y,int z){
@@ -284,4 +284,26 @@ unsigned int sleep(unsigned int seconds){
 
 void __stack_chk_fail(){
     for(;;);
+}
+
+char *getenv(char *name){
+    return 0;
+}
+
+size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
+    return 1;
+}
+
+uint32_t time(void *t){
+    return 1;
+}
+
+uint32_t write(int fildes, void *buf, uint32_t nbyte){
+    int mode = 4;
+	__asm__ __volatile__( "int $0x80" : "+a"(mode) , "+b" (fildes), "+c" (buf), "+d" (nbyte));
+    return 0;
+}
+
+uint32_t gettimeofday(){
+    return 0;
 }

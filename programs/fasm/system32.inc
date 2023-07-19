@@ -1,52 +1,40 @@
 
-; flat assembler interface for Linux
+; flat assembler interface for Unix/libc
 ; Copyright (c) 1999-2022, Tomasz Grysztar.
 ; All rights reserved.
 
-O_ACCMODE  = 0003o
-O_RDONLY   = 0000o
-O_WRONLY   = 0001o
-O_RDWR	   = 0002o
-O_CREAT    = 0100o
-O_EXCL	   = 0200o
-O_NOCTTY   = 0400o
-O_TRUNC    = 1000o
-O_APPEND   = 2000o
-O_NONBLOCK = 4000o
+extrn malloc
+extrn free
+extrn getenv
+extrn fopen
+extrn fclose
+extrn fread
+extrn fwrite
+extrn fseek
+extrn ftell
+extrn time
+extrn exit
 
-S_ISUID    = 4000o
-S_ISGID    = 2000o
-S_ISVTX    = 1000o
-S_IRUSR    = 0400o
-S_IWUSR    = 0200o
-S_IXUSR    = 0100o
-S_IRGRP    = 0040o
-S_IWGRP    = 0020o
-S_IXGRP    = 0010o
-S_IROTH    = 0004o
-S_IWOTH    = 0002o
-S_IXOTH    = 0001o
+extrn 'write' as libc_write
 
 init_memory:
 	mov	eax,esp
 	and	eax,not 0FFFh
 	add	eax,1000h-10000h
 	mov	[stack_limit],eax
-	xor	ebx,ebx
-	mov	eax,45
-	int	0x80
-	mov	[additional_memory],eax
 	mov	ecx,[memory_setting]
 	shl	ecx,10
 	jnz	allocate_memory
 	mov	ecx,1000000h
       allocate_memory:
-	mov	ebx,[additional_memory]
-	add	ebx,ecx
-	mov	eax,45
-	int	0x80
+	mov	[memory_setting],ecx
+	ccall	malloc,ecx
+	or	eax,eax
+	jz	out_of_memory
+	mov	[additional_memory],eax
+	add	eax,[memory_setting]
 	mov	[memory_end],eax
-	sub	eax,[additional_memory]
+	mov	eax,[memory_setting]
 	shr	eax,2
 	add	eax,[additional_memory]
 	mov	[additional_memory_end],eax
@@ -54,42 +42,20 @@ init_memory:
 	ret
 
 exit_program:
-	movzx	ebx,al
-	mov	eax,1
-	int	0x80
+	movzx	eax,al
+	push	eax
+	ccall	free,[additional_memory]
+	pop	eax
+	ccall	exit,eax
+	mov	esp,[stack_frame]
+	pop	ebp
+	ret
 
 get_environment_variable:
-	mov	ecx,esi
-	mov	ebx,[environment]
-      next_variable:
-	mov	esi,[ebx]
-	test	esi,esi
+	ccall	getenv,esi
+	mov	esi,eax
+	or	eax,eax
 	jz	no_environment_variable
-	add	ebx,4
-      compare_variable_names:
-	mov	edx,ecx
-      compare_character:
-	lodsb
-	mov	ah,[edx]
-	inc	edx
-	cmp	al,'='
-	je	end_of_variable_name
-	or	ah,ah
-	jz	next_variable
-	sub	ah,al
-	jz	compare_character
-	cmp	ah,20h
-	jne	next_variable
-	cmp	al,41h
-	jb	next_variable
-	cmp	al,5Ah
-	jna	compare_character
-	jmp	next_variable
-      no_environment_variable:
-	ret
-      end_of_variable_name:
-	or	ah,ah
-	jnz	next_variable
       copy_variable_value:
 	lodsb
 	cmp	edi,[memory_end]
@@ -99,18 +65,18 @@ get_environment_variable:
 	jnz	copy_variable_value
 	dec	edi
 	ret
+      no_environment_variable:
+	stosb
+	dec	edi
+	ret
 
 open:
 	push	esi edi ebp
 	call	adapt_path
-	mov	eax,5
-	mov	ebx,buffer
-	mov	ecx,O_RDONLY
-	xor	edx,edx
-	int	0x80
+	ccall	fopen,buffer,open_mode
 	pop	ebp edi esi
-	test	eax,eax
-	js	file_error
+	or	eax,eax
+	jz	file_error
 	mov	ebx,eax
 	clc
 	ret
@@ -130,40 +96,22 @@ open:
 	ja	out_of_memory
 	ret
 create:
-	push	esi edi ebp edx
+	push	esi edi ebp
 	call	adapt_path
-	mov	ebx,buffer
-	mov	ecx,O_CREAT+O_TRUNC+O_WRONLY
-	mov	edx,S_IRUSR+S_IWUSR+S_IRGRP+S_IROTH
-	pop	eax
-	cmp	eax,[output_file]
-	jne	do_create
-	cmp	[output_format],5
-	jne	do_create
-	bt	[format_flags],0
-	jnc	do_create
-	or	edx,S_IXUSR+S_IXGRP+S_IXOTH
-      do_create:
-	mov	eax,5
-	int	0x80
+	ccall	fopen,buffer,create_mode
 	pop	ebp edi esi
-	test	eax,eax
-	js	file_error
+	or	eax,eax
+	jz	file_error
 	mov	ebx,eax
 	clc
 	ret
 close:
-	mov	eax,6
-	int	0x80
+	ccall	fclose,ebx
 	ret
 read:
-	push	ecx edx esi edi ebp
-	mov	eax,3
-	xchg	ecx,edx
-	int	0x80
-	pop	ebp edi esi edx ecx
-	test	eax,eax
-	js	file_error
+	push	ebx ecx edx esi edi ebp
+	ccall	fread,edx,1,ecx,ebx
+	pop	ebp edi esi edx ecx ebx
 	cmp	eax,ecx
 	jne	file_error
 	clc
@@ -172,50 +120,41 @@ read:
 	stc
 	ret
 write:
-	push	edx esi edi ebp
-	mov	eax,4
-	xchg	ecx,edx
-	int	0x80
-	pop	ebp edi esi edx
-	test	eax,eax
-	js	file_error
+	push	ebx ecx edx esi edi ebp
+	ccall	fwrite,edx,1,ecx,ebx
+	pop	ebp edi esi edx ecx ebx
+	cmp	eax,ecx
+	jne	file_error
 	clc
 	ret
 lseek:
-	mov	ecx,edx
-	xor	edx,edx
-	mov	dl,al
-	mov	eax,19
-	int	0x80
-	cmp	eax,-1
-	je	file_error
+	push	ebx
+	movzx	eax,al
+	ccall	fseek,ebx,edx,eax
+	test	eax,eax
+	jnz	lseek_error
+	mov	ebx,[esp]
+	ccall	ftell,ebx
+	pop	ebx
 	clc
+	ret
+    lseek_error:
+	pop	ebx
+	stc
 	ret
 
 display_string:
-	push	ebx
-	mov	edi,esi
-	mov	edx,esi
-	or	ecx,-1
-	xor	al,al
-	repne	scasb
-	neg	ecx
-	sub	ecx,2
-	mov	eax,4
-	mov	ebx,[con_handle]
-	xchg	ecx,edx
-	int	0x80
-	pop	ebx
+	lodsb
+	or	al,al
+	jz	string_displayed
+	mov	dl,al
+	call	display_character
+	jmp	display_string
+      string_displayed:
 	ret
 display_character:
-	push	ebx
 	mov	[character],dl
-	mov	eax,4
-	mov	ebx,[con_handle]
-	mov	ecx,character
-	mov	edx,1
-	int	0x80
-	pop	ebx
+	ccall	libc_write,[con_handle],character,1
 	ret
 display_number:
 	push	ebx
@@ -266,13 +205,13 @@ display_block:
 	add	[displayed_count],ecx
 	mov	al,[esi+ecx-1]
 	mov	[last_displayed],al
-	push	ebx
-	mov	eax,4
-	mov	ebx,[con_handle]
-	mov	edx,ecx
-	mov	ecx,esi
-	int	0x80
-	pop	ebx
+      display_characters:
+	lodsb
+	mov	dl,al
+	push	ecx esi
+	call	display_character
+	pop	esi ecx
+	loop	display_characters
       block_displayed:
 	ret
 
@@ -292,7 +231,7 @@ assembler_error:
 	mov	ebx,[current_line]
 	test	ebx,ebx
 	jz	display_error_message
-	pushd	0
+	push	dword 0
       get_error_lines:
 	mov	eax,[ebx]
 	cmp	byte [eax],0
@@ -455,12 +394,13 @@ assembler_error:
 	jmp	exit_program
 
 make_timestamp:
-	mov	eax,13
-	mov	ebx,timestamp
-	int	0x80
+	ccall	time,timestamp
 	mov	eax,dword [timestamp]
 	mov	edx,dword [timestamp+4]
 	ret
+
+open_mode db 'r',0
+create_mode db 'w',0
 
 error_prefix db 'error: ',0
 error_suffix db '.'
