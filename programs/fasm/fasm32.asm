@@ -71,6 +71,7 @@ main:
 
 	and	[preprocessing_done],0
 	call	preprocessor
+
 	or	[preprocessing_done],-1
 	call	parser
 	call	assembler

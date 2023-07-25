@@ -304,6 +304,6 @@ uint32_t write(int fildes, void *buf, uint32_t nbyte){
     return 0;
 }
 
-uint32_t gettimeofday(){
+uint32_t gettimeofday(void *buff){
     return 0;
 }

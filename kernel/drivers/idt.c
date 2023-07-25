@@ -159,12 +159,6 @@ void setRawInterrupt(int offset,void *fun){
 extern void isrint();
 extern void isr2int();
 
-void end_of_program(){
-    k_printf("Program with pid %d ended!\n\n",getPid());
-    tty_inner_loop();
-    // for(;;);
-}
-
 typedef struct{
   long tv_sec;		/* Seconds.  */
   long tv_usec;	/* Microseconds.  */
@@ -192,7 +186,7 @@ void isrhandler(stack_registers *ix){
 	outportb(0x20,0x20);
     if(ix->rax==1){
         k_printf("program returned with %d from %x \n",ix->rbx,ix->rip);
-        ix->rip = (upointer_t)end_of_program;
+        ix->rip = (upointer_t)tty_inner_loop;
     }else if(ix->rax==2){
         k_printf("isr: fork not implemented!\n");
     }else if(ix->rax==3){
@@ -241,7 +235,7 @@ void isr2handler(stack_registers *ix){
 #endif 
     // k_printf("isr2: yield eax=%x ebx=%x ecx=%x edx=%x \n",ix->rax,ix->rbx,ix->rcx,ix->rdx);
     if(ix->rax==0){
-        // k_printf("isr2:request read\n");
+        // k_printf("isr2:request read\n");for(;;);
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         memcpy((void*)ix->rsi,(void*)(fl->buffer + fl->pointer),ix->rdx);
         fl->pointer = fl->pointer + ix->rdx;
@@ -268,9 +262,10 @@ void isr2handler(stack_registers *ix){
             freePage(tmpbuf);
         }
     }else if(ix->rax==2){
-        // k_printf("isr2:request open rsi=%x \n",ix->rsi);
+        // k_printf("isr2:request open rsi=%x \n",ix->rsi);for(;;);
         // fileopen option!
-        char* path = (char*) ix->rdi;
+        char* path = (char*) ix->rdx;
+        // k_printf("isr2:request to open %s \n",path);
         upointer_t filesize = 0;
         void* buffer;
         if(ix->rsi==0){
@@ -284,7 +279,7 @@ void isr2handler(stack_registers *ix){
             readFile(path,buffer);
         }
         int sov = 0;
-        for(int i = 0 ; i < 10 ; i++){
+        for(int i = 6 ; i < 10 ; i++){
             File *fl = (File*) &(getCurrentTaskInfo()->files[i]);
             if(fl->available==0){
                 fl->available = 1;
@@ -297,6 +292,7 @@ void isr2handler(stack_registers *ix){
                 break;
             }
         }
+        // k_printf("Opening file with ID %d \n",sov);
         ix->rax = sov;
     }else if(ix->rax==3){
         // k_printf("isr2:request close\n");
@@ -322,7 +318,7 @@ void isr2handler(stack_registers *ix){
         // k_printf("isr2:and\n");
         Task* ts = (Task*) (getTasks() + (sizeof(Task)*getPid()));
         ts->task_running = 0;
-        ix->rip = (upointer_t)end_of_program;
+        ix->rip = (upointer_t)tty_inner_loop;
     }else if(ix->rax==96){
         // k_printf("isr2:request time\n");
         timeval* tv = (timeval*) ix->rdi;
