@@ -323,7 +323,7 @@ void isr2handler(stack_registers *ix){
         // k_printf("isr2:request time\n");
         timeval* tv = (timeval*) ix->rdi;
         tv->tv_sec = 10000;
-        tv->tv_usec = 10000;
+        tv->tv_usec = 10100;
         ix->rax = 0;
     }else if(ix->rax==400){
         ix->rax = (upointer_t) requestPage();
@@ -378,6 +378,198 @@ void isr2handler(stack_registers *ix){
     #endif
 }
 
+__attribute__((interrupt)) void Error00(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x00 :: Division Error\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error01(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x01 :: Debug\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error02(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x02 :: Non-maskable Interrupt\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error03(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x03 :: Breakpoint\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error04(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x04 :: Overflow\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error05(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x05 :: Bound Range Exceeded\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error06(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x06 :: Invalid Opcode\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error07(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x07 :: Device Not Available\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error08(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x08 :: Double Fault\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error09(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x09 :: Coprocessor Segment Overrun\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0A(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x0A :: Invalid TSS\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0B(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x0B :: Segment Not Present\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0C(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x0C :: Stack-Segment Fault\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0D(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x0D :: General Protection Fault\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0E(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x0E :: Page Fault\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error0F(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x0F :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error10(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x10 :: x87 Floating-Point Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error11(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x11 :: Alignment Check\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error12(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x12 :: Machine Check\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error13(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x13 :: SIMD Floating-Point Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error14(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x14 :: Virtualization Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error15(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x15 :: Control Protection Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error16(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x16 :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error17(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x17 :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error18(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x18 :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error19(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x19 :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1A(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x1A :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1B(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x1B :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1C(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x1C :: Hypervisor Injection Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1D(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x1D :: VMM Communication Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1E(interrupt_frame* frame,upointer_t errorcode){
+	interrupt_eoi();
+    k_printf("int: 0x1E :: Security Exception\ncs=%x flags=%x ip=%x sp=%x ss=%x ec=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
+	asm volatile("cli\nhlt");
+}
+
+__attribute__((interrupt)) void Error1F(interrupt_frame* frame){
+	interrupt_eoi();
+    k_printf("int: 0x1F :: Reserved\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss);
+	asm volatile("cli\nhlt");
+}
+
 void initialise_idt_driver(){
     idtoffsetcode = 0x20;
 
@@ -412,6 +604,39 @@ void initialise_idt_driver(){
         idt_set_gate(i,(unsigned long)GeneralFault_Handler,0x08,0x8F);
         #endif
     }
+    idt_set_gate(0x00,(unsigned long)Error00,0x08,0x8F);
+    idt_set_gate(0x01,(unsigned long)Error01,0x08,0x8F);
+    idt_set_gate(0x02,(unsigned long)Error02,0x08,0x8F);
+    idt_set_gate(0x03,(unsigned long)Error03,0x08,0x8F);
+    idt_set_gate(0x04,(unsigned long)Error04,0x08,0x8F);
+    idt_set_gate(0x05,(unsigned long)Error05,0x08,0x8F);
+    idt_set_gate(0x06,(unsigned long)Error06,0x08,0x8F);
+    idt_set_gate(0x07,(unsigned long)Error07,0x08,0x8F);
+    idt_set_gate(0x08,(unsigned long)Error08,0x08,0x8F);
+    idt_set_gate(0x09,(unsigned long)Error09,0x08,0x8F);
+    idt_set_gate(0x0A,(unsigned long)Error0A,0x08,0x8F);
+    idt_set_gate(0x0B,(unsigned long)Error0B,0x08,0x8F);
+    idt_set_gate(0x0C,(unsigned long)Error0C,0x08,0x8F);
+    idt_set_gate(0x0D,(unsigned long)Error0D,0x08,0x8F);
+    idt_set_gate(0x0E,(unsigned long)Error0E,0x08,0x8F);
+    idt_set_gate(0x0F,(unsigned long)Error0F,0x08,0x8F);
+    idt_set_gate(0x10,(unsigned long)Error10,0x08,0x8F);
+    idt_set_gate(0x11,(unsigned long)Error11,0x08,0x8F);
+    idt_set_gate(0x12,(unsigned long)Error12,0x08,0x8F);
+    idt_set_gate(0x13,(unsigned long)Error13,0x08,0x8F);
+    idt_set_gate(0x14,(unsigned long)Error14,0x08,0x8F);
+    idt_set_gate(0x15,(unsigned long)Error15,0x08,0x8F);
+    idt_set_gate(0x16,(unsigned long)Error16,0x08,0x8F);
+    idt_set_gate(0x17,(unsigned long)Error17,0x08,0x8F);
+    idt_set_gate(0x18,(unsigned long)Error18,0x08,0x8F);
+    idt_set_gate(0x19,(unsigned long)Error19,0x08,0x8F);
+    idt_set_gate(0x1A,(unsigned long)Error1A,0x08,0x8F);
+    idt_set_gate(0x1B,(unsigned long)Error1B,0x08,0x8F);
+    idt_set_gate(0x1C,(unsigned long)Error1C,0x08,0x8F);
+    idt_set_gate(0x1D,(unsigned long)Error1D,0x08,0x8F);
+    idt_set_gate(0x1E,(unsigned long)Error1E,0x08,0x8F);
+    idt_set_gate(0x1F,(unsigned long)Error1F,0x08,0x8F);
+
     setRawInterrupt(0x80,isrint);
     setRawInterrupt(0x81,isr2int);
     __asm__ volatile ("lidt %0" : : "m"(idtr));

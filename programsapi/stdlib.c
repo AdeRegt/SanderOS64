@@ -200,7 +200,7 @@ int fseek( FILE *stream, long offset, int origin ){
 }
 
 long ftell( FILE *stream ){
-    hang("ftell");
+    hang(__FUNCTION__);
     // int modus = 8;
     // int res = 0;
     // __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (stream) , "D" (origin) );
@@ -223,6 +223,7 @@ void* malloc( upointer_t size ){
 }
 
 void free( void* ptr ){
+    hang(__FUNCTION__);
     // hang("free");
 }
 
@@ -283,18 +284,24 @@ unsigned int sleep(unsigned int seconds){
 }
 
 void __stack_chk_fail(){
+    hang(__FUNCTION__);
     for(;;);
 }
 
 char *getenv(char *name){
-    return 0;
+    // hang(__FUNCTION__);
+    // return 0;
+    printf("env %s \n",name);
+    return "A:";
 }
 
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
+    hang(__FUNCTION__);
     return 1;
 }
 
 uint32_t time(void *t){
+    hang(__FUNCTION__);
     return 1;
 }
 
@@ -305,5 +312,8 @@ uint32_t write(int fildes, void *buf, uint32_t nbyte){
 }
 
 uint32_t gettimeofday(void *buff){
-    return 0;
+    unsigned int modus = 96;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (buff) );
+    return res;
 }
