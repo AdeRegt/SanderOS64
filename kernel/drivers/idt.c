@@ -138,10 +138,10 @@ void setInterrupt(int offset,void *fun){
         IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset+idtoffsetcode) * sizeof(IDTDescEntry)));
         interrupt_set_offset(int_PageFault,(upointer_t)fun);
         int_PageFault->type_attr = IDT_TA_InterruptGate;
-        int_PageFault->selector = 0x08;
+        int_PageFault->selector = GDT_CODE_SEGMENT;
     #else 
         IRQ_clear_mask(32 + offset);
-        idt_set_gate(32 + (unsigned char)offset, (unsigned long)fun, 0x08, 0x8E);
+        idt_set_gate(32 + (unsigned char)offset, (unsigned long)fun, GDT_CODE_SEGMENT, IDT_TA_InterruptGate);
     #endif 
 }
 
@@ -150,9 +150,9 @@ void setRawInterrupt(int offset,void *fun){
         IDTDescEntry* int_PageFault = (IDTDescEntry*)(idtr.Offset + ((offset) * sizeof(IDTDescEntry)));
         interrupt_set_offset(int_PageFault,(upointer_t)fun);
         int_PageFault->type_attr = IDT_TA_TrapGate;
-        int_PageFault->selector = 0x08;
+        int_PageFault->selector = GDT_CODE_SEGMENT;
     #else
-        idt_set_gate((unsigned char)offset, (unsigned long)fun, 0x08, 0x8E);
+        idt_set_gate((unsigned char)offset, (unsigned long)fun, GDT_CODE_SEGMENT, IDT_TA_InterruptGate);
     #endif
 }
 
@@ -575,16 +575,16 @@ void initialise_idt_driver(){
 
     uint8_t oldpic1 = inportb(PIC1_DATA);
     uint8_t oldpic2 = inportb(PIC2_DATA);
-    outportb(0x20, 0x11);
-    outportb(0xA0, 0x11);
-    outportb(0x21, idtoffsetcode);
-    outportb(0xA1, idtoffsetcode + 8);
-    outportb(0x21, 0x04);
-    outportb(0xA1, 0x02);
-    outportb(0x21, 0x01);
-    outportb(0xA1, 0x01);
-    outportb(0x21, 0x0);
-    outportb(0xA1, 0x0);
+    outportb(PIC1, 0x11);
+    outportb(PIC2, 0x11);
+    outportb(PIC1_DATA, idtoffsetcode);
+    outportb(PIC2_DATA, idtoffsetcode + 8);
+    outportb(PIC1_DATA, ICW1_INTERVAL4);
+    outportb(PIC2_DATA, ICW1_SINGLE);
+    outportb(PIC1_DATA, ICW1_ICW4);
+    outportb(PIC2_DATA, ICW1_ICW4);
+    outportb(PIC1_DATA, 0x0);
+    outportb(PIC2_DATA, 0x0);
     outportb(PIC1_DATA,oldpic1);
     outportb(PIC2_DATA,oldpic2);
 
@@ -593,52 +593,52 @@ void initialise_idt_driver(){
     idtr.Limit = (uint16_t)sizeof(IDTDescEntry) * IDT_MAX_DESCRIPTORS - 1;
     for(uint8_t i = 0 ; i < IDT_MAX_DESCRIPTORS ; i++){
         IRQ_clear_mask(i);
-        idt_set_gate(i,(unsigned long)DefaultInterruptHandler,0x08,0x8E);
+        idt_set_gate(i,(unsigned long)DefaultInterruptHandler,GDT_CODE_SEGMENT,IDT_TA_InterruptGate);
         // setRawInterrupt(i,(unsigned long)GeneralFault_Handler);
     }
     for(uint16_t i = 0 ; i < idtoffsetcode ; i++){
         // IRQ_clear_mask(i);
         #ifndef __x86_64
-        idt_set_gate(i,(unsigned long)isrpanic,0x08,0x8F);
+        idt_set_gate(i,(unsigned long)isrpanic,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
         #else 
-        idt_set_gate(i,(unsigned long)GeneralFault_Handler,0x08,0x8F);
+        idt_set_gate(i,(unsigned long)GeneralFault_Handler,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
         #endif
     }
-    idt_set_gate(0x00,(unsigned long)Error00,0x08,0x8F);
-    idt_set_gate(0x01,(unsigned long)Error01,0x08,0x8F);
-    idt_set_gate(0x02,(unsigned long)Error02,0x08,0x8F);
-    idt_set_gate(0x03,(unsigned long)Error03,0x08,0x8F);
-    idt_set_gate(0x04,(unsigned long)Error04,0x08,0x8F);
-    idt_set_gate(0x05,(unsigned long)Error05,0x08,0x8F);
-    idt_set_gate(0x06,(unsigned long)Error06,0x08,0x8F);
-    idt_set_gate(0x07,(unsigned long)Error07,0x08,0x8F);
-    idt_set_gate(0x08,(unsigned long)Error08,0x08,0x8F);
-    idt_set_gate(0x09,(unsigned long)Error09,0x08,0x8F);
-    idt_set_gate(0x0A,(unsigned long)Error0A,0x08,0x8F);
-    idt_set_gate(0x0B,(unsigned long)Error0B,0x08,0x8F);
-    idt_set_gate(0x0C,(unsigned long)Error0C,0x08,0x8F);
-    idt_set_gate(0x0D,(unsigned long)Error0D,0x08,0x8F);
-    idt_set_gate(0x0E,(unsigned long)Error0E,0x08,0x8F);
-    idt_set_gate(0x0F,(unsigned long)Error0F,0x08,0x8F);
-    idt_set_gate(0x10,(unsigned long)Error10,0x08,0x8F);
-    idt_set_gate(0x11,(unsigned long)Error11,0x08,0x8F);
-    idt_set_gate(0x12,(unsigned long)Error12,0x08,0x8F);
-    idt_set_gate(0x13,(unsigned long)Error13,0x08,0x8F);
-    idt_set_gate(0x14,(unsigned long)Error14,0x08,0x8F);
-    idt_set_gate(0x15,(unsigned long)Error15,0x08,0x8F);
-    idt_set_gate(0x16,(unsigned long)Error16,0x08,0x8F);
-    idt_set_gate(0x17,(unsigned long)Error17,0x08,0x8F);
-    idt_set_gate(0x18,(unsigned long)Error18,0x08,0x8F);
-    idt_set_gate(0x19,(unsigned long)Error19,0x08,0x8F);
-    idt_set_gate(0x1A,(unsigned long)Error1A,0x08,0x8F);
-    idt_set_gate(0x1B,(unsigned long)Error1B,0x08,0x8F);
-    idt_set_gate(0x1C,(unsigned long)Error1C,0x08,0x8F);
-    idt_set_gate(0x1D,(unsigned long)Error1D,0x08,0x8F);
-    idt_set_gate(0x1E,(unsigned long)Error1E,0x08,0x8F);
-    idt_set_gate(0x1F,(unsigned long)Error1F,0x08,0x8F);
+    idt_set_gate(0x00,(unsigned long)Error00,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x01,(unsigned long)Error01,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x02,(unsigned long)Error02,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x03,(unsigned long)Error03,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x04,(unsigned long)Error04,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x05,(unsigned long)Error05,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x06,(unsigned long)Error06,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x07,(unsigned long)Error07,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x08,(unsigned long)Error08,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x09,(unsigned long)Error09,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0A,(unsigned long)Error0A,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0B,(unsigned long)Error0B,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0C,(unsigned long)Error0C,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0D,(unsigned long)Error0D,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0E,(unsigned long)Error0E,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x0F,(unsigned long)Error0F,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x10,(unsigned long)Error10,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x11,(unsigned long)Error11,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x12,(unsigned long)Error12,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x13,(unsigned long)Error13,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x14,(unsigned long)Error14,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x15,(unsigned long)Error15,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x16,(unsigned long)Error16,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x17,(unsigned long)Error17,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x18,(unsigned long)Error18,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x19,(unsigned long)Error19,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1A,(unsigned long)Error1A,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1B,(unsigned long)Error1B,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1C,(unsigned long)Error1C,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1D,(unsigned long)Error1D,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1E,(unsigned long)Error1E,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
+    idt_set_gate(0x1F,(unsigned long)Error1F,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
 
-    setRawInterrupt(0x80,isrint);
-    setRawInterrupt(0x81,isr2int);
+    setRawInterrupt(OSLEGACY,isrint);
+    setRawInterrupt(OSINTERRUPTS,isr2int);
     __asm__ volatile ("lidt %0" : : "m"(idtr));
     __asm__ volatile ("sti");
     return;
@@ -656,8 +656,8 @@ void initialise_idt_driver(){
         setRawInterrupt(i,GeneralFault_Handler);
     }
     // setRawInterrupt(0xCD,PageFault_Handler);
-    setRawInterrupt(0x80,isrint);
-    setRawInterrupt(0x81,isr2int);
+    setRawInterrupt(OSLEGACY,isrint);
+    setRawInterrupt(OSINTERRUPTS,isr2int);
     asm volatile ("sti");
     #endif 
 }

@@ -2,11 +2,19 @@
 #include <stdint.h>
 #include "outint.h"
 
+// 0x8E
 #define IDT_TA_InterruptGate    0b10001110
+// 0x8C
 #define IDT_TA_CallGate         0b10001100
+// 0x8F
 #define IDT_TA_TrapGate         0b10001111
 
 #define IDT_MAX_DESCRIPTORS     251
+
+#define GDT_CODE_SEGMENT 0x08
+
+#define OSLEGACY 0x80
+#define OSINTERRUPTS 0x80
 
 #ifdef __x86_64
 typedef struct {
