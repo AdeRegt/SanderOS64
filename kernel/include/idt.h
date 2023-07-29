@@ -14,7 +14,7 @@
 #define GDT_CODE_SEGMENT 0x08
 
 #define OSLEGACY 0x80
-#define OSINTERRUPTS 0x80
+#define OSINTERRUPTS 0x81
 
 #ifdef __x86_64
 typedef struct {
