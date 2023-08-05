@@ -26,6 +26,7 @@ uint32_t ehci_get_usbsts()
 __attribute__((interrupt)) void irq_ehci(interrupt_frame* frame)
 {
     uint32_t status = ehci_get_usbsts();
+    k_printf("ehci: INTERRUPT: %x \n",status);
     if(status&0x20)
     {
         k_printf("ehci: Interrupt on Async Advance!\n");
@@ -551,7 +552,7 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // enable all USB interrupts
-    ((uint32_t*)(ehci_base_addr + caplength + 0x08 ))[0] = 0b111111;
+    ((uint32_t*)(ehci_base_addr + caplength + 0x08 ))[0] = 7;
 
     //
     // set the periodic list base

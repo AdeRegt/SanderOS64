@@ -604,6 +604,7 @@ void initialise_idt_driver(){
         idt_set_gate(i,(unsigned long)GeneralFault_Handler,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
         #endif
     }
+    // https://wiki.osdev.org/Exceptions
     idt_set_gate(0x00,(unsigned long)Error00,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
     idt_set_gate(0x01,(unsigned long)Error01,GDT_CODE_SEGMENT,IDT_TA_TrapGate);
     idt_set_gate(0x02,(unsigned long)Error02,GDT_CODE_SEGMENT,IDT_TA_TrapGate);

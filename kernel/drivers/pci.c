@@ -15,7 +15,7 @@ char pci_enable_busmastering_when_needed(int bus,int slot,int function){
 	if(!(getPCIConfiguration(bus,slot,function)&0x04)){
         k_printf("[PCI] PCI bussmaster not enabled!\n");
         unsigned long setting = getPCIConfiguration(bus,slot,function);
-        setting |= 0x04;
+        setting |= 0x06;
         setBARaddress(bus,slot,function,4,setting);
         if(!(getPCIConfiguration(bus,slot,function)&0x04)){
             k_printf("[PCI] PCI busmastering still not enabled! Quiting...\n");
