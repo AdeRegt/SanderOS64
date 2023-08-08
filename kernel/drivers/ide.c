@@ -235,54 +235,54 @@ void init_ide_device(IDEDevice device)
 		
 		// ATA device detected!
 	}
-	else
-	{
-		for (int i = 0; i < 256; i++)
-		{
-			inportw(device.command);
-		}
+	// else
+	// {
+	// 	for (int i = 0; i < 256; i++)
+	// 	{
+	// 		inportw(device.command);
+	// 	}
 
-		// Device is NOT ATA
-		// Maybe it is ATAPI?
-		//if((inportb(device.command+4)==0x14)&&(inportb(device.command+5)==0xEB)){
+	// 	// Device is NOT ATA
+	// 	// Maybe it is ATAPI?
+	// 	//if((inportb(device.command+4)==0x14)&&(inportb(device.command+5)==0xEB)){
 
-		outportb(device.command + 6, device.slave == 1 ? 0xB0 : 0xA0);
-		outportb(device.command + 2, 0);
-		outportb(device.command + 3, 0);
-		outportb(device.command + 4, 0);
-		outportb(device.command + 5, 0);
-		outportb(device.command + 7, 0xA1);
+	// 	outportb(device.command + 6, device.slave == 1 ? 0xB0 : 0xA0);
+	// 	outportb(device.command + 2, 0);
+	// 	outportb(device.command + 3, 0);
+	// 	outportb(device.command + 4, 0);
+	// 	outportb(device.command + 5, 0);
+	// 	outportb(device.command + 7, 0xA1);
 
-		sleep(2);
+	// 	sleep(2);
 
-		if (inportb(device.command + 7) == 0)
-		{
-			return;
-		}
-		if (getIDEError(device) == 0)
-		{
-			k_printf("ide: device is ATAPI\n");
-			unsigned char *identbuffer = (unsigned char *) requestPage();
-			for (int i = 0; i < 256; i++)
-			{
-				unsigned short datapart = inportw(device.command);
-				unsigned char datapartA = (datapart>>8) & 0xFF;
-				unsigned char datapartB = datapart & 0xFF;
-				identbuffer[(i*2)+0] = datapartA;
-				identbuffer[(i*2)+1] = datapartB;
-			}
-			IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
-			ident->unused2[0] = 0;
-			ident->unused3[0] = 0;
-			k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
-			Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ATAPI_SECTOR_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
-            void* buffer = (void*) requestPage();
-            uint8_t res = ide_atapi_read(regdev,0,1,buffer);
-			if(res){
-				initialise_fs(regdev,(void*)(buffer));
-			}
-		}
-	}
+	// 	if (inportb(device.command + 7) == 0)
+	// 	{
+	// 		return;
+	// 	}
+	// 	if (getIDEError(device) == 0)
+	// 	{
+	// 		k_printf("ide: device is ATAPI\n");
+	// 		unsigned char *identbuffer = (unsigned char *) requestPage();
+	// 		for (int i = 0; i < 256; i++)
+	// 		{
+	// 			unsigned short datapart = inportw(device.command);
+	// 			unsigned char datapartA = (datapart>>8) & 0xFF;
+	// 			unsigned char datapartB = datapart & 0xFF;
+	// 			identbuffer[(i*2)+0] = datapartA;
+	// 			identbuffer[(i*2)+1] = datapartB;
+	// 		}
+	// 		IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
+	// 		ident->unused2[0] = 0;
+	// 		ident->unused3[0] = 0;
+	// 		k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
+	// 		Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ATAPI_SECTOR_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
+    //         void* buffer = (void*) requestPage();
+    //         uint8_t res = ide_atapi_read(regdev,0,1,buffer);
+	// 		if(res){
+	// 			initialise_fs(regdev,(void*)(buffer));
+	// 		}
+	// 	}
+	// }
 }
 
 void ide_driver_start(int bus,int slot,int function){

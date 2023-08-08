@@ -5,206 +5,7 @@
 #include "../include/memory.h"
 #include "../include/timer.h"
 #include "../include/usb.h"
-
-#define XHCI_EVENT_RING_SIZE 32
-
-typedef struct{
-    uint32_t ring_segment_base_address_low;
-    uint32_t ring_segment_base_address_high;
-    uint16_t ring_segment_size;
-    uint16_t reservedA;
-    uint32_t reservedB;
-}__attribute__((packed)) XHCIEventRingSegmentTable;
-
-typedef struct{
-    uint32_t DataBufferPointerLo;
-    uint32_t DataBufferPointerHi;
-     uint32_t CommandCompletionParameter:24;
-     uint16_t CompletionCode:8;
-     uint8_t C:1;
-     uint16_t reserved3:9;
-     uint8_t TRBType:6;
-     uint32_t VFID:8;
-     uint32_t SlotID:8;
-}__attribute__((packed)) CommandCompletionEventTRB;
-
-typedef struct{
-    uint32_t DataBufferPointerLo;
-    uint32_t DataBufferPointerHi;
-    uint32_t TRBTransferLength:17;
-    uint16_t TDSize:5;
-    uint16_t InterrupterTarget:10;
-    uint16_t Cyclebit:1;
-    uint16_t EvaluateNextTRB:1;
-    uint16_t InterruptonShortPacket:1;
-    uint16_t NoSnoop:1;
-    uint16_t Chainbit:1;
-    uint16_t InterruptOnCompletion:1;
-    uint16_t ImmediateData:1;
-    uint16_t RsvdZ1:2;
-    uint16_t BlockEventInterrupt:1;
-    uint16_t TRBType:6;
-    uint16_t RsvdZ2:16;
-}__attribute__((packed))DefaultTRB;
-
-typedef struct{
-    EhciCMD usbcmd;
-    uint32_t TRBTransferLength:17;
-    uint16_t Reserved1:5;
-    uint16_t InterrupterTarget:10;
-    uint16_t Cyclebit:1;
-    uint16_t Reserved2:4;
-    uint16_t InterruptOnCompletion:1;
-    uint16_t ImmediateData:1;
-    uint16_t Reserved3:3;
-    uint16_t TRBType:6;
-    uint16_t TRT:2;
-    uint16_t RsvdZ2:14;
-}__attribute__((packed))SetupStageTRB;
-
-typedef struct{
-    uint32_t Address1;
-    uint32_t Address2;
-    uint32_t TRBTransferLength:17;
-    uint16_t TDSize:5;
-    uint16_t InterrupterTarget:10;
-    uint16_t Cyclebit:1;
-    uint16_t EvaluateNextTRB:1;
-    uint16_t InterruptonShortPacket:1;
-    uint16_t NoSnoop:1;
-    uint16_t Chainbit:1;
-    uint16_t InterruptOnCompletion:1;
-    uint16_t ImmediateData:1;
-    uint16_t Reserved3:3;
-    uint16_t TRBType:6;
-    uint16_t Direction:1;
-    uint16_t RsvdZ2:15;
-}__attribute__((packed))DataStageTRB;
-
-typedef struct{
-    uint32_t Reserved1;
-    uint32_t Reserved2;
-    uint32_t Reserved3:17;
-    uint16_t Reserved4:5;
-    uint16_t InterrupterTarget:10;
-    uint16_t Cyclebit:1;
-    uint16_t EvaluateNextTRB:1;
-    uint16_t Reserved5:2;
-    uint16_t Chainbit:1;
-    uint16_t InterruptOnCompletion:1;
-    uint16_t Reserved6:4;
-    uint16_t TRBType:6;
-    uint16_t Direction:1;
-    uint16_t RsvdZ2:15;
-}__attribute__((packed))StatusStageTRB;
-
-typedef struct{
-     uint32_t rsvrd1;
-     uint32_t rsvrd2;
-     uint32_t rsvrd3;
-     uint8_t CycleBit:1;
-     uint16_t RsvdZ1:9;
-     uint16_t TRBType:6;
-     uint16_t SlotType:5;
-     uint16_t RsvdZ2:11;
-}__attribute__((packed)) EnableSlotCommandTRB;
-
-typedef struct{
-    uint32_t Dregisters;
-    uint32_t Aregisters;
-    uint32_t reservedA;
-    uint32_t reservedB;
-    uint32_t reservedC;
-    uint32_t reservedD;
-    uint32_t reservedE;
-    uint8_t ConfigurationValue;
-    uint8_t InterfaceNumber;
-    uint8_t AlternateSetting;
-    uint8_t reservedF;
-}__attribute__((packed)) XHCIInputControlContext;
-
-typedef struct{
-    uint32_t RouteString:20;
-    uint8_t Speed:4;
-    uint8_t reservedA:1;
-    uint8_t MTT:1;
-    uint8_t Hub:1;
-    uint8_t ContextEntries:5;
-
-    uint16_t MaxExitLatency;
-    uint8_t RootHubPortNumber;
-    uint8_t NumberOfPorts;
-
-    uint8_t ParentHubSlotID;
-    uint8_t ParentPortNumber;
-    uint8_t TTT:2;
-    uint8_t reservedB:4;
-    uint16_t InterrupterTarget:10;
-
-    uint8_t USBDeviceAddress;
-    uint32_t reservedC:19;
-    uint8_t SlotState:5;
-}__attribute__((packed)) XHCISlotContext;
-
-typedef struct {
-    uint8_t EndpointState:3;
-    uint8_t reservedA:5;
-    uint8_t Mult:2;
-    uint8_t MaxPStreams:5;
-    uint8_t LSA:1;
-    uint8_t Interval;
-    uint8_t MaxESITPayloadHigh;
-
-    uint8_t reservedB:1;
-    uint8_t Cerr:2;
-    uint8_t EPType:3;
-    uint8_t reservedC:1;
-    uint8_t HID:1;
-    uint8_t MaxBurstSize;
-    uint16_t MaxPacketSize;
-
-    uint8_t DequeueCycleState:1;
-    uint8_t reservedD:3;
-    uint32_t TRDequeuePointerLow:28;
-    uint32_t TRDequeuePointerHigh;
-
-    uint16_t AverageTRBLength;
-    uint16_t MaxESITPayloadLow; 
-
-    uint8_t padding[0xC];
-}__attribute__((packed)) XHCIEndpointContext;
-
-typedef struct{
-    XHCIInputControlContext icc;
-    XHCISlotContext slotcontext;
-    uint8_t paddingB[0x10];
-    XHCIEndpointContext epc;
-    XHCIEndpointContext epx[15];
-}__attribute__((packed)) XHCIInputContextBuffer;
-
-typedef struct{
-    uint32_t DataBufferPointerLo;
-    uint32_t DataBufferPointerHi;
-    uint32_t rsvrd2;
-    uint8_t CycleBit:1;
-    uint16_t RsvdZ1:8;
-    uint8_t BSR:1;
-    uint16_t TRBType:6;
-    uint8_t RsvdZ2;
-    uint8_t SlotID;
-}__attribute__((packed)) SetAddressCommandTRB;
-
-typedef struct{
-    uint32_t DataBufferPointerLo;
-    uint32_t DataBufferPointerHi;
-    uint32_t rsvrd2;
-    uint8_t CycleBit:1;
-    uint16_t RsvdZ1:8;
-    uint8_t Deconfigure:1;
-    uint16_t TRBType:6;
-    uint8_t RsvdZ2;
-    uint8_t SlotID;
-}__attribute__((packed)) ConfigureEndpointCommandTRB;
+#include "../include/xhci.h"
 
 void *xhci_base_addr;
 uint8_t xhci_capability_registers_length = 0;
@@ -359,17 +160,21 @@ __attribute__((interrupt)) void irq_xhci(interrupt_frame* frame)
     uint32_t usbsts = xhci_get_usbsts_reg();
     uint32_t usbiman = xhci_get_iman_reg(0);
     k_printf("xhci: interrupt found: usbsts:%x iman:%x \n",usbsts,usbiman);
+    // xhci_set_iman_reg(0,3);
+    xhci_set_iman_reg(0,1);
+    xhci_set_iman_reg(0,2);
     if(usbsts&0b1000)
     {
         k_printf("xhci: event interrupt!\n");
+        xhci_set_usbsts_reg(0b1000);
     }
-    if(usbsts&0b10000)
+    else if(usbsts&0b10000)
     {
         k_printf("xhci: portchange interrupt!\n");
+        xhci_set_usbsts_reg(0b10000);
     }
-    xhci_set_usbsts_reg(usbsts);
-    xhci_set_erdp_reg(0,((uint32_t)(upointer_t)eventring) & 8);
-    xhci_set_iman_reg(0,usbiman);
+    xhci_set_usbcmd_reg(5);
+    xhci_set_imod_reg(0,0x00100FA0);
     interrupt_eoi();
     asm volatile ("sti");
 }
@@ -389,9 +194,16 @@ CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t 
 {
     ((uint32_t*)(xhci_base_addr + xhci_doorbell_offset))[doorbell_offset] = doorbell_value;
     sleep(1);
+    uint32_t timeout = 0;
     while((xhci_get_iman_reg(0)&1)==0)
     {
         sleep(1);
+        if(timeout>100)
+        {
+            k_printf("\nxhci: panic: timeout, offset:%d value:%d check:%d \n",doorbell_offset,doorbell_value,checkvalue);
+            return 0;
+        }
+        timeout++;
     }
     sleep(2);
     for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
@@ -827,12 +639,6 @@ void xhci_port_install(uint8_t portid)
     {
         k_printf("xhci: port %d is a USB3.0 connection!\n",portid);
     }
-    else if(portc&1)
-    {
-        k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
-        xhci_set_portsc_reg(portid,xhci_get_portsc_reg(portid) | 0b1000010000);
-        sleep(10);
-    }
     else
     {
         return;
@@ -1000,10 +806,6 @@ void xhci_driver_start(int bus,int slot,int function)
     unsigned short vendor = pciConfigReadWord(bus,slot,function,0);
     k_printf("xhci: Driver started at bus %d slot %d and function %d and vendor %d\n",bus,slot,function,vendor);
 
-    //
-    // Enable busmastering
-    pci_enable_busmastering_when_needed(bus,slot,function);
-
     xhci_base_addr = (void*) (getBARaddress(bus,slot,function,0x10) & 0xFFFFFFF0);
 
     unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
@@ -1086,6 +888,11 @@ void xhci_driver_start(int bus,int slot,int function)
         goto onceagainstoprunning;
     }
     // at this point it is safe to assume the controller is stopped.
+
+    //
+    // Enable busmastering
+    pci_enable_busmastering_when_needed(bus,slot,function);
+
     // lets trigger a reset.
     // send reset sequence
     k_printf("xhci: about to reset!\n");
@@ -1196,33 +1003,36 @@ void xhci_driver_start(int bus,int slot,int function)
     // interrupt moderation rate.
     xhci_set_imod_reg(0,0x00100FA0);
 
-    // Enable system bus interrupt generation by writing
-    // a ‘1’ to the Interrupter Enable (INTE) flag of the
-    // USBCMD register (5.4.1).
-    #ifdef ENABLE_INTERRUPTS
-    xhci_set_usbcmd_reg(4);
-    #endif
-
     // Enable the Interrupter by writing a ‘1’ to the
     // Interrupt Enable (IE) field of the Interrupter
     // Management register (5.5.2.1).
     xhci_set_iman_reg(0,2);
+
+    // Set all pointers to zero
+    command_ring_pointer = 0;
 
     // Write the USBCMD (5.4.1) to turn the host controller ON via setting the
     // Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin
     // accepting doorbell references.
     #ifdef ENABLE_INTERRUPTS
     xhci_set_usbcmd_reg(5);
+    sleep(20);
+    for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
+    {
+        PortStatusChangeEventTRB *to = (PortStatusChangeEventTRB*)&((PortStatusChangeEventTRB*)(eventring+(i*sizeof(PortStatusChangeEventTRB))))[0];
+        if(to->TRBType==34)
+        {
+            // k_printf("xhci: %d - type:%d portid:%d \n",i,to->TRBType,to->PortID);
+            xhci_set_erdp_reg(0,(uint32_t)(upointer_t)to);
+            xhci_port_install(to->PortID);
+        }
+    }
     #else
     xhci_set_usbcmd_reg(1);
-    #endif 
-
-    // Set all pointers to zero
-    command_ring_pointer = 0;
-
     sleep(10);
     for(uint8_t i = 1 ; i < xhci_number_of_ports ; i++){
         xhci_port_install(i);
     }
-
+    #endif 
+    for(;;);
 }
