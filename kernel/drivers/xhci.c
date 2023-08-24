@@ -194,16 +194,9 @@ CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t 
 {
     ((uint32_t*)(xhci_base_addr + xhci_doorbell_offset))[doorbell_offset] = doorbell_value;
     sleep(1);
-    uint32_t timeout = 0;
     while((xhci_get_iman_reg(0)&1)==0)
     {
         sleep(1);
-        if(timeout>100)
-        {
-            k_printf("\nxhci: panic: timeout, offset:%d value:%d check:%d \n",doorbell_offset,doorbell_value,checkvalue);
-            return 0;
-        }
-        timeout++;
     }
     sleep(2);
     for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
@@ -596,25 +589,34 @@ void *xhci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, 
 uint8_t xhci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
 
-    DefaultTRB *trb1 = (DefaultTRB*) ((DefaultTRB*)(device->localringout+(device->localringindexout++*sizeof(DefaultTRB))));
+    TransferTRB *trb1 = (TransferTRB*) ((DefaultTRB*)(device->localringout+(device->localringindexout++ *sizeof(DefaultTRB))));
     trb1->DataBufferPointerLo = command;
-    trb1->TRBTransferLength = size;
-    trb1->InterrupterTarget = 0;
+    trb1->DataBufferPointerHi = 0;
+    trb1->BlockEventInterrupt = 0;
+    trb1->Chainbit = 0;
     trb1->Cyclebit = 1;
+    trb1->EvaluateNextTRB = 0;
     trb1->ImmediateData = 0;
-    trb1->TRBType = 1;
+    trb1->InterrupterTarget = 0;
     trb1->InterruptOnCompletion = 1;
+    trb1->InterruptonShortPacket = 0;
+    trb1->NoSnoop = 1;
+    trb1->TDSize = 0;
+    trb1->TRBTransferLength = 5;
+    trb1->TRBType = 1;
 
-    StatusStageTRB *trb3 = (StatusStageTRB*) & ((DefaultTRB*)device->localringout)[device->localringindexout++];
-    trb3->Cyclebit = 1;
-    trb3->InterruptOnCompletion = 1;
-    trb3->Direction = 1;
-    trb3->TRBType = 4;
-
-    StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)device->localringout)[device->localringindexout];
+    StatusStageTRB *trb4 = (StatusStageTRB*) & ((DefaultTRB*)device->localringout)[device->localringindexout++];
     trb4->Cyclebit = 0;
 
-    CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,device->localringoutid,(uint32_t)(upointer_t)trb3);
+    CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,device->localringoutid,(uint32_t)(upointer_t)trb1);
+    for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
+    {
+        CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
+        if(to->DataBufferPointerLo==0){
+            continue;
+        }
+        k_printf("T5 %d %x %x %x\n",i,to->DataBufferPointerLo,trb1,to->TRBType);
+    }for(;;);
     if(res)
     {
         return res->CompletionCode;
@@ -634,10 +636,20 @@ void *xhci_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint
 void xhci_port_install(uint8_t portid)
 {
     uint32_t portc = xhci_get_portsc_reg(portid);
+    uint8_t protocol = 0;
 
     if(portc&2)
     {
         k_printf("xhci: port %d is a USB3.0 connection!\n",portid);
+        protocol = 3;
+    }
+    else if(portc&1)
+    {
+        k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
+        xhci_set_portsc_reg(portid,0x210);
+        sleep(50);
+        portc = xhci_get_portsc_reg(portid);
+        protocol = 2;
     }
     else
     {
@@ -653,14 +665,24 @@ void xhci_port_install(uint8_t portid)
     
     uint8_t portspeed = (portc >> 10) & 0b111;
     uint16_t calculatedportspeed = 0;
-    if(portspeed==4)
+    if(portspeed==XHCI_SPEED_SUPER)
     {
         k_printf("xhci: port %d is a superspeed connection!\n",portid);
         calculatedportspeed = 512;
     }
-    else if(portspeed==3)
+    else if(portspeed==XHCI_SPEED_HI)
     {
         k_printf("xhci: port %d is a highspeed connection!\n",portid);
+        calculatedportspeed = 64;
+    }
+    else if(portspeed==XHCI_SPEED_LOW)
+    {
+        k_printf("xhci: port %d is a lowspeed connection!\n",portid);
+        calculatedportspeed = 8;
+    }
+    else if(portspeed==XHCI_SPEED_FULL)
+    {
+        k_printf("xhci: port %d is a fullspeed connection!\n",portid);
         calculatedportspeed = 64;
     }
     else
@@ -701,9 +723,19 @@ void xhci_port_install(uint8_t portid)
     infostructures->epc.AverageTRBLength = 8;
 
     // now do the call
-    if(xhci_request_device_address(deviceid,infostructures,0)==0)
+    if(protocol==3)
     {
-        goto failure;
+        if(xhci_request_device_address(deviceid,infostructures,0)==0)
+        {
+            goto failure;
+        }
+    }
+    else
+    {
+        if(xhci_request_device_address(deviceid,infostructures,1)==0)
+        {
+            goto failure;
+        }
     }
     k_printf("xhci: port has now a address!\n");
 
@@ -759,9 +791,15 @@ void xhci_port_install(uint8_t portid)
         void *ep_ring_1 = xhci_setup_endpoint(device,ep1,1,infostructures);
         void *ep_ring_2 = xhci_setup_endpoint(device,ep2,2,infostructures);
 
-        if(ep_ring_1==0||ep_ring_2==0)
+        if(ep_ring_1==0)
         {
-            k_printf("xhci: port %d unable to create valid endpoints\n",portid);
+            k_printf("xhci: port %d unable to create valid endpoints EP1\n",portid);
+            goto failure;
+        }
+
+        if(ep_ring_2==0)
+        {
+            k_printf("xhci: port %d unable to create valid endpoints EP2\n",portid);
             goto failure;
         }
         k_printf("xhci: port %d endpoint 1 ring at %x \n",portid,ep_ring_1);
@@ -1034,5 +1072,4 @@ void xhci_driver_start(int bus,int slot,int function)
         xhci_port_install(i);
     }
     #endif 
-    for(;;);
 }

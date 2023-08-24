@@ -254,6 +254,7 @@ void fillDhcpRequestHeader(struct DHCPREQUESTHeader *dhcpheader){
 
 unsigned char* getIpAddressFromDHCPServer(){
     struct DHCPDISCOVERHeader *dhcpheader = (struct DHCPDISCOVERHeader *)requestPage();
+    memset(dhcpheader,0,sizeof(struct DHCPDISCOVERHeader));
     dhcpheader->op = 1;
     dhcpheader->htype = 1;
     dhcpheader->hlen = 6;
@@ -295,6 +296,7 @@ unsigned char* getIpAddressFromDHCPServer(){
     if(res_fs==0){
         return 0;
     }
+    k_printf("[ETH] First package send\n");
     PackageRecievedDescriptor prd;
     while(1){
         prd = getEthernetPackage(); 
@@ -337,6 +339,7 @@ unsigned char* getIpAddressFromDHCPServer(){
     freePage(dhcpheader);
 
     struct DHCPREQUESTHeader *dhcp2header = (struct DHCPREQUESTHeader *)requestPage();
+    memset(dhcp2header,0,sizeof(struct DHCPREQUESTHeader));
     dhcp2header->op = 1;
     dhcp2header->htype = 1;
     dhcp2header->hlen = 6;
@@ -544,29 +547,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
         }
     }else if(eh->type==ETHERNET_TYPE_IP4){
         struct IPv4Header* ip = (struct IPv4Header*) eh;
-        if(ip->protocol==IPV4_TYPE_UDP){
-            struct UDPHeader* udp = (struct UDPHeader*) eh;
-            // k_printf("[ETH] UDP package recieved for port %x !\n",switch_endian16(udp->destination_port));
-            if(udp->destination_port==switch_endian16(50618)){
-                // TFTP, automatic ACK
-                struct TFTPAcknowledgeHeader* tftp_old = (struct TFTPAcknowledgeHeader*)eh;
-                struct TFTPAcknowledgeHeader* tftp = (struct TFTPAcknowledgeHeader*)requestPage();
-
-                tftp->index = tftp_old->index;
-                tftp->type = switch_endian16(4);
-
-                unsigned short packagelength = sizeof(struct UDPHeader) + 4 ;
-                fillUdpHeader((struct UDPHeader*)&tftp->header,(unsigned char*)tftp_old->header.ipv4header.ethernetheader.from,packagelength-sizeof(struct EthernetHeader),getOurIpAsLong(),tftp_old->header.ipv4header.source_addr,50618,switch_endian16(tftp_old->header.source_port));
-            
-                PackageRecievedDescriptor sec;
-                sec.buffersize = sizeof(struct TFTPAcknowledgeHeader);
-                sec.high_buf = 0;
-                sec.low_buf = (unsigned long)tftp;
-
-                sendEthernetPackage(sec);
-                freePage(tftp);
-            }
-        }else if(ip->protocol==IPV4_TYPE_TCP){
+        if(ip->protocol==IPV4_TYPE_TCP){
             struct TCPHeader* tcp = (struct TCPHeader*) eh;
             unsigned short fx = switch_endian16(tcp->flags);
             // k_printf("[ETH] TCP package recieved for port %x %s %s %s %s !\n",switch_endian16(tcp->destination_port),fx&TCP_PUS?"PUSH":"",fx&TCP_SYN?"SYN":"",fx&TCP_ACK?"ACK":"",fx&TCP_FIN?"FIN":"");

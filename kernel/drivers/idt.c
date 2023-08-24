@@ -201,7 +201,7 @@ void isrhandler(stack_registers *ix){
             k_printf("%c",z[i]);
         }
     }else{
-        k_printf("isr: Unknown isr code: %d !\n",ix->rax);for(;;);
+        k_printf("isr: Unknown isr code: %d !\n",ix->rax);
     }
     #ifndef __x86_64
     _inti_cs = ix->cs;

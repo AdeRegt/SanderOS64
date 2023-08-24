@@ -36,7 +36,7 @@ void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
     uint8_t g = usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
     if(g==0)
     {
-        k_printf("__block: datablok0 failed!\n");
+        k_printf("__block: datablok0 failed with %d !\n",g);
         return 0;
     }
     void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,cbw->transferlength,0);

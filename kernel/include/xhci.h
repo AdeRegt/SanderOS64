@@ -3,6 +3,10 @@
 
 
 #define XHCI_EVENT_RING_SIZE 32
+#define XHCI_SPEED_FULL   1
+#define XHCI_SPEED_LOW    2
+#define XHCI_SPEED_HI     3
+#define XHCI_SPEED_SUPER  4
 
 typedef struct{
     uint32_t ring_segment_base_address_low;
@@ -54,6 +58,25 @@ typedef struct{
     uint16_t TRBType:6;
     uint16_t RsvdZ2:16;
 }__attribute__((packed))DefaultTRB;
+
+typedef struct{
+    uint32_t DataBufferPointerLo;
+    uint32_t DataBufferPointerHi;
+    uint32_t TRBTransferLength:17;
+    uint16_t TDSize:5;
+    uint16_t InterrupterTarget:10;
+    uint16_t Cyclebit:1;
+    uint16_t EvaluateNextTRB:1;
+    uint16_t InterruptonShortPacket:1;
+    uint16_t NoSnoop:1;
+    uint16_t Chainbit:1;
+    uint16_t InterruptOnCompletion:1;
+    uint16_t ImmediateData:1;
+    uint16_t RsvdZ1:2;
+    uint16_t BlockEventInterrupt:1;
+    uint16_t TRBType:6;
+    uint16_t RsvdZ2:16;
+}__attribute__((packed))TransferTRB;
 
 typedef struct{
     EhciCMD usbcmd;

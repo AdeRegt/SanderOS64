@@ -76,7 +76,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame *frame){
 	outportb(0x20,0x20);
 }
 
-void rtl_sendPackage(PackageRecievedDescriptor desc){
+int rtl_sendPackage(PackageRecievedDescriptor desc){
 	unsigned long ms1 = 0x80000000 | 0x40000000 | 0x40000 | 0x20000000 | 0x10000000 | (desc.buffersize & 0x3FFF); // 0x80000000 | ownbit=yes | firstsegment | lastsegment | length
 	unsigned long ms2 = 0 ;
 	unsigned long ms3 = desc.low_buf;
@@ -103,6 +103,7 @@ void rtl_sendPackage(PackageRecievedDescriptor desc){
 		}
 	}
 	((unsigned volatile long*)((unsigned volatile long)&package_send_ack))[0] = 0;
+	return 1;
 }
 
 PackageRecievedDescriptor rtl_recievePackage(){
