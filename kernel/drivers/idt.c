@@ -236,9 +236,9 @@ void isr2handler(stack_registers *ix){
     // k_printf("isr2: yield eax=%x ebx=%x ecx=%x edx=%x \n",ix->rax,ix->rbx,ix->rcx,ix->rdx);
     if(ix->rax==0){
         k_printf("isr2:request read\n");
-        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
-        memcpy((void*)ix->rsi,(void*)(fl->buffer + fl->pointer),ix->rdx);
-        fl->pointer = fl->pointer + ix->rdx;
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
+        memcpy((void*)ix->rdx,(void*)(fl->buffer + fl->pointer),ix->rcx);
+        fl->pointer = fl->pointer + ix->rcx;
     }else if(ix->rax==1){
         char* z = ((char*) (ix->rsi));
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
@@ -300,16 +300,17 @@ void isr2handler(stack_registers *ix){
         fl->available = 0;
         ix->rax = 0;
     }else if(ix->rax==8){
-        k_printf("isr2:request seek rdi:%x rdx:%x \n",ix->rdi,ix->rdx);
+        // "D" (stream) , "d" (origin) , "S" (offset)
+        k_printf("isr2:request seek fileid(rbx):%d , args(rcx):%d , method(rdx):%d \n",ix->rbx,ix->rcx,ix->rdx);
         // seek option!
-        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
-        if(ix->rdx==2){
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
+        if(ix->rcx==2){
             fl->pointer = fl->filesize;
-            ix->rax = fl->pointer;
         }else{
-            fl->pointer = ix->rsi;
-            ix->rax = fl->pointer;
+            fl->pointer = ix->rdx;
         }
+        ix->rax = fl->pointer;
+        // ix->rax = 0;
     }else if(ix->rax==12){
         k_printf("isr2:request space\n");
         // we always accept extending memory whatoever
@@ -364,6 +365,14 @@ void isr2handler(stack_registers *ix){
     }else if(ix->rax==409){
         k_printf("isr2:release page\n");
         freePage((void*)ix->rbx);
+    }else if(ix->rax==410){
+        k_printf("isr2:request env variable [%s] \n",(char*) ix->rdx);
+        char* p = "A:INCLUDE/";
+        ix->rax = (upointer_t)p;
+    }else if(ix->rax==411){
+        k_printf("isr2:request tell \n");
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
+        ix->rax = fl->pointer;
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

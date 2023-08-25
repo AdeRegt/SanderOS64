@@ -188,23 +188,22 @@ int fclose( FILE *stream ){
 upointer_t fread( void *buffer, upointer_t size, upointer_t count, FILE *stream ){
     int modus = 0;
     upointer_t res = 0;
-    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) , "S" (buffer) , "d" (count) );
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "b" (stream) , "d" (buffer) , "c" (count) );
     return res;
 }
 
-int fseek( FILE *stream, long offset, int origin ){
+int fseek( FILE *stream, long int offset, int origin ){
     int modus = 8;
     int res = 0;
-    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "D" (stream) , "d" (origin) , "S" (offset) );
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (stream) , "c" (origin) , "d" ((int)offset) );
     return res;
 }
 
 long ftell( FILE *stream ){
-    hang(__FUNCTION__);
-    // int modus = 8;
-    // int res = 0;
-    // __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (stream) , "D" (origin) );
-    // return res;
+    int modus = 411;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (stream) );
+    return res;
 }
 
 FILE *fopen( const char *filename, const char *mode ){
@@ -226,8 +225,6 @@ void* malloc( upointer_t size ){
 }
 
 void free( void* ptr ){
-    // hang(__FUNCTION__);
-    // hang("free");
     int mode = 409;
     void* res = 0;
 	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ptr) );
@@ -295,7 +292,11 @@ void __stack_chk_fail(){
 }
 
 char *getenv(char *name){
-    return 0;
+    int modus = 410;
+    int enos = 0;
+    void* res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (name) );
+    return res;
 }
 
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
