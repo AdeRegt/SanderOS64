@@ -85,7 +85,7 @@ typedef __builtin_va_list va_list;
 #define va_arg(a,b)    __builtin_va_arg(a,b)
 #define __va_copy(d,s) __builtin_va_copy((d),(s))
 
-void hang(char* func){
+void hang(const char* func){
     printf("\nHANG: %s \n",func);
     for(;;);
 }
@@ -212,6 +212,9 @@ FILE *fopen( const char *filename, const char *mode ){
     int enos = 0;
     void* res = 0;
     __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (filename) , "S" (enos) );
+    if((upointer_t)res==-1){
+        return 0;
+    }
     return res;
 }
 
@@ -223,8 +226,11 @@ void* malloc( upointer_t size ){
 }
 
 void free( void* ptr ){
-    hang(__FUNCTION__);
+    // hang(__FUNCTION__);
     // hang("free");
+    int mode = 409;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ptr) );
 }
 
 void *draw_pixel(int x,int y,int z){
@@ -289,10 +295,7 @@ void __stack_chk_fail(){
 }
 
 char *getenv(char *name){
-    // hang(__FUNCTION__);
-    // return 0;
-    printf("env %s \n",name);
-    return "A:";
+    return 0;
 }
 
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
