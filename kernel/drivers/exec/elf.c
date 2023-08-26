@@ -11,10 +11,18 @@
 #include "../../include/exec/debugger.h"
 
 uint8_t is_elf(void *programmem){
+    #ifdef __x86_64
     Elf64_Ehdr* elfheader = (Elf64_Ehdr*) programmem;
+    #else 
+    Elf32_Ehdr* elfheader = (Elf32_Ehdr*) programmem;
+    #endif
 
     // check elfheader
+    #ifdef __x86_64
     if(!(elfheader->e_ident[0]==0x7F && elfheader->e_ident[1]=='E' && elfheader->e_ident[2]=='L' && elfheader->e_ident[3]=='F' && elfheader->e_ident[4]==2 )){
+    #else 
+    if(!(elfheader->e_ident[0]==0x7F && elfheader->e_ident[1]=='E' && elfheader->e_ident[2]=='L' && elfheader->e_ident[3]=='F' && elfheader->e_ident[4]==1 )){
+    #endif
         return 0;
     }
     return 1;
@@ -176,6 +184,23 @@ upointer_t elf_load_image(void *programmem){
     return elfheader->e_entry;
     #endif 
     #ifndef __x86_64
-    return 0;
+    // casting elfheader
+    Elf32_Ehdr* elfheader = (Elf32_Ehdr*) programmem;
+    if(elfheader->e_type!=2){
+        k_printf("elf: elf type is not 2 but %d \n",elfheader->e_type);
+        return 0;
+    }
+    Elf32_Shdr * sections = (Elf32_Shdr *)((long)programmem + elfheader->e_shoff);
+    for(Elf32_Half i = 0 ; i < elfheader->e_shnum ; i++){
+        Elf32_Shdr section = sections[i];
+        if(section.sh_addr){
+            if(section.sh_type==1){
+                for(int e = 0 ; e < section.sh_size ; e++){
+                    ((uint8_t*)(section.sh_addr+e))[0] = ((uint8_t*)(programmem + section.sh_offset + e))[0];
+                }
+            }
+        }
+    }
+    return elfheader->e_entry;
     #endif 
 }

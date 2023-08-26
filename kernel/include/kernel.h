@@ -2,6 +2,8 @@
 #include "psf.h"
 #include "memory.h"
 
+#define halt(x) k_printf(x);for(;;);
+
 /**
  * @brief Bootinfo structure given by the program that booted us
  * 

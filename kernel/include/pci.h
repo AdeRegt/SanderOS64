@@ -16,9 +16,11 @@ void initialise_drivers_from_pci();
 unsigned long getBARaddress(int bus,int slot,int function,int barNO);
 void setBARaddress(int bus,int slot,int function,int barNO,unsigned long result);
 unsigned short pciConfigReadWord (unsigned char bus, unsigned char slot, unsigned char func, unsigned char offset);
+void pciConfigWriteWord (unsigned char bus, unsigned char slot, unsigned char func, unsigned char offset,unsigned long value);
 char pci_enable_busmastering_when_needed(int bus,int slot,int function);
 
 void xhci_driver_start(int bus,int slot,int function);
 void rtl_driver_start(int bus,int slot,int function);
 void e1000_driver_start(int bus,int slot,int function);
 void ehci_driver_start(int bus,int slot,int function);
+void vbox_driver_start(int bus,int slot,int function);

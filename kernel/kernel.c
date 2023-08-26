@@ -30,23 +30,20 @@ void __stack_chk_fail_local(){
 void kernel_main(BootInfo *gi){
     bi = gi;
     initialise_gdt_driver();
+    initialise_idt_driver();
     set_graphics_info(gi->graphics_info);
     set_memory_info(gi->memory_info);
     initialise_graphics_driver();
     initialise_memory_driver();
     initialise_paging_driver();
     initialise_comport();
-    initialise_idt_driver();
     initialise_multitasking_driver();
     initialise_pci_driver();
     #ifndef use_driver
         initialise_drivers_from_pci();
+        initialise_ps2_driver();
     #endif 
     initialise_ethernet();
-    post_init_kernel();
-}
-
-void post_init_kernel(){
     char* filedir = dir("A:SANDEROS");
     if(!filedir){
         k_printf("Unable to detect a valid kernel FS!\n");
@@ -55,10 +52,7 @@ void post_init_kernel(){
     #ifdef use_driver
         loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
         initialise_drivers_from_pci();
-    #else
-        initialise_ps2_driver();
     #endif 
     initialise_tty();
-    k_printf("__end of kernel!\n");
-    for(;;);
+    halt("__end of kernel!\n");
 }

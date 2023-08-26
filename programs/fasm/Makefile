@@ -1,23 +1,20 @@
 all:
 	mkdir origin/SOURCE/SANDEROS64
 	mkdir origin/SOURCE/SANDEROS64/X64
-	cp ./fasm.asm origin/SOURCE/SANDEROS64/X64/fasm.asm
-	cp ./linker.ld origin/SOURCE/SANDEROS64/X64/linker.ld
-	cp ./modes.inc origin/SOURCE/SANDEROS64/X64/modes.inc
-	cp ./system.inc origin/SOURCE/SANDEROS64/X64/system.inc
-	cd origin/SOURCE/SANDEROS64/X64
-	fasm ./fasm.asm
-	$(CC) -T ./linker.ld fasm.o -o ./fasmexec
-	cp ./fasmexec ../../../../fasm.bin
-	rm ./fasm.asm 
-	rm ./fasm.o
-	rm ./fasmexec 
-	rm ./linker.ld 
-	rm ./modes.inc 
-	rm ./system.inc 
-	cd ..
-	rm -r X64
-	cd .. 
-	rm -r SANDEROS64
-	cd ../..
-	cp ./fasm.bin ../../bin/programs/fasm.bin
+	cp ./fasm64.asm origin/SOURCE/SANDEROS64/X64/fasm.asm
+	cp ./fasm32.asm origin/SOURCE/SANDEROS64/fasm.asm
+	cp ./linker64.ld origin/SOURCE/SANDEROS64/X64/linker.ld
+	cp ./linker32.ld origin/SOURCE/SANDEROS64/linker.ld
+	cp ./modes64.inc origin/SOURCE/SANDEROS64/X64/modes.inc
+	cp ./system64.inc origin/SOURCE/SANDEROS64/X64/system.inc
+	cp ./system32.inc origin/SOURCE/SANDEROS64/system.inc
+	cp ./Copymake64 origin/SOURCE/SANDEROS64/X64/Makefile
+	cp ./Copymake32 origin/SOURCE/SANDEROS64/Makefile
+	$(MAKE) -C origin/SOURCE/SANDEROS64/X64
+	rm origin/SOURCE/SANDEROS64/X64/Makefile
+	rm -r origin/SOURCE/SANDEROS64/X64
+	$(MAKE) -C origin/SOURCE/SANDEROS64
+	rm origin/SOURCE/SANDEROS64/Makefile
+	rm -r origin/SOURCE/SANDEROS64
+	cp ./fasm64.bin ../../bin/programs/64bit/fasm.bin
+	cp ./fasm32.bin ../../bin/programs/32bit/fasm.bin

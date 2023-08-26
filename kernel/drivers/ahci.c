@@ -4,7 +4,7 @@
 #include "../include/memory.h"
 #include "../include/idt.h"
 #include "../include/ports.h"
-#include "../include/fs/fat.h"
+#include "../include/fs/mbr.h"
 
 #define	SATA_SIG_ATA	0x00000101	// SATA drive
 #define	SATA_SIG_ATAPI	0xEB140101	// SATAPI drive
@@ -55,26 +55,50 @@ uint8_t ahci_read_sector(HBAPort *hbaPort, upointer_t sector, uint32_t counter, 
 	#ifndef __x86_64
 	commandTable->prdtEntry[0].dataBaseAddressUpper = (uint32_t)0;
 	#endif
-	commandTable->prdtEntry[0].byteCount = (counter<<9)-1;
-	commandTable->prdtEntry[0].interruptOnCompletion = 1;
+	if(hbaPort->signature==SATA_SIG_ATA){
+		commandTable->prdtEntry[0].byteCount = (counter<<9)-1;
+		commandTable->prdtEntry[0].interruptOnCompletion = 1;
+	}
 
 	FIS_REG_H2D* cmdFIS = (FIS_REG_H2D*)(&commandTable->commandFIS);
 
 	cmdFIS->fisType = FIS_TYPE_REG_H2D;
 	cmdFIS->commandControl = 1; // command
-	cmdFIS->command = ATA_CMD_READ_DMA_EX;
+	if(hbaPort->signature==SATA_SIG_ATA){
+		cmdFIS->command = ATA_CMD_READ_DMA_EX;
 
-	cmdFIS->lba0 = (uint8_t)sectorL;
-	cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
-	cmdFIS->lba2 = (uint8_t)(sectorL >> 16);
-	cmdFIS->lba3 = (uint8_t)sectorH;
-	cmdFIS->lba4 = (uint8_t)(sectorH >> 8);
-	cmdFIS->lba4 = (uint8_t)(sectorH >> 16);
+		cmdFIS->lba0 = (uint8_t)sectorL;
+		cmdFIS->lba1 = (uint8_t)(sectorL >> 8);
+		cmdFIS->lba2 = (uint8_t)(sectorL >> 16);
+		cmdFIS->lba3 = (uint8_t)sectorH;
+		cmdFIS->lba4 = (uint8_t)(sectorH >> 8);
+		cmdFIS->lba4 = (uint8_t)(sectorH >> 16);
 
-	cmdFIS->deviceRegister = 1<<6; //LBA mode
+		cmdFIS->deviceRegister = 1<<6; //LBA mode
 
-	cmdFIS->countLow = counter & 0xFF;
-	cmdFIS->countHigh = (counter >> 8) & 0xFF;
+		cmdFIS->countLow = counter & 0xFF;
+		cmdFIS->countHigh = (counter >> 8) & 0xFF;
+	}else if(hbaPort->signature==SATA_SIG_ATAPI){
+		cmdFIS->command = 0xA0;
+		cmdFIS->featureLow = 1;
+		cmdFIS->featureHigh = 0;
+		commandTable->prdtEntry[0].interruptOnCompletion = 1;
+		cmdHeader->atapi = 1;
+		commandTable->atapiCommand[ 0] = 0xA8;
+		commandTable->atapiCommand[ 1] = 0;
+		commandTable->atapiCommand[ 2] = (sectorL >> 0x18) & 0xFF;
+    	commandTable->atapiCommand[ 3] = (sectorL >> 0x10) & 0xFF;
+    	commandTable->atapiCommand[ 4] = (sectorL >> 0x08) & 0xFF;
+    	commandTable->atapiCommand[ 5] = (sectorL >> 0x00) & 0xFF;
+    	commandTable->atapiCommand[ 6] = 0x00;
+    	commandTable->atapiCommand[ 7] = 0x00;
+    	commandTable->atapiCommand[ 8] = 0x00;
+    	commandTable->atapiCommand[ 9] = counter & 0xFF;
+    	commandTable->atapiCommand[10] = 0x00;
+    	commandTable->atapiCommand[11] = 0x00;
+		cmdFIS->countLow = 1;
+		cmdFIS->countHigh = 0;
+	}
 
 	upointer_t spin = 0;
 
@@ -277,20 +301,17 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 
 			if(port->signature==SATA_SIG_ATA||port->signature==SATA_SIG_ATAPI){
 				ahci_port_configure(port);
-				k_printf("Port configured\n");
-			}
-			if(port->signature==SATA_SIG_ATA){
-				k_printf("Found the hdd\n");
+				k_printf("AHCI: Port configured\n");
 				char* buffer = (char*) requestPage();
 				char xu1 = ahci_read_sector(port,0,1,(void*)buffer);
 				if(xu1){
 					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, ahci_ata_write, 3, port);
-					fat_detect_and_initialise(dev,buffer);
+					initialise_fs(dev,buffer);
+				}else{
+					k_printf("AHCI: Failed to read testsector!\n");
 				}
-			}else if(port->signature==SATA_SIG_ATAPI){
-				k_printf("Found the cdrom\n");
 			}
 		}
 	}
-	k_printf("[AHCI] End of operation\n");
+	k_printf("AHCI: End of operation\n");
 }

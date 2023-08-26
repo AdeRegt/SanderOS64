@@ -4,6 +4,12 @@
 
 GraphicsInfo *graphics_info;
 
+unsigned int* getMouseCoordinates();
+
+void repaint(){
+    
+}
+
 void set_graphics_info(GraphicsInfo *gi){
     graphics_info = gi;
 }
@@ -17,6 +23,11 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
     *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress) = colour;
 }
 
+unsigned int get_pixel_at(unsigned int x,unsigned int y){
+    unsigned int BBP = 4;
+    return *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress);
+}
+
 unsigned long pointerX = 50;
 unsigned long pointerY = 50;
 
@@ -25,6 +36,7 @@ unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned c
 }
 
 void clear_screen(unsigned int colour){
+    asm volatile("cli");
     if(graphics_info->strategy==1){
         unsigned int BBP = 4;
         for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
@@ -45,6 +57,7 @@ void clear_screen(unsigned int colour){
         pointerX = 0;
         pointerY = 0;
     }
+    asm volatile("sti");
 }
 
 void putc(char deze){
@@ -52,7 +65,7 @@ void putc(char deze){
         com_write_debug_serial(deze);
     }
     if(graphics_info->strategy==1){
-        if(pointerY>graphics_info->Height){
+        if(pointerY>(graphics_info->Height-50)){
             clear_screen(0xFFFFFFFF);
             pointerX = 50;
             pointerY = 50;

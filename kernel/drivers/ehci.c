@@ -26,6 +26,7 @@ uint32_t ehci_get_usbsts()
 __attribute__((interrupt)) void irq_ehci(interrupt_frame* frame)
 {
     uint32_t status = ehci_get_usbsts();
+    k_printf("ehci: INTERRUPT: %x \n",status);
     if(status&0x20)
     {
         k_printf("ehci: Interrupt on Async Advance!\n");
@@ -111,7 +112,7 @@ uint8_t ehci_wait_for_completion(volatile EhciTD *status)
     int timeout = 25;
     while(1)
     {
-        sleep(5);
+        sleep(2);
         // k_printf("*");
         volatile uint32_t tstatus = (volatile uint32_t)status->token;
         if(tstatus & (1 << 4))
@@ -232,7 +233,7 @@ uint8_t ehci_set_used_config(uint8_t address,uint8_t config)
     return res;
 }
 
-void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size,uint8_t address)
+void *ehci_request_normal_data(USBDevice *device, uint8_t request, uint8_t dir, uint8_t type, uint8_t recieve, uint16_t windex,uint16_t wlength, uint16_t wvalue,uint8_t size)
 {
     void *buffer2 = requestPage();
     memset(buffer2,0,sizeof(EhciQH));
@@ -242,7 +243,7 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
     EhciTD *transfercommand = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status,1,size,1,(uint32_t)(upointer_t)buffer);    // OK
     EhciTD *td = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)transfercommand,2,8,0,(uint32_t)(upointer_t)command);       // OK 8
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
-    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,address,0x40000000,0,0);
+    EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)td,2,1,0,64,device->deviceaddres,0x40000000,0,0);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
     head2->horizontal_link_pointer = ((uint32_t)(upointer_t)head1) | 2;
     head2->curlink = (uint32_t) (upointer_t) buffer2;
@@ -260,7 +261,7 @@ void *ehci_request_normal_data(uint8_t request, uint8_t dir, uint8_t type, uint8
     }
 }
 
-void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
+uint8_t ehci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,int8_t endpoint,int8_t size)
 {
     EhciTD *status2 = ehci_generate_transfer_descriptor(1,0,0,1,0);
     EhciTD *status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,0,size,0,command);
@@ -272,19 +273,44 @@ void ehci_send_bulk_data(uint8_t address,uint32_t command,int8_t endpoint,int8_t
     freePage(status);
     freePage(head1);
     freePage(head2);
+    return res;
 }
 
-void *ehci_recieve_bulk_data(uint8_t address,uint8_t endpoint,uint16_t size,uint8_t toggle)
+void *ehci_recieve_bulk_data(USBDevice *device, uint8_t address,uint8_t endpoint,uint32_t size,uint8_t toggle)
 {
     void* command = requestPage();
-    memset(command,0,size);
-    EhciTD *status;
-    if(toggle){
-        EhciTD *status2 = ehci_generate_transfer_descriptor(1,1,0,toggle==0?1:0,0);
-        status = ehci_generate_transfer_descriptor((uint32_t)(upointer_t)status2,1,size,toggle,(uint32_t)(upointer_t)command);
-    }else{
-        status = ehci_generate_transfer_descriptor(1,1,size,toggle,(uint32_t)(upointer_t)command);
+    for(upointer_t i = 0 ; i < size ; i+=0x1000){
+        requestPage();
     }
+    memset(command,0,size);
+    EhciTD *status = 0;
+    EhciTD *current = 0;
+    EhciTD *lastone = 0;
+    
+    uint32_t pointer = 0;
+    uint16_t packagel = size<512?size:512;
+    uint16_t i = 0;
+    while(1)
+    {
+        current = ehci_generate_transfer_descriptor(1,1,packagel,toggle,(uint32_t)(upointer_t)command + pointer);
+        if(status==0)
+        {
+            status = current;
+        }
+        if(lastone!=0)
+        {
+            lastone->nextlink = (uint32_t)(upointer_t)current;
+        }
+        toggle = toggle==0;
+        lastone = current;
+        pointer += packagel;
+        if(pointer==size)
+        {
+            break;
+        }
+        i++;
+    }
+
     EhciQH *head1 = ehci_generate_queue_head(1,0,0,1,0,0,0,0x40,0);
     EhciQH *head2 = ehci_generate_queue_head((uint32_t)(upointer_t)status,2,1,0,512,address,0x40000000,0,endpoint);
     head1->horizontal_link_pointer = ((uint32_t)(upointer_t)head2) | 2;
@@ -526,7 +552,7 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // enable all USB interrupts
-    ((uint32_t*)(ehci_base_addr + caplength + 0x08 ))[0] = 0b111111;
+    ((uint32_t*)(ehci_base_addr + caplength + 0x08 ))[0] = 7;
 
     //
     // set the periodic list base

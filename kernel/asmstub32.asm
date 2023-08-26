@@ -98,3 +98,4 @@ _start:
 .end:
 
 %include "drivers/multitasking32.asm"
+%include "drivers/isr32.asm"

@@ -2,7 +2,7 @@
 #include "../include/graphics.h"
 #include "../include/memory.h"
 #include "../include/device.h"
-#include "../include/fs/fat.h"
+#include "../include/fs/mbr.h"
 
 #define USB_STICK_REQUEST_LUN 0xFE
 
@@ -33,9 +33,25 @@ typedef struct {
 
 void *usb_stick_send_request(USBDevice *device, CommandBlockWrapper *cbw)
 {
-    usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
-    void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,512,0);
-    CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,1);
+    uint8_t g = usb_send_bulk_data(device,device->deviceaddres,(uint32_t)(upointer_t)cbw,device->epOUTid,sizeof(CommandBlockWrapper) );
+    if(g==0)
+    {
+        k_printf("__block: datablok0 failed with %d !\n",g);
+        return 0;
+    }
+    void* res = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,cbw->transferlength,0);
+    if(res==0)
+    {
+        k_printf("__block: datablok1 failed!\n");
+        return 0;
+    }
+    uint32_t oc = (cbw->transferlength/512)&2;
+    CommandStatusWrapper *cq = usb_recieve_bulk_data(device,device->deviceaddres,device->epINid,13,oc==2?0:1);
+    if(cq==0)
+    {
+        k_printf("__block: csw failed!\n");
+        return 0;
+    }
     if(cq->signature!=0x53425355)
     {
         k_printf("__commandstatuswrapper: invalidsignature\n");
@@ -72,12 +88,14 @@ CommandBlockWrapper* usb_stick_generate_pointer()
 
 uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
 {
-    upointer_t buffervoid = (upointer_t)buffer;
-    for(uint32_t i = 0 ; i < counter ; i++)
-    {
-        upointer_t calculatedaddress = sector + i ;
+    uint32_t dedway = 5;
+    for(uint32_t i = 0 ; i < counter ; i+=dedway){
+        uint32_t tleft = counter - i;
+        if(tleft>dedway){
+            tleft = dedway;
+        }
         CommandBlockWrapper *ep = usb_stick_generate_pointer();
-        ep->transferlength = 512;
+        ep->transferlength = 512 * tleft;
         ep->flags = 0x80;
         ep->command_len = 10;
         // command READ(0x12)
@@ -85,22 +103,23 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
         // reserved
         ep->data[1] = 0;
         // lba
-        ep->data[2] = (uint8_t) ((calculatedaddress >> 24) & 0xFF);
-        ep->data[3] = (uint8_t) ((calculatedaddress >> 16) & 0xFF);
-        ep->data[4] = (uint8_t) ((calculatedaddress >> 8) & 0xFF);
-        ep->data[5] = (uint8_t) ((calculatedaddress) & 0xFF);
+        ep->data[2] = (uint8_t) ((sector >> 24) & 0xFF);
+        ep->data[3] = (uint8_t) ((sector >> 16) & 0xFF);
+        ep->data[4] = (uint8_t) ((sector >> 8) & 0xFF);
+        ep->data[5] = (uint8_t) ((sector) & 0xFF);
         // counter
         ep->data[6] = 0;
-        ep->data[7] = 0;
-        ep->data[8] = 1;
+        ep->data[7] = (uint8_t) ((tleft >> 8) & 0xFF);
+        ep->data[8] = (uint8_t) ((tleft) & 0xFF);
+
         uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
         freePage(ep);
         if(cq==0){
             return 0;
         }
-        memcpy((void*)buffervoid,cq,512);
+        uintptr_t bpnt = ((uintptr_t)buffer) + (512*i);
+        memcpy((void*)bpnt,cq,512*tleft);
         freePage(cq);
-        buffervoid += 512;
     }
     return 1;
 }
@@ -116,18 +135,19 @@ void install_usb_stick(USBDevice *device)
         k_printf("usb-%d: Unknown protocol type\n",device->physport);
         return;
     }
-    uint8_t* luns = usb_request_normal_data(device,USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1,device->deviceaddres);
+    uint8_t* luns = usb_request_normal_data(device,USB_STICK_REQUEST_LUN,0x80,1,1,0,1,0,1);
     if(luns==0){
         k_printf("usb-%d: cant get lun!\n",device->physport);
         return;
     }
     uint8_t lun = luns[0];
+    k_printf("usb-%d: we have a lun of %d \n",device->physport,lun);
 
     Blockdevice* bdev = registerBlockDevice(512, usb_stick_read, usb_stick_write, 0, device);
 
     void *cq = requestPage();
     uint8_t g = usb_stick_read(bdev,0,1,cq);
     if(g){
-        fat_detect_and_initialise(bdev,cq);
+        initialise_fs(bdev,cq);
     }
 }

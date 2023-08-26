@@ -8,24 +8,7 @@
 char wd[FILENAME_MAX];
 char pd[FILENAME_MAX];
 
-void initialise_tty(){
-    clear_screen(create_colour_code(0xFF,0xFF,0xFF,0xFF));
-
-    memset((void*)&wd,0,FILENAME_MAX);
-    memcpy((void*)&wd,"A:PROGRAMS",strlen("A:PROGRAMS"));
-
-    char *kp = dir(wd);
-
-    k_printf("SanderOS64 Buildin Command Interpeter\n");
-    if(kp){
-        k_printf("Known programs: \n");
-        k_printf("%s\n",kp);
-    }
-    k_printf("Commands: \n");
-    k_printf("exit               - Exit the shell\n");
-    k_printf("dir                - Print contents of the working directory\n");
-    k_printf("cd        [path]   - Change working directory\n");
-    k_printf("\n");
+void tty_inner_loop(){
     while(1){
         k_printf("%s > ",wd);
         uint8_t *tw = scanLine(50);
@@ -33,14 +16,32 @@ void initialise_tty(){
         if(memcmp(tw,"exit",4)==0){
             break;
         }else if(memcmp(tw,"dir",3)==0){
-            k_printf("%s\n",dir(wd));
+            char *dirinfo = dir(wd);
+            if(dirinfo){
+                k_printf("%s\n",dirinfo);
+            }else{
+                k_printf("Unable to read directory!\n");
+            }
         }else if(memcmp(tw,"cd ",3)==0){
             char *strpath = (char*) (tw+3);
             if(strpath[1]==':'){
                 memset((void*)&wd,0,50);
                 memcpy((void*)&wd,strpath,strlen(strpath));
+            }else if(strpath[0]=='.'&&strpath[1]=='.'){
+                upointer_t imax = strlen(wd);
+                for(upointer_t i = 0 ; i < imax ; i++){
+                    char thisone = wd[imax-i];
+                    if(thisone=='/'){
+                        wd[imax-i] = 0;
+                        break;
+                    }
+                    if(thisone==':'){
+                        break;
+                    }
+                    wd[imax-i] = 0;
+                }
             }else{
-                if(strlen((char*)&wd)>2){
+                if(strlen((char*)&wd)>3){
                     memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),"/",1);
                 }
                 memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
@@ -69,7 +70,7 @@ void initialise_tty(){
             int rt = exec(pd,pd2);
             if(rt==-1){
                 k_printf("Unable to run program!\n");
-            }else if(rt<1000){
+            }else if(rt && rt<1000){
                 k_printf("Program is running in the background\n");
                 waitForPid(rt);
             }else{
@@ -78,4 +79,28 @@ void initialise_tty(){
         }
         free(tw);
     }
+}
+
+void initialise_tty(){
+
+    memset((void*)&wd,0,FILENAME_MAX);
+    #ifdef __x86_64
+        memcpy((void*)&wd,"A:PROGRAMS/64BIT",strlen("A:PROGRAMS/64BIT"));
+    #else
+        memcpy((void*)&wd,"A:PROGRAMS/32BIT",strlen("A:PROGRAMS/32BIT"));
+    #endif
+
+    char *kp = dir(wd);
+
+    k_printf("SanderOS64 Buildin Command Interpeter\n");
+    if(kp){
+        k_printf("Known programs: \n");
+        k_printf("%s\n",kp);
+    }
+    k_printf("Commands: \n");
+    k_printf("exit               - Exit the shell\n");
+    k_printf("dir                - Print contents of the working directory\n");
+    k_printf("cd        [path]   - Change working directory\n");
+    k_printf("\n");
+    tty_inner_loop();
 }

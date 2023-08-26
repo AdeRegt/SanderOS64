@@ -22,7 +22,7 @@ char getc(){
     return buffer[0];
 }
 
-long unsigned int strlen(const char *ert){
+upointer_t strlen(const char *ert){
     char len = 0;
     while(ert[len++]);
     len--;
@@ -85,7 +85,7 @@ typedef __builtin_va_list va_list;
 #define va_arg(a,b)    __builtin_va_arg(a,b)
 #define __va_copy(d,s) __builtin_va_copy((d),(s))
 
-void hang(char* func){
+void hang(const char* func){
     printf("\nHANG: %s \n",func);
     for(;;);
 }
@@ -172,50 +172,52 @@ int printf( const char* format,...){
     va_end(arg);
 }
 
-void* memcpy( void *dest, const void *src, uint64_t count ){
-    for(uint64_t i = 0 ; i < count ; i++){
-        *(unsigned char*)((uint64_t)dest + i) = *(unsigned char*)((uint64_t)src + i);
+void* memcpy( void *dest, const void *src, upointer_t count ){
+    for(upointer_t i = 0 ; i < count ; i++){
+        *(unsigned char*)((upointer_t)dest + i) = *(unsigned char*)((upointer_t)src + i);
     }
 }
 
 int fclose( FILE *stream ){
     int modus = 3;
-    uint64_t res = 0;
+    upointer_t res = 0;
     __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) );
     return res;
 }
 
-uint64_t fread( void *buffer, uint64_t size, uint64_t count, FILE *stream ){
+upointer_t fread( void *buffer, upointer_t size, upointer_t count, FILE *stream ){
     int modus = 0;
-    uint64_t res = 0;
-    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "D" (stream) , "S" (buffer) , "d" (count) );
+    upointer_t res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "b" (stream) , "d" (buffer) , "c" (count) );
     return res;
 }
 
-int fseek( FILE *stream, long offset, int origin ){
+int fseek( FILE *stream, long int offset, int origin ){
     int modus = 8;
     int res = 0;
-    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "D" (stream) , "d" (origin) , "S" (offset) );
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (stream) , "c" (origin) , "d" ((int)offset) );
     return res;
 }
 
 long ftell( FILE *stream ){
-    hang("ftell");
-    // int modus = 8;
-    // int res = 0;
-    // __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (stream) , "D" (origin) );
-    // return res;
+    int modus = 411;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (stream) );
+    return res;
 }
 
 FILE *fopen( const char *filename, const char *mode ){
     int modus = 2;
-    int enos = 0;
+    int enos = mode[0]=='w'?1:0;
     void* res = 0;
     __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (filename) , "S" (enos) );
+    if((upointer_t)res==-1){
+        return 0;
+    }
     return res;
 }
 
-void* malloc( uint64_t size ){
+void* malloc( upointer_t size ){
     int mode = 400;
     void* res = 0;
 	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "d" (size) );
@@ -223,7 +225,9 @@ void* malloc( uint64_t size ){
 }
 
 void free( void* ptr ){
-    hang("free");
+    int mode = 409;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ptr) );
 }
 
 void *draw_pixel(int x,int y,int z){
@@ -234,8 +238,8 @@ void *draw_pixel(int x,int y,int z){
 }
 
 void *memset(void *start, int value, long unsigned int num){
-    for(uint64_t i = 0 ; i < num ; i++){
-        *(unsigned char*)((uint64_t)start + i) = value;
+    for(upointer_t i = 0 ; i < num ; i++){
+        *(unsigned char*)((upointer_t)start + i) = value;
     }
     return start;
 }
@@ -254,6 +258,68 @@ unsigned char wait_for_character(){
     return res[0];
 }
 
+void *get_ip_from_name(uint8_t *name){
+    int mode = 405;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (name) );
+    return res;
+}
+
+void *get_mac_from_ip(uint8_t *name){
+    int mode = 406;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (name) );
+    return res;
+}
+
+void *start_tcp_session(uint8_t *ip,uint16_t port,void *functionp){
+    int mode = 407;
+    void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ip), "c" (port), "d" (functionp) );
+    return res;
+}
+
+unsigned int sleep(unsigned int seconds){
+    unsigned int modus = 408;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "b" (seconds) );
+    return res;
+}
+
 void __stack_chk_fail(){
+    hang(__FUNCTION__);
     for(;;);
+}
+
+char *getenv(char *name){
+    int modus = 410;
+    int enos = 0;
+    void* res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (name) );
+    return res;
+}
+
+upointer_t fwrite(void *ptr, upointer_t size, upointer_t nmemb, FILE *stream){
+    int modus = 1;
+    upointer_t res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "b" (stream) , "d" (ptr) , "c" (nmemb) );
+    return res;
+}
+
+uint32_t time(void *t){
+    hang(__FUNCTION__);
+    return 1;
+}
+
+uint32_t write(int fildes, void *buf, uint32_t nbyte){
+    int mode = 4;
+	__asm__ __volatile__( "int $0x80" : "+a"(mode) , "+b" (fildes), "+c" (buf), "+d" (nbyte));
+    return 0;
+}
+
+uint32_t gettimeofday(void *buff){
+    unsigned int modus = 96;
+    int res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (buff) );
+    return res;
 }

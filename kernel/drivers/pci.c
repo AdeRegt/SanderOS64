@@ -5,6 +5,7 @@
 #include "../include/exec/module.h"
 #include "../include/device.h"
 #include "../include/ethernet.h"
+#include "../include/ide.h"
 
 unsigned long getPCIConfiguration(int bus,int slot,int function){
 	return getBARaddress(bus,slot,function,0x04) & 0x0000FFFF;
@@ -14,7 +15,7 @@ char pci_enable_busmastering_when_needed(int bus,int slot,int function){
 	if(!(getPCIConfiguration(bus,slot,function)&0x04)){
         k_printf("[PCI] PCI bussmaster not enabled!\n");
         unsigned long setting = getPCIConfiguration(bus,slot,function);
-        setting |= 0x04;
+        setting |= 0x06;
         setBARaddress(bus,slot,function,4,setting);
         if(!(getPCIConfiguration(bus,slot,function)&0x04)){
             k_printf("[PCI] PCI busmastering still not enabled! Quiting...\n");
@@ -120,6 +121,7 @@ void initialise_pci_driver(){
 		for(int slot = 0 ; slot < 32 ; slot++){
 			for(int function = 0 ; function <= 7 ; function++){
 				unsigned short vendor = pciConfigReadWord(bus,slot,function,0);
+                unsigned short device = pciConfigReadWord(bus,slot,function,2);
 				if(vendor != 0xFFFF){
 					unsigned char classc = (pciConfigReadWord(bus,slot,function,0x0A)>>8)&0xFF;
 					unsigned char sublca = (pciConfigReadWord(bus,slot,function,0x0A))&0xFF;
@@ -133,6 +135,10 @@ void initialise_pci_driver(){
                         xhci_driver_start(bus,slot,function);
                     }else if(classc==0x0C && sublca==0x03 && subsub==0x20 ){
                         ehci_driver_start(bus,slot,function);
+                    }else if(classc==0x01 && sublca==0x01 ){
+                        ide_driver_start(bus,slot,function);
+                    }else if(vendor==0x80EE && device==0xCAFE){
+                        vbox_driver_start(bus,slot,function);
                     }
                 }
             }

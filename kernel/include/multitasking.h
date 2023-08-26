@@ -4,6 +4,7 @@
 
 typedef struct{
     // Pushed by isr_common_stub
+    #ifdef __x86_64
     upointer_t r15;
     upointer_t r14;
     upointer_t r13;
@@ -12,6 +13,12 @@ typedef struct{
     upointer_t r10;
     upointer_t r9;
     upointer_t r8;
+    #else 
+    uint32_t gs;
+    uint32_t fs;
+    uint32_t es;
+    uint32_t ds;
+    #endif
     upointer_t rdi;
     upointer_t rsi;
     upointer_t rbp;

@@ -2,12 +2,8 @@
 #include <stdint.h>
 
 struct e1000_rx_desc {
-    #ifdef __x86_64
-        uint64_t addr;
-    #else 
-        uint32_t addr;
-        uint32_t always0;
-    #endif 
+        unsigned long addr_1;
+        unsigned long addr_2;
         unsigned short length;
         unsigned short checksum;
         unsigned char status;
@@ -16,12 +12,8 @@ struct e1000_rx_desc {
 } __attribute__((packed));
  
 struct e1000_tx_desc {
-    #ifdef __x86_64
-        uint64_t addr;
-    #else 
-        uint32_t addr;
-        uint32_t always0;
-    #endif 
+        unsigned long addr_1;
+        unsigned long addr_2;
         unsigned short length;
         unsigned char cso;
         unsigned char cmd;

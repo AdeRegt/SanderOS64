@@ -6,8 +6,13 @@
 #include "../../include/multitasking.h"
 #include "../../include/graphics.h"
 #include "../../include/exec/debugger.h"
+#include "../../include/exec/sxe.h"
 
+#ifdef __x86_64
 int use_paging = 1;
+#else 
+int use_paging = 0;
+#endif
 
 int exec(uint8_t *path,char *argv){
 
@@ -61,16 +66,19 @@ int exec(uint8_t *path,char *argv){
         if(!address){
             return -1;
         }
+    }else if(is_sxe(buffer)){
+        return sxe_run(buffer);
+    }else if(use_paging){
+        return addTask(buffer,buffer,fz,argstock);
     }else{
-        if(use_paging){
-            return addTask(buffer,buffer,fz,argstock);
-        }else{
-            memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
-            address = EXTERNAL_PROGRAM_ADDRESS;
-        }
+        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
+        address = EXTERNAL_PROGRAM_ADDRESS;
     }
 
     // call!
-    int (*callProgram)(int argc,char* argv) = (void*)address;
-    return callProgram(0,0);
+    k_printf("exec: running BIN program at %x \n",address);
+    int (*callProgram)(int,char**) = (void*)address;
+    char *data[] = {path, argv};
+    char **dictionary = data;
+    return callProgram(1 + (strlen(argv)>0),dictionary);
 }
