@@ -208,7 +208,7 @@ long ftell( FILE *stream ){
 
 FILE *fopen( const char *filename, const char *mode ){
     int modus = 2;
-    int enos = 0;
+    int enos = mode[0]=='w'?1:0;
     void* res = 0;
     __asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(modus) , "d" (filename) , "S" (enos) );
     if((upointer_t)res==-1){
@@ -299,9 +299,11 @@ char *getenv(char *name){
     return res;
 }
 
-size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream){
-    hang(__FUNCTION__);
-    return 1;
+upointer_t fwrite(void *ptr, upointer_t size, upointer_t nmemb, FILE *stream){
+    int modus = 1;
+    upointer_t res = 0;
+    __asm__ __volatile__( "int $0x81" : "=a" (res) : "a" (modus) , "b" (stream) , "d" (ptr) , "c" (nmemb) );
+    return res;
 }
 
 uint32_t time(void *t){

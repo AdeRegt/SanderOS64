@@ -241,18 +241,23 @@ void isr2handler(stack_registers *ix){
         fl->pointer = fl->pointer + ix->rcx;
     }else if(ix->rax==1){
         char* z = ((char*) (ix->rsi));
-        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
+        File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         if(ix->rdi<5){
             for(upointer_t i = 0 ; i < ix->rdx ; i++){
                 k_printf("%c",z[i]);
             }
         }else{
-            // k_printf("isr2:request write\n");
-            upointer_t oldsize = getFileSize(fl->filename);
-            upointer_t newsize = oldsize + ix->rdx;
+            upointer_t oldsize = 0;
+            if(fl->flags==0){
+                oldsize = getFileSize(fl->filename);
+            }
+            upointer_t newsize = oldsize + ix->rcx;
             void *tmpbuf = requestPage();
-            readFile(fl->filename,tmpbuf);
-            memcpy((void*)(tmpbuf + oldsize),z,ix->rdx);
+            if(fl->flags==0){
+                readFile(fl->filename,tmpbuf);
+            }
+            // k_printf("isr2:request write to [%s] newsize:%d oldsize:%d \n",fl->filename,newsize,oldsize);
+            memcpy((void*)(tmpbuf + oldsize),z,ix->rcx);
             upointer_t q = writeFile(fl->filename,tmpbuf,newsize);
             if(q==0){
                 ix->rax = -1;
