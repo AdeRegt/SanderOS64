@@ -86,35 +86,46 @@ CommandBlockWrapper* usb_stick_generate_pointer()
     return ep;
 }
 
+void *usb_stick_one_read(Blockdevice *dev, upointer_t sector, uint32_t counter)
+{
+    CommandBlockWrapper *ep = usb_stick_generate_pointer();
+    ep->transferlength = 512 * counter;
+    ep->flags = 0x80;
+    ep->command_len = 10;
+    // command READ(0x12)
+    ep->data[0] = 0x28;
+    // reserved
+    ep->data[1] = 0;
+    // lba
+    ep->data[2] = (uint8_t) ((sector >> 24) & 0xFF);
+    ep->data[3] = (uint8_t) ((sector >> 16) & 0xFF);
+    ep->data[4] = (uint8_t) ((sector >> 8) & 0xFF);
+    ep->data[5] = (uint8_t) ((sector) & 0xFF);
+    // counter
+    ep->data[6] = 0;
+    ep->data[7] = (uint8_t) ((counter >> 8) & 0xFF);
+    ep->data[8] = (uint8_t) ((counter) & 0xFF);
+
+    uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
+    freePage(ep);
+    return cq;
+}
+
 uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
 {
-    uint32_t dedway = 5;
-    for(uint32_t i = 0 ; i < counter ; i+=dedway){
+    uint32_t dedway = 12;
+    for(uint32_t i = 0 ; i < counter ; i+=dedway)
+    {
         uint32_t tleft = counter - i;
-        if(tleft>dedway){
+        if(tleft>dedway)
+        {
             tleft = dedway;
         }
-        CommandBlockWrapper *ep = usb_stick_generate_pointer();
-        ep->transferlength = 512 * tleft;
-        ep->flags = 0x80;
-        ep->command_len = 10;
-        // command READ(0x12)
-        ep->data[0] = 0x28;
-        // reserved
-        ep->data[1] = 0;
-        // lba
-        ep->data[2] = (uint8_t) ((sector >> 24) & 0xFF);
-        ep->data[3] = (uint8_t) ((sector >> 16) & 0xFF);
-        ep->data[4] = (uint8_t) ((sector >> 8) & 0xFF);
-        ep->data[5] = (uint8_t) ((sector) & 0xFF);
-        // counter
-        ep->data[6] = 0;
-        ep->data[7] = (uint8_t) ((tleft >> 8) & 0xFF);
-        ep->data[8] = (uint8_t) ((tleft) & 0xFF);
 
-        uint8_t* cq = usb_stick_send_request((USBDevice*)dev->attachment,ep);
-        freePage(ep);
-        if(cq==0){
+        uint8_t* cq = usb_stick_one_read(dev,sector,tleft);
+        sector += tleft;
+        if(cq==0)
+        {
             return 0;
         }
         uintptr_t bpnt = ((uintptr_t)buffer) + (512*i);

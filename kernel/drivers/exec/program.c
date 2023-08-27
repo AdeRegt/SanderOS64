@@ -73,6 +73,12 @@ int exec(uint8_t *path,char *argv){
     }else{
         memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
         address = EXTERNAL_PROGRAM_ADDRESS;
+        int times = 5;
+        k_printf("--> %x \n",512*times);
+        for(uint8_t i = 0 ; i < 100 ; i++){
+            upointer_t tv = EXTERNAL_PROGRAM_ADDRESS+(512*times)+i;
+            k_printf("%x ",((uint8_t*)tv)[0]);
+        }
     }
 
     // call!
