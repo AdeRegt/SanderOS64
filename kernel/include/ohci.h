@@ -1,0 +1,1 @@
+void ohci_driver_start(int bus,int slot,int function);
