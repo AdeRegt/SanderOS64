@@ -113,7 +113,7 @@ void *usb_stick_one_read(Blockdevice *dev, upointer_t sector, uint32_t counter)
 
 uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer)
 {
-    uint32_t dedway = 25;
+    uint32_t dedway = 1;
     for(uint32_t i = 0 ; i < counter ; i+=dedway)
     {
         uint32_t tleft = counter - i;
