@@ -1,6 +1,6 @@
 all:
 	fasm ./fasm.asm
-	$(CC) -T ./linker.ld fasm.o ../../../../../programsapi/stdlib32.o ../../../../../programsapi/crt032.o -o ./fasmexec  -nostdlib -ffreestanding -m32
+	$(CC) -T ./linker.ld fasm.o ../../../../../programsapi/bin/stdlib32.o ../../../../../programsapi/bin/crt032.o -o ./fasmexec  -nostdlib -ffreestanding -m32
 	cp ./fasmexec ../../../fasm32.bin
 	rm ./fasm.asm 
 	rm ./fasm.o
