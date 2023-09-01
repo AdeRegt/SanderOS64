@@ -4,4 +4,4 @@ all:
 	$(MAKE) -C chip8
 	$(MAKE) -C fasm
 	$(MAKE) -C hello
-	$(MAKE) -C smallerc
+	$(MAKE) -C dragon
