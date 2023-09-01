@@ -4,6 +4,3 @@
 [submodule "programs/chip8/origin"]
 	path = programs/chip8/origin
 	url = https://github.com/AdeRegt/chip8.git
-[submodule "programs/smallerc/origin"]
-	path = programs/smallerc/origin
-	url = https://github.com/alexfru/SmallerC.git
