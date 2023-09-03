@@ -190,7 +190,7 @@ void isrhandler(stack_registers *ix){
     }else if(ix->rax==2){
         k_printf("isr: fork not implemented!\n");
     }else if(ix->rax==3){
-        if(ix->rbx){
+        if(ix->rbx<5){
             char* u = (char*) ix->rcx;
             u[0] = getch(1);
         }
@@ -235,7 +235,9 @@ void isr2handler(stack_registers *ix){
 #endif 
     // k_printf("isr2: yield eax=%x ebx=%x ecx=%x edx=%x \n",ix->rax,ix->rbx,ix->rcx,ix->rdx);
     if(ix->rax==0){
-        // k_printf("isr2:request read\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request read\n");
+        #endif
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         memcpy((void*)ix->rdx,(void*)(fl->buffer + fl->pointer),ix->rcx);
         fl->pointer = fl->pointer + ix->rcx;
@@ -256,7 +258,9 @@ void isr2handler(stack_registers *ix){
             if(fl->flags==0){
                 readFile(fl->filename,tmpbuf);
             }
-            // k_printf("isr2:request write to [%s] newsize:%d oldsize:%d \n",fl->filename,newsize,oldsize);
+            #ifdef IDT_DEBUG
+            k_printf("isr2:request write to [%s] newsize:%d oldsize:%d \n",fl->filename,newsize,oldsize);
+            #endif
             memcpy((void*)(tmpbuf + oldsize),z,ix->rcx);
             upointer_t q = writeFile(fl->filename,tmpbuf,newsize);
             if(q==0){
@@ -270,7 +274,9 @@ void isr2handler(stack_registers *ix){
         // k_printf("isr2:request open rsi=%x \n",ix->rsi);for(;;);
         // fileopen option!
         char* path = (char*) ix->rdx;
-        // k_printf("isr2:request to open %s \n",path);
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request to open %s \n",path);
+        #endif
         upointer_t filesize = 0;
         void* buffer;
         if(ix->rsi==0){
@@ -300,13 +306,17 @@ void isr2handler(stack_registers *ix){
         // k_printf("Opening file with ID %d \n",sov);
         ix->rax = sov;
     }else if(ix->rax==3){
-        // k_printf("isr2:request close\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request close\n");
+        #endif
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rdi]);
         fl->available = 0;
         ix->rax = 0;
     }else if(ix->rax==8){
         // "D" (stream) , "d" (origin) , "S" (offset)
-        // k_printf("isr2:request seek fileid(rbx):%d , args(rcx):%d , method(rdx):%d \n",ix->rbx,ix->rcx,ix->rdx);
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request seek fileid(rbx):%d , args(rcx):%d , method(rdx):%d \n",ix->rbx,ix->rcx,ix->rdx);
+        #endif
         // seek option!
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         if(ix->rcx==2){
@@ -317,25 +327,35 @@ void isr2handler(stack_registers *ix){
         ix->rax = fl->pointer;
         // ix->rax = 0;
     }else if(ix->rax==12){
-        // k_printf("isr2:request space\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request space\n");
+        #endif
         // we always accept extending memory whatoever
         ix->rax = ix->rdi;
     }else if(ix->rax==60){
-        // k_printf("isr2: end\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2: end\n");
+        #endif
         Task* ts = (Task*) (getTasks() + (sizeof(Task)*getPid()));
         ts->task_running = 0;
         ix->rip = (upointer_t)tty_inner_loop;
     }else if(ix->rax==96){
-        // k_printf("isr2:request time\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request time\n");
+        #endif
         timeval* tv = (timeval*) ix->rdi;
         tv->tv_sec = 10000;
         tv->tv_usec = 10100;
         ix->rax = 0;
     }else if(ix->rax==400){
-        // k_printf("isr2:request page\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request page\n");
+        #endif
         ix->rax = (upointer_t) requestPage();
     }else if(ix->rax==401){
-        // k_printf("isr2:request argument\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request argument\n");
+        #endif
         if(ix->rcx>0&&ix->rcx<10){
             char* us = (char*) getCurrentTaskInfo()->arguments[ix->rcx-1];
             ((uint32_t*)ix->rdi)[0] = (uint32_t)((upointer_t)us);
@@ -355,27 +375,41 @@ void isr2handler(stack_registers *ix){
         u[0] = getch(1);
     }else if(ix->rax==405){
         uint8_t *name = (uint8_t*) ix->rbx;
-        // k_printf("isr2:request ip from name\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request ip from name\n");
+        #endif
         ix->rax = (upointer_t)getIPFromName(name);
     }else if(ix->rax==406){
-        // k_printf("isr2:request mac from ip\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request mac from ip\n");
+        #endif
         uint8_t *name = (uint8_t*) ix->rbx;
         ix->rax = (upointer_t)getMACFromIp(name);
     }else if(ix->rax==407){
-        // k_printf("isr2:request tcp session\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request tcp session\n");
+        #endif
         create_tcp_session(getOurIpAsLong(),((unsigned long*)ix->rbx)[0],ix->rcx,ix->rcx,ix->rdx);
     }else if(ix->rax==408){
-        // k_printf("isr2:request sleep\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request sleep\n");
+        #endif
         sleep(ix->rbx);
     }else if(ix->rax==409){
-        // k_printf("isr2:release page\n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:release page\n");
+        #endif
         freePage((void*)ix->rbx);
     }else if(ix->rax==410){
-        // k_printf("isr2:request env variable [%s] \n",(char*) ix->rdx);
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request env variable [%s] \n",(char*) ix->rdx);
+        #endif
         char* p = "A:INCLUDE/";
         ix->rax = (upointer_t)p;
     }else if(ix->rax==411){
-        // k_printf("isr2:request tell \n");
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request tell \n");
+        #endif
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         ix->rax = fl->pointer;
     }else{

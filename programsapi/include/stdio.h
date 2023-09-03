@@ -8,8 +8,9 @@
 #define EOF -1
 
 typedef void FILE;
-#define stdout 1
-#define stderr 2
+#define stdout ((FILE*)1)
+#define stderr ((FILE*)2)
+#define stdin ((FILE*)3)
 
 typedef __builtin_va_list va_list;
 

@@ -12,14 +12,14 @@ __attribute__((noreturn)) void exit(int number){
 
 char buffer[2];
 
-char getc(){
-    int mode = 3;
-    int fp = 1;
-    int ptr = 1;
+char getc(FILE* stream){
+    int mode = 0;
+    void *fp = stream;
+    void *ptr = buffer;
     buffer[0] =0;
     buffer[1] =0;
-    void* g =buffer;
-	__asm__ __volatile__( "int $0x80" : "+a"(mode) , "+b" (fp), "+c" (g), "+d" (ptr));
+    void* g = (void*)1;
+	__asm__ __volatile__( "int $0x81" : "+a"(mode) , "+b" (fp), "+c" (g), "+d" (ptr));
     return buffer[0];
 }
 
@@ -94,7 +94,7 @@ void hang(const char* func){
 void scanline(char* where,char echo){
     int i = 0;
     while(1){
-        char deze = getc();
+        char deze = getc(stdin);
         putsc(deze);
         if(deze=='\n'){
             break;
@@ -155,7 +155,7 @@ int printf( const char* format,...){
                 putsc('x');
                 char *convertednumber = convert(t,16);
                 puts(convertednumber);
-            }else if(deze=='d'){
+            }else if(deze=='d'||deze=='i'){
                 int t = va_arg(arg,unsigned int);
                 char *convertednumber = convert(t,10);
                 puts(convertednumber);
@@ -175,7 +175,7 @@ int printf( const char* format,...){
 
 void* memcpy( void *dest, const void *src, upointer_t count ){
     for(upointer_t i = 0 ; i < count ; i++){
-        *(unsigned char*)((upointer_t)dest + i) = *(unsigned char*)((upointer_t)src + i);
+        ((uint8_t*)(dest+i))[0] = ((uint8_t*)(src+i))[0];
     }
 }
 
@@ -344,8 +344,9 @@ int strcmp ( const char * a, const char * b ){
 }
 
 void assert(int a){
-    if(a){
-        hang("_assert failure_");
+    if(!a){
+        printf("__ASSERT FAILURE__");
+        hang("");
     }
 }
 
@@ -367,99 +368,65 @@ int sprintf(char *str, const char *format, ...){
     va_list arg; 
 	va_start(arg, format);
     int t = vsnprintf(str,0,format,arg);
-	va_end(arg); 
+	va_end(arg);
     return t;
 }
 
-int vsnprintf(char *str, size_t size, const char *format, va_list arg){
+int vsnprintf(char *buffer, size_t size, const char *format, va_list arg){
     if(strlen(format)==0){
 		return -1;
 	}
-	char* buffer = malloc(strlen(format));
-	char* buffertmp;
-	int buffersize = strlen(format) + 1;
-	int oldsize;
-	const char *traverse; 
-	unsigned int i; 
-	signed int t;
-	char *s;
 	size_t travelpointer = 0;
-	
-	for(traverse = format; *traverse != '\0'; traverse++) 
-	{ 
-		while( *traverse != '%' && *traverse != '\0' ) 
-		{ 
-			buffer[travelpointer++] = *traverse;
-			traverse++; 
-		} 
-		if(*traverse =='\0'){
-		    break; 
-		}
-		traverse++; 
-		oldsize = buffersize;
-		
-		switch(*traverse) 
-		{ 
-			case 'c' : i = va_arg(arg,int);		//Fetch char argument
-						// char is only 1 argument
-						buffersize += 1;
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						buffer[travelpointer++] = i;
-						break; 
-						
-			case 'd' : t = va_arg(arg,int); 		//Fetch Decimal/Integer argument
-						char* chachacha;
-						if(t<0) 
-						{ 
-							t = -t;
-							chachacha = "-"; 
-						} 
-						chachacha = itos(t,10);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 'o': i = va_arg(arg,unsigned int); //Fetch Octal representation
-						chachacha = itos(i,8);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 's': s = va_arg(arg,char *); 		//Fetch string
-						chachacha = s; 
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 'x': i = va_arg(arg,unsigned int); //Fetch Hexadecimal representation
-						chachacha = itos(i,16);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-				
-		}	
-	}
-	buffer[travelpointer++] = 0x00;
-    memcpy(str,buffer,(size_t)(travelpointer>size&&size!=0?size:travelpointer));
+    size_t length = 0;
+	while(1){
+        char deze = format[length];
+        if(deze=='\0'){
+            break;
+        }else if(deze=='%'){
+            length++;
+            deze = format[length];
+            if(deze=='c'){
+                char i = va_arg(arg,int);
+                buffer[travelpointer++] = i;
+            }else if(deze=='%'){
+                buffer[travelpointer++] = '%';
+            }else if(deze=='s'){
+                char *s = va_arg(arg,char *);
+                int tz = strlen(s);
+                for(int tv = 0 ; tv < tz ; tv++){
+                    buffer[travelpointer++] = s[tv];
+                }
+            }else if(deze=='x'){
+                int t = va_arg(arg,unsigned int);
+                buffer[travelpointer++] = '0';
+                buffer[travelpointer++] = 'x';
+                char *convertednumber = convert(t,16);
+                int tz = strlen(convertednumber);
+                for(int tv = 0 ; tv < tz ; tv++){
+                    buffer[travelpointer++] = convertednumber[tv];
+                }
+            }else if(deze=='d'||deze=='i'){
+                int t = va_arg(arg,unsigned int);
+                char *convertednumber = convert(t,10);
+                int tz = strlen(convertednumber);
+                for(int tv = 0 ; tv < tz ; tv++){
+                    buffer[travelpointer++] = convertednumber[tv];
+                }
+            }else if(deze=='o'){
+                int t = va_arg(arg,unsigned int);
+                char *convertednumber = convert(t,8);
+                int tz = strlen(convertednumber);
+                for(int tv = 0 ; tv < tz ; tv++){
+                    buffer[travelpointer++] = convertednumber[tv];
+                }
+            }
+            length++;
+        }else{
+            buffer[travelpointer++] = deze;
+            length++;
+        }
+    }
+    // memcpy(str,buffer,travelpointer);
     return travelpointer;
 }
 
@@ -467,90 +434,8 @@ int vfprintf(FILE *stream, const char *format, va_list arg){
     if(strlen(format)==0){
 		return -1;
 	}
-	char* buffer = malloc(strlen(format));
-	char* buffertmp;
-	int buffersize = strlen(format) + 1;
-	int oldsize;
-	const char *traverse; 
-	unsigned int i; 
-	signed int t;
-	char *s;
-	int travelpointer = 0;
-	
-	for(traverse = format; *traverse != '\0'; traverse++) 
-	{ 
-		while( *traverse != '%' && *traverse != '\0' ) 
-		{ 
-			buffer[travelpointer++] = *traverse;
-			traverse++; 
-		} 
-		if(*traverse =='\0'){
-		    break; 
-		}
-		traverse++; 
-		oldsize = buffersize;
-		
-		switch(*traverse) 
-		{ 
-			case 'c' : i = va_arg(arg,int);		//Fetch char argument
-						// char is only 1 argument
-						buffersize += 1;
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						buffer[travelpointer++] = i;
-						break; 
-						
-			case 'd' : t = va_arg(arg,int); 		//Fetch Decimal/Integer argument
-						char* chachacha;
-						if(t<0) 
-						{ 
-							t = -t;
-							chachacha = "-"; 
-						} 
-						chachacha = itos(t,10);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 'o': i = va_arg(arg,unsigned int); //Fetch Octal representation
-						chachacha = itos(i,8);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 's': s = va_arg(arg,char *); 		//Fetch string
-						chachacha = s; 
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-						
-			case 'x': i = va_arg(arg,unsigned int); //Fetch Hexadecimal representation
-						chachacha = itos(i,16);
-						buffersize += strlen(chachacha);
-						buffertmp = buffer;
-						buffer = malloc(buffersize);
-						memcpy(buffertmp,buffer,oldsize);
-						free(buffertmp);
-						for(size_t x0 = 0 ; x0 < strlen(chachacha) ; x0++){buffer[travelpointer++] = chachacha[x0];}
-						break; 
-				
-		}	
-	}
-	buffer[travelpointer++] = 0x00;
+    char* buffer = malloc(strlen(format));
+	vsnprintf(buffer,0,format,arg);
     return write((int)((upointer_t)stream),buffer,strlen(buffer));
 }
 
