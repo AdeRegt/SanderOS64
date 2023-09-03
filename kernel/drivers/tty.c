@@ -4,6 +4,7 @@
 #include "../include/device.h"
 #include "../include/exec/program.h"
 #include "../include/multitasking.h"
+#include "../include/cmos.h"
 
 char wd[FILENAME_MAX];
 char pd[FILENAME_MAX];
@@ -83,6 +84,8 @@ void tty_inner_loop(){
 
 void initialise_tty(){
 
+    clear_screen(0xF0F0F0F0);
+
     memset((void*)&wd,0,FILENAME_MAX);
     #ifdef __x86_64
         memcpy((void*)&wd,"A:PROGRAMS/64BIT",strlen("A:PROGRAMS/64BIT"));
@@ -93,6 +96,7 @@ void initialise_tty(){
     char *kp = dir(wd);
 
     k_printf("SanderOS64 Buildin Command Interpeter\n");
+    k_printf("Today, it is %d %s %d%d and the time is %d:%d \n",getDay(),getMonthString(),getCentury(),getYear(),getHour(),getMinute());
     if(kp){
         k_printf("Known programs: \n");
         k_printf("%s\n",kp);

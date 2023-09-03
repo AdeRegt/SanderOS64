@@ -33,7 +33,8 @@
         "comport.h": "c",
         "ps2.h": "c",
         "tty.h": "c",
-        "gdt.h": "c"
+        "gdt.h": "c",
+        "random": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

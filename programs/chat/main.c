@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <SanderOS.h>
 
 #define WANTED_PORT 6667

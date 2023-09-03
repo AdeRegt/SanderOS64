@@ -17,14 +17,15 @@ int use_paging = 0;
 int exec(uint8_t *path,char *argv){
 
     k_printf("Trying to execute %s with %s \n",path,argv==0?"<no args>":argv);
-    char** argstock = (char**) requestPage();
+    char *data[10];// = {path, argv};
     for(int i = 0 ; i < 10 ; i++){
-        argstock[i] = 0;
+        data[i] = 0;
     }
+    data[0] = path;
+    int asc = 1;
     if(argv!=0){
         char* buffer2 = 0;
         int z = 0;
-        int asc = 0;
         while(1){
             char deze = argv[z];
             if(deze==0){
@@ -38,7 +39,7 @@ int exec(uint8_t *path,char *argv){
             }
             if(buffer2==0){
                 buffer2 = (char*)(argv + z);
-                argstock[asc++] = buffer2;
+                data[asc++] = buffer2;
             }
             z++;
         }
@@ -69,7 +70,7 @@ int exec(uint8_t *path,char *argv){
     }else if(is_sxe(buffer)){
         return sxe_run(buffer);
     }else if(use_paging){
-        return addTask(buffer,buffer,fz,argstock);
+        return addTask(buffer,buffer,fz,data);
     }else{
         memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
         address = EXTERNAL_PROGRAM_ADDRESS;
@@ -78,7 +79,6 @@ int exec(uint8_t *path,char *argv){
     // call!
     k_printf("exec: running BIN program at %x \n",address);
     int (*callProgram)(int,char**) = (void*)address;
-    char *data[] = {path, argv};
     char **dictionary = data;
-    return callProgram(1 + (strlen(argv)>0),dictionary);
+    return callProgram(1 + asc,dictionary);
 }

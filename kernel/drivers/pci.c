@@ -6,6 +6,7 @@
 #include "../include/device.h"
 #include "../include/ethernet.h"
 #include "../include/ide.h"
+#include "../include/ohci.h"
 
 unsigned long getPCIConfiguration(int bus,int slot,int function){
 	return getBARaddress(bus,slot,function,0x04) & 0x0000FFFF;
@@ -107,6 +108,8 @@ void initialise_drivers_from_pci(){
                         #endif
                     }else if( classc==0x02 && sublca==0x00 && (device==0x100e||device==0x153A||device==0x10EA||vendor==0x8086)){
                         e1000_driver_start(bus,slot,function);
+                    }else if(vendor==0x80EE && device==0xCAFE){
+                        vbox_driver_start(bus,slot,function);
                     }
                 }
             }
@@ -130,15 +133,14 @@ void initialise_pci_driver(){
                         unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
                         unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
                         initialise_ahci_driver(bar5,usbint);
-                        continue;
                     }else if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
                         xhci_driver_start(bus,slot,function);
                     }else if(classc==0x0C && sublca==0x03 && subsub==0x20 ){
                         ehci_driver_start(bus,slot,function);
+                    }else if(classc==0x0C && sublca==0x03 && subsub==0x10 ){
+                        ohci_driver_start(bus,slot,function);
                     }else if(classc==0x01 && sublca==0x01 ){
                         ide_driver_start(bus,slot,function);
-                    }else if(vendor==0x80EE && device==0xCAFE){
-                        vbox_driver_start(bus,slot,function);
                     }
                 }
             }

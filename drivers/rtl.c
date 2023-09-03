@@ -202,6 +202,6 @@ int driver_start(PCIInfo *pi){
 	outportb(bar1 + 0x37, 0x0C); /* Enable Rx/Tx in the Command register */
 	outportb(bar1 + 0x50, 0x00); /* Lock config registers */
 	
-	register_ethernet_device((unsigned long)&rtl_sendPackage,(unsigned long)&rtl_recievePackage,macaddress);
+	register_ethernet_device(rtl_sendPackage,rtl_recievePackage,macaddress);
 	k_printf("[RTL81] Setup finished\n");
 }
