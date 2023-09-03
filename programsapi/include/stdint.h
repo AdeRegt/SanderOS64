@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #ifdef __INT8_TYPE__
 typedef __INT8_TYPE__ int8_t;
 #endif
@@ -30,7 +32,4 @@ typedef __UINT64_TYPE__ uint64_t;
         typedef uint32_t upointer_t;
     #endif
     typedef upointer_t off_t;
-#endif 
-#ifdef __SIZET_TYPE__
-typedef unsigned long long size_t;
 #endif 

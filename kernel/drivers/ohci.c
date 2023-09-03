@@ -57,5 +57,5 @@ void ohci_driver_start(int bus,int slot,int function)
     // look at the status and see if something is different then we expect
     k_printf("ohci: hc controll value: %x commandstatus: %x interruptstatus: %x interruptenable: %x interruptdisable: %x \n",getOHCIHcControl(),getOHCIHcCommandStatus(),getOHCIHcInterruptStatus(),getOHCIHcInterruptEnable(),getOHCIHcInterruptDisable());
 
-    for(;;);
+    // for(;;);
 }

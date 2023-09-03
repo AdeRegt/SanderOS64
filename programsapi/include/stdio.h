@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 #define FILENAME_MAX 50
 #define SEEK_SET 1
@@ -35,4 +36,5 @@ long ftell( FILE *stream );
 int fseek( FILE *stream, long offset, int origin );
 FILE *fopen( const char *filename, const char *mode );
 int vfprintf(FILE *stream, const char *format, va_list arg);
+int vsnprintf(char *str, size_t size, const char *format, va_list arg);
 int sprintf(char *str, const char *string,...); 

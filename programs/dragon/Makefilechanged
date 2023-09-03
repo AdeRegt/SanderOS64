@@ -1,7 +1,7 @@
 INCLUDES= -I ./ -I ./helpers
 OBJECTS= ../../../programsapi/bin/stdlib32.o ./build/misc.o ./build/lexer.o  ./build/lex_process.o ./build/token.o ./build/expressionable.o ./build/parser.o ./build/validator.o ./build/symresolver.o ./build/scope.o ./build/resolver.o ./build/rdefault.o ./build/helper.o ./build/codegen.o ./build/helpers/vector.o ./build/helpers/buffer.o ./build/helpers/hashmap.o ./build/compiler.o ./build/cprocess.o ./build/preprocessor/preprocessor.o ./build/preprocessor/native.o ./build/array.o ./build/node.o ./build/preprocessor/static-includes.o ./build/preprocessor/static-includes/stddef.o ./build/preprocessor/static-includes/stdarg.o  ./build/fixup.o ./build/native.o ./build/stackframe.o
 all: ${OBJECTS}
-	${CC} main.c -ffreestanding -nostdlib -T ../../../programsapi/linker32.ld -o main ${OBJECTS} -g
+	${CC} main.c -ffreestanding -nostdlib -T ../../../programsapi/linker32.ld -o ../../../bin/programs/32bit/dragon.bin ${OBJECTS} -g
 
 ./build/misc.o: ./misc.c
 	${CC} misc.c ${INCLUDES} -o ./build/misc.o -g -c
