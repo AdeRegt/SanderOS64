@@ -10,7 +10,8 @@ uefi_loader:
 	$(MAKE) -C bootloader/UEFI ARCH=x86_64 BIT=64
 
 grub_loader:
-	$(MAKE) -C bootloader/GRUB32
+	$(MAKE) -C bootloader/64stub
+	$(MAKE) -C bootloader/32to64
 
 update_image:
 

@@ -34,7 +34,8 @@
         "ps2.h": "c",
         "tty.h": "c",
         "gdt.h": "c",
-        "random": "c"
+        "random": "c",
+        "system_error": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
