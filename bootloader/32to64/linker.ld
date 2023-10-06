@@ -9,15 +9,15 @@ SECTIONS
 		*(.multiboot)
 		*(.text)
 	}
-	.data : ALIGN(0x1000)
+	.data :
 	{
 		*(.data)
 	}
-	.rodata : ALIGN(0x1000)
+	.rodata : 
 	{
 		*(.rodata)
 	}
-	.bss : ALIGN(0x1000)
+	.bss : 
 	{
 		*(COMMON)
 		*(.bss)

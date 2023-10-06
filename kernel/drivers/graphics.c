@@ -192,6 +192,43 @@ void k_printf(char* format,...){
 }
 
 
+unsigned long oldmousex = 0;
+unsigned long oldmousey = 0;
+char mousebuffer[10*10];
+
+void restoreMouseImageBuffer(){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            draw_pixel_at(oldmousex + x,oldmousey + y,mousebuffer[(y*10)+x]);
+        }
+    }
+}
+
+void storeMouseImageBuffer(){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            mousebuffer[(y*10)+x] = get_pixel_at(oldmousex + x,oldmousey + y);
+        }
+    }
+}
+
+void drawMouseAt(unsigned long xOff,unsigned long yOff){
+    restoreMouseImageBuffer();
+    oldmousex = xOff;
+    oldmousey = yOff;
+    storeMouseImageBuffer();
+    drawCharacter(getActiveFont(),'#',0x00000000,xOff,yOff);
+}
+
+void fillMouseImageBuffer(unsigned int val){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            mousebuffer[(y*10)+x] = val;
+        }
+    }
+}
+
+
 void initialise_graphics_driver(){
     clear_screen(0xFFFFFFFF);
     setActiveFont(getDefaultFont());

@@ -92,22 +92,14 @@ void ep_grub(multiboot_info_t *grub, uint32_t magic){
     initialise_graphics_driver();
 
     k_printf("Welcome to SanderOS64 chainloader 32bit!\n");
-    k_printf("There are %d available mods!\n",grub->mods_count);
+    k_printf("There are %d available mods (size: %d) !\n",grub->mods_count,sizeof(struct multiboot_mod_list));
 
-    for(multiboot_uint32_t i = 0 ; i < grub->mods_count; i++){
-        struct multiboot_mod_list* modlist = (struct multiboot_mod_list*) ( grub->mods_addr + (sizeof(struct multiboot_mod_list)*i) );
-        k_printf("Now inspecting mod %d : it starts at %x and has the commandline of %s \n",i,modlist->mod_start,modlist->cmdline);
-        if(strcmp((uint8_t*)modlist->cmdline,"kernel")==1){
-            // epoint_kernel = loadELFImage((void*)modlist->mod_start);
-            // k_printf("kernel found! EP is located at %x \n",epoint_kernel);
-        }else if(strcmp((uint8_t*)modlist->cmdline,"stub")==1){
-            epoint_stub = loadELFImage((void*)modlist->mod_start);
-            k_printf("stub found! EP is located at %x \n",epoint_stub);
-            break;
-        }else{
-            k_printf("Unknown module.. please use \"kernel\" for the kernel parameter or \"stub\" for the 64bit stub\n");
-            for(;;);
-        }
-    }
+    struct multiboot_mod_list* modlist = (struct multiboot_mod_list*) ( grub->mods_addr + (16*0) );
+    void *addstart = (void*)modlist->mod_start;
+    epoint_kernel = loadELFImage(addstart);
 
+    modlist = (struct multiboot_mod_list*) ( grub->mods_addr + (16*1) );
+    addstart = (void*)modlist->mod_start;
+    epoint_stub = loadELFImage(addstart);
+    
 }

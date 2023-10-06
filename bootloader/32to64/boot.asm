@@ -98,10 +98,6 @@ _start:
 
    cli 
 
-        mov eax,cr4
-        or  eax,1 << 5
-        mov cr4,eax         ; enable physical-address extensions
-
         mov edi,70000h
         mov ecx,4000h >> 2
         xor eax,eax
@@ -134,15 +130,18 @@ _start:
         or  eax,1 << 31
         mov cr0,eax         ; enable paging
 
-        jmp 0x08:0x10000 
+
+.switch_to_64bit_code:
+    push 0x08
+    push 0x5000
+    retf
 
 GDT_64: 
-.Null: 
-    dq 0x0000000000000000             ; Null Descriptor - should be present. 
-
-.Code_64: 
-    dq 0x0020980000000000             ; 64-bit code descriptor.  
-    dq 0x0000900000000000             ; 64-bit data descriptor.  
+    DQ  0x0000000000000000
+    DQ  0x00A09A0000000000  ;ring 0 code
+    DQ  0x00A09A0000000000  ;ring 0 data
+    DQ  0x00A0FA0000000000  ;ring 3 code
+    DQ  0x00A0F20000000000  ;ring 3 data
 .Pointer: 
     dw $ - GDT_64 - 1                    ; 16-bit Size (Limit) of GDT. 
     dd GDT_64                            ; 32-bit Base Address of GDT. (CPU will zero extend to 64-bit) 

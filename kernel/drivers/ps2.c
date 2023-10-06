@@ -189,10 +189,11 @@ unsigned int* getMouseCoordinates(){
 }
 
 volatile unsigned int mouse_colour;
+void drawMouseAt(unsigned long xOff,unsigned long yOff);
 
 __attribute__((interrupt)) void irq_mouse(interrupt_frame *frame)
 {
-    draw_pixel_at(mouse_x,mouse_y,mouse_colour);
+    // draw_pixel_at(mouse_x,mouse_y,mouse_colour);
     unsigned char status = inportb(0x64);
 	if(status & 1){
 		char sts = inportb(0x60);
@@ -230,7 +231,7 @@ __attribute__((interrupt)) void irq_mouse(interrupt_frame *frame)
 		}
 	}
     mouse_colour = get_pixel_at(mouse_x,mouse_y);
-    draw_pixel_at(mouse_x,mouse_y,0xABCD);
+    drawMouseAt(mouse_x,mouse_y);
 	
 	
 	// EOI

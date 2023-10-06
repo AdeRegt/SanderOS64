@@ -208,7 +208,9 @@ void init_ide_device(IDEDevice device)
 		}
 	}
 
-	if (inportb(0x1F4) == 0x3C || inportb(0x1F5) == 0xC3)
+	sleep(2);
+
+	if (inportb(device.command + 4) == 0x3C || inportb(device.command + 5) == 0xC3)
 	{
 		k_printf("ide: Device is SATA\n");
 		return;
