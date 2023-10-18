@@ -20,3 +20,5 @@ void initialise_graphics_driver();
 void putc(char deze);
 unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha);
 void repaint();
+void itoa(int n, char *buffer, int base);
+char *convert(unsigned int num, int base);

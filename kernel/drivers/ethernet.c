@@ -642,10 +642,25 @@ void exsend(unsigned long addr,unsigned long count){
     k_printf("\n");
 }
 
+void eth_dump_eth_addresses(){
+    if(ethernet_is_enabled()){
+        k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
+        k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
+        k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
+        k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
+    }else{
+        k_printf("[ETH] No ethernet enabled!\n");
+    }
+}
+
+uint8_t ethernet_is_enabled(){
+    EthernetDevice ed = getDefaultEthernetDevice();
+    return ed.is_enabled;
+}
+
 void initialise_ethernet(){
     k_printf("[ETH] Ethernet module reached!\n");
-    EthernetDevice ed = getDefaultEthernetDevice();
-    if(ed.is_enabled){
+    if(ethernet_is_enabled()){
         k_printf("[ETH] There is a ethernet device present on the system!\n");
         k_printf("[ETH] Asking DHCP server for our address....\n");
 
@@ -660,9 +675,6 @@ void initialise_ethernet(){
             fillIP((unsigned char*)&our_ip,(unsigned char*)&dinges);
         }
 
-        k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
-        k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
-        k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
-        k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
+        eth_dump_eth_addresses();
     }
 }

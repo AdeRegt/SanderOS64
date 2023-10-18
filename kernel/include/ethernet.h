@@ -176,3 +176,5 @@ unsigned long getOurIpAsLong();
 PackageRecievedDescriptor getEthernetPackage();
 uint16_t switch_endian16(uint16_t nb);
 unsigned long switch_endian32(unsigned long num);
+void eth_dump_eth_addresses();
+uint8_t ethernet_is_enabled();

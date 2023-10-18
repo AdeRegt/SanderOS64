@@ -1,4 +1,5 @@
 #include "../include/graphics.h"
+#include "../include/memory.h"
 #include "../include/comport.h"
 #include "../include/psf.h"
 
@@ -94,6 +95,46 @@ void putc(char deze){
             pointerY++;
         }
     }
+}
+
+char* strcpy(char* destination, char* source){
+    int size = strlen(source);
+    memcpy(destination,source,size);
+    return destination;
+}
+
+void reverse(char *s){
+    char *j;
+    int i = strlen(s);
+
+    strcpy(j,s);
+    while (i-- >= 0){
+        *(s++) = j[i];
+    }
+    *s = '\0';
+}
+
+void itoa(int n, char *buffer, int base)
+{
+    char *ptr = buffer;
+    int lowbit;
+
+    base >>= 1;
+    do
+    {
+        lowbit = n & 1;
+        n = (n >> 1) & 32767;
+        *ptr = ((n % base) << 1) + lowbit;
+        if (*ptr < 10){
+            *ptr +='0';
+        }else{
+            *ptr +=55;
+        }
+        ++ptr;
+    }
+    while (n /= base);
+    *ptr = '\0';
+    reverse (buffer);   /* reverse string */
 }
 
 void printString(char* message){

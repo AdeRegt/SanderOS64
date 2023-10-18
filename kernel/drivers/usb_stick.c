@@ -116,20 +116,15 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
     uint32_t dedway = 1;
     for(uint32_t i = 0 ; i < counter ; i+=dedway)
     {
-        uint32_t tleft = counter - i;
-        if(tleft>dedway)
-        {
-            tleft = dedway;
-        }
 
-        uint8_t* cq = usb_stick_one_read(dev,sector,tleft);
-        sector += tleft;
+        uint8_t* cq = usb_stick_one_read(dev,sector,1);
+        sector++;
         if(cq==0)
         {
             return 0;
         }
         uintptr_t bpnt = ((uintptr_t)buffer) + (512*i);
-        memcpy((void*)bpnt,cq,512*tleft);
+        memcpy((void*)bpnt,cq,512);
         freePage(cq);
     }
     return 1;
