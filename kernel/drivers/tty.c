@@ -57,7 +57,7 @@ void tty_inner_loop(){
             if(file){
                 k_printf("Load of %s succesful! \n",strpath);
                 char* pd2 = 0;
-                pd2 = (char*)0;
+                pd2 = (char*)strpath;
                 int rt = exec_memory(file,pd2);
                 if(rt==-1){
                     k_printf("Unable to run program!\n");

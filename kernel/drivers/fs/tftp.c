@@ -98,6 +98,9 @@ char* load_tftp_file(char* path){
 
     void *createdbuffer = requestPage();
     int foundsize = 0;
+    for(int i = 0 ; i < 10 ; i++){
+        requestPage();
+    }
 
     onceagain:
     while(1){

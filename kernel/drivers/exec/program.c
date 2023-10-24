@@ -57,7 +57,7 @@ int exec_memory(void* buffer,char *argv){
     }else if(use_paging){
         return addTask(buffer,buffer,0x1000,data);
     }else{
-        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x1000);
+        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x5000);
         address = EXTERNAL_PROGRAM_ADDRESS;
     }
 

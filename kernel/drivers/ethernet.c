@@ -565,7 +565,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 unsigned short size = (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader)) + 12;
                 unsigned long sid = switch_endian32(tcp->sequence_number);
                 if(switch_endian16(tcp->flags) & TCP_PUS){
-                    unsigned long tr = desc.buffersize - sizeof(struct TCPHeader);
+                    unsigned long tr = desc.buffersize - ( sizeof(struct TCPHeader) + 16 );
                     sid += tr;
                 }else if(switch_endian16(tcp->flags) & TCP_SYN){
                     sid++;
