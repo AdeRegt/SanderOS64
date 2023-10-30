@@ -412,6 +412,12 @@ void isr2handler(stack_registers *ix){
         #endif
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         ix->rax = fl->pointer;
+    }else if(ix->rax==412){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:send tcp message \n");
+        #endif
+        PackageRecievedDescriptor* rvo = (PackageRecievedDescriptor*) ix->rdx;
+        send_tcp_message(getOurIpAsLong(),((unsigned long*)ix->rbx)[0],ix->rcx,ix->rcx,(void*)rvo->low_buf,rvo->buffersize);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

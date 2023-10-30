@@ -237,6 +237,12 @@ void init_ide_device(IDEDevice device)
 		
 		// ATA device detected!
 	}
+
+	if( inportb(device.command+4)==0x14 && inportb(device.command+5)==0xEB )
+	{
+		k_printf("ide: device is ATAPI\n");
+		// for(;;);
+	}
 	// else
 	// {
 	// 	for (int i = 0; i < 256; i++)

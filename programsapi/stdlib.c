@@ -94,7 +94,7 @@ void hang(const char* func){
 void scanline(char* where,char echo){
     int i = 0;
     while(1){
-        char deze = getc(stdin);
+        char deze = scan_for_character();//getc(stdin);
         putsc(deze);
         if(deze=='\n'){
             break;
@@ -276,6 +276,17 @@ void *get_mac_from_ip(uint8_t *name){
 void *start_tcp_session(uint8_t *ip,uint16_t port,void *functionp){
     int mode = 407;
     void* res = 0;
+	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ip), "c" (port), "d" (functionp) );
+    return res;
+}
+
+void *send_tcp_message(uint8_t *ip,uint16_t port,void *buffer,int size){
+    int mode = 412;
+    void* res = 0;
+    PackageRecievedDescriptor pest;
+    pest.low_buf = buffer;
+    pest.buffersize = size;
+    void* functionp = (void*) &pest;
 	__asm__ __volatile__( "int $0x81" : "=a"(res) : "a"(mode) , "b" (ip), "c" (port), "d" (functionp) );
     return res;
 }

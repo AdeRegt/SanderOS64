@@ -459,6 +459,9 @@ unsigned char* getIPFromName(char* name){
 }
 
 unsigned long ethjmplist[20000];
+unsigned long acklist[20000];
+unsigned long seqlist[20000];
+int tcpstackpointer = 0;
 
 void setTcpHandler(unsigned short port,unsigned long func){
     ethjmplist[port] = func;
@@ -503,6 +506,32 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1291004734,0,10,TCP_SYN,64800);
 
     setTcpHandler(to_port,func);
+
+    PackageRecievedDescriptor sec;
+    sec.buffersize = sizetype;
+    sec.high_buf = 0;
+    sec.low_buf = (unsigned long)tcp1;
+    sendEthernetPackage(sec);
+    freePage(tcp1);
+}
+
+void send_tcp_message(unsigned long from, unsigned long to, unsigned short from_port, unsigned short to_port, void* buffer, int size){
+    unsigned long sizetype = sizeof(struct TCPHeader) + size;
+    struct TCPHeader* tcp1 = (struct TCPHeader*) requestPage();
+    memset(tcp1,0,0x1000);
+    unsigned char* destmac;
+    unsigned char* t4 = (unsigned char*)&to;
+
+    if(t4[0]==192){
+        destmac = getMACFromIp(t4);
+    }else{
+        destmac = getMACFromIp((unsigned char*)&router_ip);
+    }
+    unsigned short size2 = sizetype - sizeof(struct EthernetHeader);
+    uint8_t *tv = (uint8_t*) ( ((upointer_t) tcp1) + sizeof(struct TCPHeader));
+    memcpy(tv,buffer,size);
+    
+    fillTcpHeader(tcp1,destmac,size2,from,to,from_port,to_port,seqlist[from_port],acklist[from_port],5,TCP_PUS | TCP_ACK,512);
 
     PackageRecievedDescriptor sec;
     sec.buffersize = sizetype;
@@ -572,6 +601,8 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 }else if(switch_endian16(tcp->flags) & TCP_FIN){
                     sid++;
                 }
+                seqlist[from_port] = switch_endian32(tcp->acknowledge_number);
+                acklist[from_port] = sid;
                 fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,switch_endian32(tcp->acknowledge_number),sid,8,TCP_ACK,507);
 
                 PackageRecievedDescriptor sec;
