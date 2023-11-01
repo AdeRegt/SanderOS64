@@ -110,6 +110,7 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 
     IDEDevice cdromdevice = (IDEDevice)((IDEDevice*)dev->attachment)[0];
     
+	getIDEError(cdromdevice);
 	ide_wait_for_ready(cdromdevice);
 
 	outportb(cdromdevice.command + 6, cdromdevice.slave == 1 ? 0xB0 : 0xA0);
@@ -117,6 +118,8 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 	outportb(cdromdevice.command + 4, ATAPI_SECTOR_SIZE & 0xff);
 	outportb(cdromdevice.command + 5, ATAPI_SECTOR_SIZE >> 8);
 	outportb(cdromdevice.command + 7, 0xA0);
+
+	getIDEError(cdromdevice);
 
 	ide_wait_for_ready(cdromdevice);
 
@@ -152,7 +155,46 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 		((uint16_t*)buffer)[mp++] = inportw(cdromdevice.command + 0);
 	}
 	ide_wait_for_ready(cdromdevice);
-    return 1;
+	return 1;
+}
+
+uint8_t ide_atapi_eject(IDEDevice cdromdevice){
+   	getIDEError(cdromdevice);
+
+	ide_wait_for_ready(cdromdevice);
+	outportb(cdromdevice.command + 6, cdromdevice.slave == 1 ? 0xB0 : 0xA0);
+	outportb(cdromdevice.command + 1, 0x00);
+	outportb(cdromdevice.command + 7, 0xA0);
+
+	getIDEError(cdromdevice);
+	ide_wait_for_ready(cdromdevice);
+
+	read_cmd[0] = 0x1B;
+	read_cmd[1] = 0x00;
+	read_cmd[2] = 0x00;
+	read_cmd[3] = 0x00;
+	read_cmd[4] = 0x02;
+	read_cmd[5] = 0x00;
+	read_cmd[6] = 0x00;
+	read_cmd[7] = 0x00;
+	read_cmd[8] = 0x00;
+	read_cmd[9] = 0x00;
+	read_cmd[10] = 0x00;
+	read_cmd[11] = 0x00;
+
+	resetIDEFire();
+	getIDEError(cdromdevice);
+	ide_wait_for_ready(cdromdevice);
+	unsigned short *mdx = (unsigned short *)&read_cmd;
+	for (int f = 0; f < 6; f++)
+	{
+		outportw(cdromdevice.command + 0, mdx[f]);
+	}
+	getIDEError(cdromdevice);
+	waitForIDEFire();
+	ide_wait_for_ready(cdromdevice);
+	getIDEError(cdromdevice);
+	ide_wait_for_ready(cdromdevice);
 }
 
 uint8_t ide_atapi_write(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
@@ -240,8 +282,48 @@ void init_ide_device(IDEDevice device)
 
 	if( inportb(device.command+4)==0x14 && inportb(device.command+5)==0xEB )
 	{
-		k_printf("ide: device is ATAPI\n");
-		// for(;;);
+		k_printf("ide: ATAPI\n");
+		for (int i = 0; i < 256; i++)
+		{
+			inportw(device.command);
+		}
+
+		resetIDEFire();
+
+		outportb(device.command + 6, device.slave == 1 ? 0xB0 : 0xA0);
+		outportb(device.command + 2, 0);
+		outportb(device.command + 3, 0);
+		outportb(device.command + 4, 0);
+		outportb(device.command + 5, 0);
+		outportb(device.command + 7, 0xA1);
+
+		sleep(2);
+		getIDEError(device);
+		ide_wait_for_ready(device);
+
+		if (inportb(device.command + 7) == 0)
+		{
+			return;
+		}
+		if (getIDEError(device) == 0)
+		{
+			k_printf("ide: device is ATAPI\n");
+			unsigned char *identbuffer = (unsigned char *) requestPage();
+			for (int i = 0; i < 256; i++)
+			{
+				unsigned short datapart = inportw(device.command);
+				unsigned char datapartA = (datapart>>8) & 0xFF;
+				unsigned char datapartB = datapart & 0xFF;
+				identbuffer[(i*2)+0] = datapartA;
+				identbuffer[(i*2)+1] = datapartB;
+			}
+			IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
+			ident->unused2[0] = 0;
+			ident->unused3[0] = 0;
+			k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
+			ide_atapi_eject(device);
+		}
+		
 	}
 	// else
 	// {
