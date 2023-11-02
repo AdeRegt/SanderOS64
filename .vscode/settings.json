@@ -35,7 +35,10 @@
         "tty.h": "c",
         "gdt.h": "c",
         "random": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "string.h": "c",
+        "algorithm": "c",
+        "sanderos.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

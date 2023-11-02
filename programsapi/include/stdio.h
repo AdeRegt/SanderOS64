@@ -39,3 +39,4 @@ FILE *fopen( const char *filename, const char *mode );
 int vfprintf(FILE *stream, const char *format, va_list arg);
 int vsnprintf(char *str, size_t size, const char *format, va_list arg);
 int sprintf(char *str, const char *string,...); 
+int putsc(const char p2);

@@ -12,3 +12,4 @@ void *get_mac_from_ip(uint8_t *name);
 void *start_tcp_session(uint8_t *ip,uint16_t port,void *functionp);
 void *send_tcp_message(uint8_t *ip,uint16_t port,void *buffer,int size);
 char *itos(unsigned int num, int base);
+void hang(const char* func);

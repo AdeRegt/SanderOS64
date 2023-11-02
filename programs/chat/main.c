@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <SanderOS.h>
+#include <string.h>
 
 #define WANTED_PORT 6667
 #define WANTED_HOST "chat.freenode.net"
@@ -23,23 +24,6 @@ void onincommin(unsigned long address,unsigned long size){
     }
     printf("\n");
     messagedepot = 1;
-}
-
-void sebdnessages(){
-    char* message = malloc(100);
-    for(int i = 0 ; i < 100 ; i++){
-        message[i] = 0;
-    }
-    printf("> ");
-    for(int i = 0 ; i < 100 ; i++){
-        char t = wait_for_character();
-        message[i] = t;
-        printf("%c",t);
-        if(t=='\n'){
-            break;
-        }
-    }
-    send_tcp_message(targetip,WANTED_PORT,message,strlen(message));
 }
 
 int main(){
@@ -78,7 +62,6 @@ int main(){
             break;
         }
     }
-    sebdnessages();
 
     send_tcp_message(targetip,WANTED_PORT,IRC_JOIN,strlen(IRC_JOIN));
 
