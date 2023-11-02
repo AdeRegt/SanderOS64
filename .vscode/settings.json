@@ -38,7 +38,9 @@
         "system_error": "c",
         "string.h": "c",
         "algorithm": "c",
-        "sanderos.h": "c"
+        "sanderos.h": "c",
+        "stdlib.h": "c",
+        "ostream": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
