@@ -53,7 +53,7 @@ __attribute__((interrupt)) void irq_rtl8169(interrupt_frame *frame){
 	if(status&0x01){
 		// k_printf("[RTL81] Package recieved!\n");
 		PackageRecievedDescriptor prd;
-		for(int z = 0 ; z < 100 ; z++){
+		for(int z = 0 ; z < num_of_rx_descriptors ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
 				prd.buffersize = Rx_Descriptors[z].command & 0x3FFF;
 				prd.low_buf = Rx_Descriptors[z].low_buf;
@@ -110,7 +110,7 @@ PackageRecievedDescriptor rtl_recievePackage(){
 	PackageRecievedDescriptor prd;
 	while(1){
 		int i = -1;
-		for(int z = 0 ; z < 100 ; z++){
+		for(int z = 0 ; z < num_of_rx_descriptors ; z++){
 			if(!(Rx_Descriptors[z].command & OWN)){
 				Rx_Descriptors[z].command |= OWN;
 				prd.buffersize = Rx_Descriptors[z].command & 0x3FFF;

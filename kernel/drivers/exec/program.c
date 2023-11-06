@@ -107,6 +107,10 @@ int exec(uint8_t *path,char *argv){
     }
 
     void* buffer = requestBigPage();
+    for(int i = PAGE_SIZE ; i < fz ; i += PAGE_SIZE){
+        requestPage();
+    }
+    requestPage();
     
     char raw_program = readFile((uint8_t*)path,buffer);
     if(raw_program==0){
