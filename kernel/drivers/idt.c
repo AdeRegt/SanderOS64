@@ -164,6 +164,28 @@ typedef struct{
   long tv_usec;	/* Microseconds.  */
 }__attribute__((packed)) timeval;
 
+upointer_t scanlinebackup_eip = 0;
+upointer_t scanlinebackup_cod = 0;
+upointer_t scanlinebackup_rsp = 0;
+upointer_t scanlinebackup_rbp = 0;
+
+void scanline(){
+    for(int i = 0 ; i < 100 ; i++){
+        ((char*)scanlinebackup_cod)[i] = 0;
+    }
+    for(int i = 0 ; i < 100 ; i++){
+        char t = getch(1);
+        putc(t);
+        if(t=='\n'){
+            break;
+        }
+        ((char*)scanlinebackup_cod)[i] = t;
+    }
+    int modus = 413;
+    int where = 0;
+    __asm__ __volatile__( "int $0x81" :  : "a"(modus) , "b" (where) );
+}
+
 // http://faculty.nps.edu/cseagle/assembly/sys_call.html
 #ifndef __x86_64
 void isrhandler(){
@@ -418,6 +440,28 @@ void isr2handler(stack_registers *ix){
         #endif
         PackageRecievedDescriptor* rvo = (PackageRecievedDescriptor*) ix->rdx;
         send_tcp_message(getOurIpAsLong(),((unsigned long*)ix->rbx)[0],ix->rcx,ix->rcx,(void*)rvo->low_buf,rvo->buffersize);
+    }else if(ix->rax==413){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:scanline \n");
+        #endif
+        if(ix->rbx){
+            scanlinebackup_eip  = ix->rip;
+            scanlinebackup_cod  = ix->rbx;
+            scanlinebackup_rsp  = ix->rsp;
+            scanlinebackup_rbp  = ix->rbp;
+            ix->rsp             = (upointer_t) requestPage() + 0x5000;
+            ix->rbp             = (upointer_t) ix->rsp - 0x5000;
+            ix->rip             = (upointer_t) scanline;
+        }else{
+            ix->rsp = scanlinebackup_rsp;
+            ix->rbp = scanlinebackup_rbp;
+            ix->rip = scanlinebackup_eip;
+        }
+    }else if(ix->rax==414){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:cls \n");
+        #endif
+        clear_screen(0xF0F0F0F0);
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

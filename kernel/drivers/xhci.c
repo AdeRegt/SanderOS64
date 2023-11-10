@@ -609,14 +609,6 @@ uint8_t xhci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,
     trb4->Cyclebit = 0;
 
     CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,device->localringoutid,(uint32_t)(upointer_t)trb1);
-    for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
-    {
-        CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
-        if(to->DataBufferPointerLo==0){
-            continue;
-        }
-        k_printf("T5 %d %x %x %x\n",i,to->DataBufferPointerLo,trb1,to->TRBType);
-    }for(;;);
     if(res)
     {
         return res->CompletionCode;
@@ -624,6 +616,14 @@ uint8_t xhci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,
     else
     {
         k_printf("xhci: couldent get xhci datatoken\n");
+        for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
+        {
+            CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
+            if(to->DataBufferPointerLo==0){
+                continue;
+            }
+            k_printf("T5 %d %x %x %x\n",i,to->DataBufferPointerLo,trb1,to->TRBType);
+        }for(;;);
         return 0;
     }
 }
@@ -643,15 +643,15 @@ void xhci_port_install(uint8_t portid)
         k_printf("xhci: port %d is a USB3.0 connection!\n",portid);
         protocol = 3;
     }
-    else if(portc&1)
-    {
-        k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
-        xhci_set_portsc_reg(portid,0x210);
-        sleep(50);
-        portc = xhci_get_portsc_reg(portid);
-        protocol = 2;
-        sleep(50);
-    }
+    // else if(portc&1)
+    // {
+    //     k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
+    //     xhci_set_portsc_reg(portid,0x210);
+    //     sleep(50);
+    //     portc = xhci_get_portsc_reg(portid);
+    //     protocol = 2;
+    //     sleep(50);
+    // }
     else
     {
         return;
@@ -837,7 +837,7 @@ void xhci_port_install(uint8_t portid)
     return;
 
     failure:
-    k_printf("xhci: The installing of port %d failed misserably!\n",portid);
+    k_printf("xhci: The installing of port %d failed misserably!\n",portid);for(;;);
 }
 
 void xhci_driver_start(int bus,int slot,int function)

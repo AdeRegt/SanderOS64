@@ -40,7 +40,10 @@
         "algorithm": "c",
         "sanderos.h": "c",
         "stdlib.h": "c",
-        "ostream": "c"
+        "ostream": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

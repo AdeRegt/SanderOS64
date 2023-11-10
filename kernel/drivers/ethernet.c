@@ -462,6 +462,7 @@ unsigned long ethjmplist[20000];
 unsigned long acklist[20000];
 unsigned long seqlist[20000];
 int tcpstackpointer = 0;
+unsigned long tcp_creat_ito = 1291004734;
 
 void setTcpHandler(unsigned short port,unsigned long func){
     ethjmplist[port] = func;
@@ -480,6 +481,9 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
         destmac = getMACFromIp((unsigned char*)&router_ip);
     }
     unsigned short size = sizetype - sizeof(struct EthernetHeader);
+
+    seqlist[from_port] = 0;
+    acklist[from_port] = 0;
 
     uint8_t *tv = (uint8_t*) ( ((upointer_t) tcp1) + sizeof(struct TCPHeader));
     tv[0] = 0x02; 
@@ -503,7 +507,9 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     tv[18] = 0x03;
     tv[19] = 0x07;
     
-    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1291004734,0,10,TCP_SYN,64800);
+    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,tcp_creat_ito,0,10,TCP_SYN,64800);
+
+    tcp_creat_ito += 1291004734;
 
     setTcpHandler(to_port,func);
 
@@ -622,9 +628,24 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                     }else{
                         k_printf("[ETH] No function handler for this tcpservice!\n");
                     }
+                }else if(switch_endian16(tcp->flags) & TCP_SYN){
+                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    if(func){
+                        int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
+                        sendPackage(1,0);
+                    }else{
+                        k_printf("[ETH] No function handler for this tcpservice!\n");
+                    }
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
                     k_printf("[ETH] Stream is finished!\n");
+                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    if(func){
+                        int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
+                        sendPackage(2,0);
+                    }else{
+                        k_printf("[ETH] No function handler for this tcpservice!\n");
+                    }
                 }
             }
             return 1;
