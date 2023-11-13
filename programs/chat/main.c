@@ -82,11 +82,13 @@ void sendItem(uint8_t targetip[4]){
     printf("> ");
     char buffer[100];
     scanline((char*)&buffer);
+    cls();
     sendMessage(buffer,targetip);
     printf("\n");
 }
 
 int main(){
+    cls();
     uint8_t targetip[4];
     printf("Welcome to the chat!\n");
     targetip[0] = 185;

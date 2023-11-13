@@ -463,6 +463,8 @@ unsigned long acklist[20000];
 unsigned long seqlist[20000];
 int tcpstackpointer = 0;
 unsigned long tcp_creat_ito = 1291004734;
+unsigned short tcpswitchboard[20000];
+unsigned long tcpswitchboardpointer = 100;
 
 void setTcpHandler(unsigned short port,unsigned long func){
     ethjmplist[port] = func;
@@ -474,6 +476,9 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     memset(tcp1,0,0x1000);
     unsigned char* destmac;
     unsigned char* t4 = (unsigned char*)&to;
+
+    tcpswitchboard[from_port] = tcpswitchboardpointer;
+    from_port = tcpswitchboardpointer++;
 
     if(t4[0]==192){
         destmac = getMACFromIp(t4);
@@ -527,6 +532,8 @@ void send_tcp_message(unsigned long from, unsigned long to, unsigned short from_
     memset(tcp1,0,0x1000);
     unsigned char* destmac;
     unsigned char* t4 = (unsigned char*)&to;
+
+    from_port = tcpswitchboard[from_port];
 
     if(t4[0]==192){
         destmac = getMACFromIp(t4);
@@ -621,7 +628,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 if(switch_endian16(tcp->flags) & TCP_PUS){
                     unsigned long addr = desc.low_buf + sizeof(struct TCPHeader);
                     unsigned long count = desc.buffersize-sizeof(struct TCPHeader);
-                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
                     if(func){
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(addr,count);
@@ -629,7 +636,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                         k_printf("[ETH] No function handler for this tcpservice!\n");
                     }
                 }else if(switch_endian16(tcp->flags) & TCP_SYN){
-                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
                     if(func){
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(1,0);
@@ -639,7 +646,7 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
                     k_printf("[ETH] Stream is finished!\n");
-                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
                     if(func){
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(2,0);
