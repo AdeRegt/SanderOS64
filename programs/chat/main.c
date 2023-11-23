@@ -78,13 +78,17 @@ void sendMessage(char* buffer,uint8_t targetip[4]){
     wait_for_us();
 }
 
-void sendItem(uint8_t targetip[4]){
+int sendItem(uint8_t targetip[4]){
     printf("> ");
     char buffer[100];
     scanline((char*)&buffer);
+    if(strlen((char*)&buffer)==0){
+        return 1;
+    }
     cls();
     sendMessage(buffer,targetip);
     printf("\n");
+    return 0;
 }
 
 int main(){
@@ -97,7 +101,10 @@ int main(){
     targetip[3] = 22;
     printf("Chat: IP is %d.%d.%d.%d \n",targetip[0],targetip[1],targetip[2],targetip[3]);
     while(1){
-        sendItem(targetip);
+        int t = sendItem(targetip);
+        if(t){
+            break;
+        }
     }
-    for(;;);exit(1);
+    exit(1);
 }

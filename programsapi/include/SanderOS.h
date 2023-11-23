@@ -14,3 +14,4 @@ void *send_tcp_message(uint8_t *ip,uint16_t port,void *buffer,int size);
 char *itos(unsigned int num, int base);
 void hang(const char* func);
 void cls();
+void scanline(char* where);
