@@ -3,6 +3,7 @@
 #define TFTP_DEFAULT_PORT 69
 
 char* load_tftp_file(char* path);
+void tftp_detect_and_initialise();
 
 typedef struct {
     struct UDPHeader udpheader;

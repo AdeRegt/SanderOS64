@@ -534,7 +534,6 @@ __attribute__((interrupt)) void Error07(interrupt_frame* frame){
 }
 
 __attribute__((interrupt)) void Error08(interrupt_frame* frame,upointer_t errorcode){
-	interrupt_eoi();
     k_printf("int: 0x08 :: Double Fault\ncs=%x flags=%x ip=%x sp=%x ss=%x\n",frame->cs,frame->flags,frame->ip,frame->sp,frame->ss,errorcode);
 	asm volatile("cli\nhlt");
 }

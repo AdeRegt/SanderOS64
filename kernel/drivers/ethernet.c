@@ -1,6 +1,7 @@
 #include "../include/ethernet.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
+#include "../include/fs/tftp.h"
 unsigned short switch_endian16(unsigned short nb) {
     return (nb>>8) | (nb<<8);
 }
@@ -728,6 +729,7 @@ void initialise_ethernet(){
             fillIP((unsigned char*)&our_ip,dhcpid);
             freePage(dhcpid);
             k_printf("[ETH] DHCP is present\n");
+            tftp_detect_and_initialise();
         }else{
             k_printf("[ETH] No DHCP server present here, using static address\n");
             unsigned char dinges[SIZE_OF_IP] = {192,168,178,15};   

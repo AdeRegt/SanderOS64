@@ -1,5 +1,6 @@
 #include "../include/usb.h"
 #include "../include/graphics.h"
+#include "../include/SCSI.h"
 #include "../include/memory.h"
 #include "../include/device.h"
 #include "../include/fs/mbr.h"
@@ -93,7 +94,7 @@ void *usb_stick_one_read(Blockdevice *dev, upointer_t sector, uint32_t counter)
     ep->flags = 0x80;
     ep->command_len = 10;
     // command READ(0x12)
-    ep->data[0] = 0x28;
+    ep->data[0] = SCSI_READ_10;
     // reserved
     ep->data[1] = 0;
     // lba

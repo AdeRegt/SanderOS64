@@ -11,6 +11,8 @@
 #endif 
 typedef unsigned long long size_t;
 
+#define NULL (void*)0
+
 typedef struct {
     uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad
     uint32_t                          Pad;

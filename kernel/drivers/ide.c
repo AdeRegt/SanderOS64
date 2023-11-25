@@ -1,5 +1,6 @@
 #include "../include/ide.h"
 #include "../include/graphics.h"
+#include "../include/SCSI.h"
 #include "../include/ports.h"
 #include "../include/memory.h"
 #include "../include/paging.h"
@@ -104,7 +105,7 @@ void ide_wait_for_ready(IDEDevice cdromdevice)
 	}
 }
 
-char read_cmd[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+char read_cmd[12] = {SCSI_READ_12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void* buffer){
 
@@ -128,7 +129,7 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 	read_cmd[3] = (lba >> 0x10) & 0xFF;
 	read_cmd[4] = (lba >> 0x08) & 0xFF;
 	read_cmd[5] = (lba >> 0x00) & 0xFF;
-	read_cmd[0] = 0xA8;
+	read_cmd[0] = SCSI_READ_12;
 
 	resetIDEFire();
 	getIDEError(cdromdevice);
