@@ -9,6 +9,7 @@
 #include "../include/timer.h"
 #include "../include/device.h"
 #include "../include/fs/mbr.h"
+#include "../include/fs/iso9660.h"
 
 unsigned short ide_port_primary = 0;
 unsigned short ide_port_secondary = 0;
@@ -110,6 +111,8 @@ char read_cmd[12] = {SCSI_READ_12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void* buffer){
 
     IDEDevice cdromdevice = (IDEDevice)((IDEDevice*)dev->attachment)[0];
+
+	resetIDEFire();
     
 	getIDEError(cdromdevice);
 	ide_wait_for_ready(cdromdevice);
@@ -123,6 +126,10 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 	getIDEError(cdromdevice);
 
 	ide_wait_for_ready(cdromdevice);
+
+	for(int i = 0 ; i < 12 ; i++){
+		read_cmd[i] = 0;
+	}
 
 	read_cmd[9] = counter;
 	read_cmd[2] = (lba >> 0x18) & 0xFF; /* most sig. byte of LBA */
@@ -156,6 +163,7 @@ uint8_t ide_atapi_read(Blockdevice* dev, upointer_t lba, uint32_t counter, void*
 		((uint16_t*)buffer)[mp++] = inportw(cdromdevice.command + 0);
 	}
 	ide_wait_for_ready(cdromdevice);
+	waitForIDEFire();
 	return 1;
 }
 
@@ -203,7 +211,26 @@ uint8_t ide_atapi_write(Blockdevice* dev, upointer_t sector, uint32_t counter, v
 }
 
 uint8_t ide_ata_read(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
-    return 0;
+
+    IDEDevice cdromdevice = (IDEDevice)((IDEDevice*)dev->attachment)[0];
+
+	resetIDEFire();
+	outportb(cdromdevice.command + 6, 0xE0 | (cdromdevice.slave << 4) | ((sector >> 24) & 0x0F));
+	outportb(cdromdevice.command + 2, (unsigned char)counter);
+	outportb(cdromdevice.command + 3, (unsigned char)sector);
+	outportb(cdromdevice.command + 4, (unsigned char)(sector >> 8));
+	outportb(cdromdevice.command + 5, (unsigned char)(sector >> 16));
+	outportb(cdromdevice.command + 7, 0x20);
+	waitForIDEFire();
+	int U = 0;
+	int i = 0;
+	for (i = 0; i < (512 / 2); i++)
+	{
+		unsigned short X = inportw(cdromdevice.command);
+		((unsigned short*)buffer)[U++] = X;
+	}
+
+    return 1;
 }
 
 uint8_t ide_ata_write(Blockdevice* dev, upointer_t sector, uint32_t counter, void* buffer){
@@ -213,12 +240,6 @@ uint8_t ide_ata_write(Blockdevice* dev, upointer_t sector, uint32_t counter, voi
 void init_ide_device(IDEDevice device)
 {
 	setInterrupt(device.irq, irq_ide);
-	// k_printf("ide: initialising device CMD=%x",device.command);
-	// k_printf(" CTRL=%x",device.control);
-	// k_printf(" IRQ=%x",device.irq);
-	// k_printf(" SLV=");
-	// k_printf(device.slave == 1 ? "SLAVE" : "MASTER");
-	// k_printf("\n");
 
 	resetIDEFire();
 
@@ -277,6 +298,7 @@ void init_ide_device(IDEDevice device)
 		k_printf("ide: ATA version=%s name=%s \n",ident->version,ident->name);
 
 		Blockdevice *regdev = (Blockdevice*)registerBlockDevice(512, ide_ata_read, ide_ata_write, 0, (void*)&device);
+		initialise_fs(regdev,identbuffer);
 		
 		// ATA device detected!
 	}
@@ -322,58 +344,14 @@ void init_ide_device(IDEDevice device)
 			ident->unused2[0] = 0;
 			ident->unused3[0] = 0;
 			k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
-			ide_atapi_eject(device);
+			// ide_atapi_eject(device);
+
+			Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ISO9660_LOGICAL_BLOCK_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
+			initialise_iso9660(regdev);
 		}
 		
 	}
-	// else
-	// {
-	// 	for (int i = 0; i < 256; i++)
-	// 	{
-	// 		inportw(device.command);
-	// 	}
 
-	// 	// Device is NOT ATA
-	// 	// Maybe it is ATAPI?
-	// 	//if((inportb(device.command+4)==0x14)&&(inportb(device.command+5)==0xEB)){
-
-	// 	outportb(device.command + 6, device.slave == 1 ? 0xB0 : 0xA0);
-	// 	outportb(device.command + 2, 0);
-	// 	outportb(device.command + 3, 0);
-	// 	outportb(device.command + 4, 0);
-	// 	outportb(device.command + 5, 0);
-	// 	outportb(device.command + 7, 0xA1);
-
-	// 	sleep(2);
-
-	// 	if (inportb(device.command + 7) == 0)
-	// 	{
-	// 		return;
-	// 	}
-	// 	if (getIDEError(device) == 0)
-	// 	{
-	// 		k_printf("ide: device is ATAPI\n");
-	// 		unsigned char *identbuffer = (unsigned char *) requestPage();
-	// 		for (int i = 0; i < 256; i++)
-	// 		{
-	// 			unsigned short datapart = inportw(device.command);
-	// 			unsigned char datapartA = (datapart>>8) & 0xFF;
-	// 			unsigned char datapartB = datapart & 0xFF;
-	// 			identbuffer[(i*2)+0] = datapartA;
-	// 			identbuffer[(i*2)+1] = datapartB;
-	// 		}
-	// 		IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
-	// 		ident->unused2[0] = 0;
-	// 		ident->unused3[0] = 0;
-	// 		k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
-	// 		Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ATAPI_SECTOR_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
-    //         void* buffer = (void*) requestPage();
-    //         uint8_t res = ide_atapi_read(regdev,0,1,buffer);
-	// 		if(res){
-	// 			initialise_fs(regdev,(void*)(buffer));
-	// 		}
-	// 	}
-	// }
 }
 
 void ide_driver_start(int bus,int slot,int function){

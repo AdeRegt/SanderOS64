@@ -53,6 +53,6 @@ typedef struct
 	uint16_t control;
 	uint8_t irq;
 	uint8_t slave;
-} IDEDevice;
+}__attribute__((packed)) IDEDevice;
 
 void ide_driver_start(int bus,int slot,int function);
