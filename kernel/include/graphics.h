@@ -1,13 +1,7 @@
-
-typedef unsigned long long size_t;
-typedef struct {
-	void* BaseAddress;
-	size_t BufferSize;
-	unsigned int Width;
-	unsigned int Height;
-	unsigned int PixelsPerScanLine;
-    unsigned char strategy;
-} GraphicsInfo;
+#pragma once
+#include <stdint.h>
+#include "sizet.h"
+#include "boot.h"
 
 void set_graphics_info(GraphicsInfo *gi);
 GraphicsInfo *get_graphics_info();

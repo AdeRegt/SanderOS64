@@ -1,9 +1,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include <elf.h>
-#include "../../kernel/include/kernel.h"
-
-typedef unsigned long long size_t;
+#include "../../kernel/include/boot.h"
 
 typedef struct {
 	void* BaseAddress;
@@ -240,16 +238,6 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 	Print(L"Kernel Loaded\n\r");
 	
 
-	PSF1_FONT* newFont = LoadPSF1Font(NULL, L"sanderos\\fonts\\default.psf", ImageHandle, SystemTable);
-	if (newFont == NULL){
-		Print(L"Font is not valid or is not found\n\r");
-	}
-	else
-	{
-		Print(L"Font found. char size = %d\n\r", newFont->psf1_Header->charsize);
-	}
-	
-
 	Framebuffer* newBuffer = InitializeGOP();
 
 	EFI_MEMORY_DESCRIPTOR* Map = NULL;
@@ -266,27 +254,6 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	void (*KernelStart)(BootInfo*) = ((__attribute__((sysv_abi)) void (*)(BootInfo*) ) (upointer_t)header.e_entry);
 
-	// EFI_CONFIGURATION_TABLE* configTable = SystemTable->ConfigurationTable;
-	void* rsdp = NULL; 
-	// EFI_GUID Acpi2TableGuid = ACPI_20_TABLE_GUID;
-
-	// for (UINTN index = 0; index < SystemTable->NumberOfTableEntries; index++){
-	// 	if (CompareGuid(&configTable[index].VendorGuid, &Acpi2TableGuid)){
-	// 		if (strcmp((CHAR8*)"RSD PTR ", (CHAR8*)configTable->VendorTable, 8)){
-	// 			rsdp = (void*)configTable->VendorTable;
-	// 			Print(L"Found RSD PTR\n");
-	// 			RSDP2 *rs2 = (RSDP2*)rsdp;
-	// 			SDTHeader* xsdt = (SDTHeader*)(rs2->XSDTAddress);
-	// 			void * res = FindTable(xsdt,(char*)"MCFG");
-	// 			if(res){
-	// 				rsdp = res;
-	// 			}
-	// 			break;
-	// 		}
-	// 	}
-	// 	configTable++;
-	// }
-
 	MemoryInfo mi;
 	mi.mMap = (MemoryDescriptor*)Map;
 	mi.mMapDescSize = DescriptorSize;
@@ -294,15 +261,15 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	BootInfo bootInfo;
 	bootInfo.graphics_info = (GraphicsInfo*) newBuffer;
-	bootInfo.font = (PSF1_Font*) newFont;
+	bootInfo.font = (PSF1_Font*) NULL;
 	bootInfo.memory_info = (MemoryInfo*) &mi;
-	bootInfo.rsdp = rsdp;
+	bootInfo.rsdp = NULL;
 
 
-	Print(L"Addr: %x \n",KernelStart);
+	Print(L"KernelStart: %x \n",KernelStart);
 	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
 
 	KernelStart(&bootInfo);
 
-	return EFI_SUCCESS; // Exit the UEFI application
+	return EFI_SUCCESS;
 }

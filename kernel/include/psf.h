@@ -1,13 +1,5 @@
-typedef struct {
-	unsigned char magic[2];
-	unsigned char mode;
-	unsigned char charsize;
-} PSF1_Header;
-
-typedef struct {
-	PSF1_Header* psf1_Header;
-	void* glyphBuffer;
-} PSF1_Font;
+#include "sizet.h"
+#include "boot.h"
 
 PSF1_Font* getDefaultFont();
 void setActiveFont(PSF1_Font *av);

@@ -77,7 +77,6 @@ __attribute__((interrupt)) void GeneralFault_Handler(interrupt_frame* frame){
 
 __attribute__((interrupt)) void NakedInterruptHandler(interrupt_frame* frame){
 	interrupt_eoi();
-	asm volatile("cli\nhlt");
 }
 
 __attribute__((interrupt)) void DefaultInterruptHandler(interrupt_frame* frame){
