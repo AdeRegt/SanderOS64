@@ -307,6 +307,7 @@ void initialise_ahci_driver(unsigned long bar5, unsigned long ints){
 				if(xu1){
 					Blockdevice* dev = registerBlockDevice(512, ahci_ata_read, ahci_ata_write, 3, port);
 					initialise_fs(dev,buffer);
+					k_printf("AHCI: Read test sector!\n");
 				}else{
 					k_printf("AHCI: Failed to read testsector!\n");
 				}
