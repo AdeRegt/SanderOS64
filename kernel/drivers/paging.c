@@ -4,6 +4,10 @@
 
 PageTable *pagemaplevel4;
 
+void *getPagingTable(){
+    return pagemaplevel4;
+}
+
 PageLookupResult page_map_indexer(unsigned long long virtual_address){
     PageLookupResult plr;
     virtual_address >>= 12;

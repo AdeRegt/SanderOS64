@@ -119,11 +119,6 @@ void multitaskinghandler(stack_registers *ix){
 int addTask(void *task,void *cr3,upointer_t size,char** args){
     asm volatile ("cli");
     memcpy(&tasks[cmt],&tasks[0],sizeof(Task));
-    tasks[cmt].sessionregs.rip = (upointer_t)task;
-    // tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
-    tasks[cmt].task_running = 1;
-    #ifndef __x86_64
-    // tasks[cmt].sessionregs.ss = tasks[cmt].sessionregs.rsp;
 
     tasks[cmt].sessionregs.rip       =  (upointer_t) task;
     tasks[cmt].sessionregs.rax       =  0;
@@ -134,8 +129,9 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     tasks[cmt].sessionregs.rsi       =  0;
     tasks[cmt].sessionregs.rsp       =  (upointer_t) requestPage() + 0x5000;
     tasks[cmt].sessionregs.rbp       =  (upointer_t) tasks[cmt].sessionregs.rsp - 0x5000;
-    k_printf("upointer op %x \n",tasks[cmt].sessionregs.rip);
-    #endif
+    
+    tasks[cmt].task_running = 1;
+
     cmt++;
     asm volatile ("sti");
     return cmt - 1;

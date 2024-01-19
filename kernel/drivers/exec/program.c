@@ -55,7 +55,8 @@ int exec_memory(void* buffer,char *argv){
     }else if(is_sxe(buffer)){
         return sxe_run(buffer);
     }else if(use_paging){
-        return addTask(buffer,buffer,0x1000,data);
+        map_memory(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS,buffer);
+        return addTask((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x1000,data);
     }else{
         memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x5000);
         address = EXTERNAL_PROGRAM_ADDRESS;
@@ -128,7 +129,8 @@ int exec(uint8_t *path,char *argv){
     }else if(is_sxe(buffer)){
         return sxe_run(buffer);
     }else if(use_paging){
-        return addTask(buffer,buffer,fz,data);
+        map_memory(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS,buffer);
+        return addTask((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz,data);
     }else{
         memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
         address = EXTERNAL_PROGRAM_ADDRESS;
