@@ -21,7 +21,6 @@ all: ${OBJECTS}
 ./build/preprocessor/static-includes/stdarg.o: ./preprocessor/static-includes/stdarg.c
 	${CC} ./preprocessor/static-includes/stdarg.c ${INCLUDES} -o ./build/preprocessor/static-includes/stdarg.o -g -c
 
-
 ./build/lexer.o: ./lexer.c
 	${CC} lexer.c ${INCLUDES} -o ./build/lexer.o -g -c
 
@@ -73,14 +72,11 @@ all: ${OBJECTS}
 ./build/fixup.o: ./fixup.c
 	${CC} fixup.c ${INCLUDES} -o ./build/fixup.o -g -c 
 
-
 ./build/native.o: ./native.c
 	${CC} native.c ${INCLUDES} -o ./build/native.o -g -c 
 
-
 ./build/stackframe.o: ./stackframe.c
 	${CC} stackframe.c ${INCLUDES} -o ./build/stackframe.o -g -c 
-
 
 # Helper files
 ./build/helpers/vector.o: ./helpers/vector.c
@@ -91,9 +87,6 @@ all: ${OBJECTS}
 
 ./build/helpers/hashmap.o: ./helpers/hashmap.c
 	${CC} ./helpers/hashmap.c ${INCLUDES} -o ./build/helpers/hashmap.o -g -c
-
-
-
 
 clean:
 	rm -rf ${OBJECTS}
