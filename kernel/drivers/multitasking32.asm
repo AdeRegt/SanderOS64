@@ -12,6 +12,7 @@ extern _context_es
 extern _context_fs
 extern _context_gs
 extern _context_esi
+extern _context_esp
 extern _context_edi
 extern _context_ebp
 extern _context_ebx
@@ -24,8 +25,6 @@ extern _context_eax
 extern _test_handler
 
 multitaskingint:
-    ; make sure interrupts do not happen when we are playing..
-    cli
 
     ; we have a stackframe which we can recieve by popping the right values from the stack...
     pop dword [_context_eip]
@@ -40,6 +39,7 @@ multitaskingint:
     mov dword [_context_ebp], ebp
     mov dword [_context_edi], edi
     mov dword [_context_esi], esi
+    mov dword [_context_esp], esp
 
     ; save the segments registers
     mov eax,0
@@ -65,8 +65,14 @@ multitaskingint:
     mov esp, eax
 
     pushad
+    cli
     call _test_handler
+    sti
     popad
+
+    ; tell the interrupts we are done with them
+    mov al, 0x20
+    out 0x20, al 
 
     mov eax,0
     mov ax, word [_context_ds]
@@ -79,6 +85,7 @@ multitaskingint:
     mov gs, ax
 
     ; now restore the general registers
+    mov esp, dword [_context_esp]
     mov esi, dword [_context_esi]
     mov edi, dword [_context_edi]
     mov ebp, dword [_context_ebp]
@@ -92,15 +99,6 @@ multitaskingint:
     push dword [_context_cs]
     push dword [_context_eip]
 
-    ; tell the interrupts we are done with them
-    mov al, 0x20
-    out 0x20, al 
-
-    ; wait a bit 
-    ; now restore the ax register
-    mov eax, dword [_context_eax]
-    ; now, restore the context
-    sti
     iretd
 
 global gdt_flush     ; Allows the C code to link to this

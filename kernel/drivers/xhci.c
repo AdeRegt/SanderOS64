@@ -193,12 +193,12 @@ DefaultTRB *xhci_request_free_command_trb(uint8_t inc)
 CommandCompletionEventTRB *xhci_ring_and_wait(uint32_t doorbell_offset,uint32_t doorbell_value,uint32_t checkvalue)
 {
     ((uint32_t*)(xhci_base_addr + xhci_doorbell_offset))[doorbell_offset] = doorbell_value;
-    sleep(1);
+    sleep(10);
     while((xhci_get_iman_reg(0)&1)==0)
     {
-        sleep(1);
+        sleep(10);
     }
-    sleep(2);
+    sleep(20);
     for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
     {
         CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
@@ -609,14 +609,6 @@ uint8_t xhci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,
     trb4->Cyclebit = 0;
 
     CommandCompletionEventTRB *res = xhci_ring_and_wait(device->deviceaddres,device->localringoutid,(uint32_t)(upointer_t)trb1);
-    for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
-    {
-        CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
-        if(to->DataBufferPointerLo==0){
-            continue;
-        }
-        k_printf("T5 %d %x %x %x\n",i,to->DataBufferPointerLo,trb1,to->TRBType);
-    }for(;;);
     if(res)
     {
         return res->CompletionCode;
@@ -624,6 +616,14 @@ uint8_t xhci_send_bulk_data(USBDevice *device, uint8_t address,uint32_t command,
     else
     {
         k_printf("xhci: couldent get xhci datatoken\n");
+        for(int i = 0 ; i < XHCI_EVENT_RING_SIZE ; i++)
+        {
+            CommandCompletionEventTRB *to = (CommandCompletionEventTRB*)&((CommandCompletionEventTRB*)(eventring+(i*sizeof(CommandCompletionEventTRB))))[0];
+            if(to->DataBufferPointerLo==0){
+                continue;
+            }
+            k_printf("T5 %d %x %x %x\n",i,to->DataBufferPointerLo,trb1,to->TRBType);
+        }for(;;);
         return 0;
     }
 }
@@ -643,14 +643,15 @@ void xhci_port_install(uint8_t portid)
         k_printf("xhci: port %d is a USB3.0 connection!\n",portid);
         protocol = 3;
     }
-    else if(portc&1)
-    {
-        k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
-        xhci_set_portsc_reg(portid,0x210);
-        sleep(50);
-        portc = xhci_get_portsc_reg(portid);
-        protocol = 2;
-    }
+    // else if(portc&1)
+    // {
+    //     k_printf("xhci: port %d is a USB2.0 connection!\n",portid);
+    //     xhci_set_portsc_reg(portid,0x210);
+    //     sleep(50);
+    //     portc = xhci_get_portsc_reg(portid);
+    //     protocol = 2;
+    //     sleep(50);
+    // }
     else
     {
         return;
@@ -836,7 +837,7 @@ void xhci_port_install(uint8_t portid)
     return;
 
     failure:
-    k_printf("xhci: The installing of port %d failed misserably!\n",portid);
+    k_printf("xhci: The installing of port %d failed misserably!\n",portid);for(;;);
 }
 
 void xhci_driver_start(int bus,int slot,int function)
@@ -853,7 +854,7 @@ void xhci_driver_start(int bus,int slot,int function)
     if(hcversion!=0x30)
     {
         k_printf("xhci: invalid xhci version (%x)!\n",hcversion);
-        return;
+        // return;
     }
 
     xhci_capability_registers_length = ((uint8_t*)xhci_base_addr)[0];
@@ -929,7 +930,7 @@ void xhci_driver_start(int bus,int slot,int function)
 
     //
     // Enable busmastering
-    pci_enable_busmastering_when_needed(bus,slot,function);
+    // pci_enable_busmastering_when_needed(bus,slot,function);
 
     // lets trigger a reset.
     // send reset sequence
@@ -1067,9 +1068,10 @@ void xhci_driver_start(int bus,int slot,int function)
     }
     #else
     xhci_set_usbcmd_reg(1);
-    sleep(10);
+    sleep(20);
     for(uint8_t i = 1 ; i < xhci_number_of_ports ; i++){
         xhci_port_install(i);
     }
     #endif 
+    for(;;);
 }

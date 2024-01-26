@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include "outint.h"
+#include "sizet.h"
+#include "boot.h"
 
 #define MEMORY_MAP_SIZE 1024
 #define PAGE_SIZE 0x1000
@@ -9,22 +11,10 @@
 #else
 #define MEMORY_AREA_PICK_RATE 1000
 #endif 
-typedef unsigned long long size_t;
 
-typedef struct {
-    uint32_t                          Type;           // Field size is 32 bits followed by 32 bit pad
-    uint32_t                          Pad;
-    upointer_t                        PhysicalStart;  // Field size is 64 bits
-    upointer_t                        VirtualStart;   // Field size is 64 bits
-    upointer_t                        NumberOfPages;  // Field size is 64 bits
-    upointer_t                        Attribute;      // Field size is 64 bits
-} MemoryDescriptor;
-
-typedef struct{
-    MemoryDescriptor* mMap;
-	upointer_t mMapSize;
-	upointer_t mMapDescSize;
-}MemoryInfo;
+#ifndef NULL 
+#define NULL (void*)0
+#endif 
 
 void initialise_memory_driver();
 void memset(void *start, unsigned char value, upointer_t num);

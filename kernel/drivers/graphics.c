@@ -1,4 +1,5 @@
 #include "../include/graphics.h"
+#include "../include/memory.h"
 #include "../include/comport.h"
 #include "../include/psf.h"
 
@@ -96,6 +97,46 @@ void putc(char deze){
     }
 }
 
+char* strcpy(char* destination, char* source){
+    int size = strlen(source);
+    memcpy(destination,source,size);
+    return destination;
+}
+
+void reverse(char *s){
+    char *j;
+    int i = strlen(s);
+
+    strcpy(j,s);
+    while (i-- >= 0){
+        *(s++) = j[i];
+    }
+    *s = '\0';
+}
+
+void itoa(int n, char *buffer, int base)
+{
+    char *ptr = buffer;
+    int lowbit;
+
+    base >>= 1;
+    do
+    {
+        lowbit = n & 1;
+        n = (n >> 1) & 32767;
+        *ptr = ((n % base) << 1) + lowbit;
+        if (*ptr < 10){
+            *ptr +='0';
+        }else{
+            *ptr +=55;
+        }
+        ++ptr;
+    }
+    while (n /= base);
+    *ptr = '\0';
+    reverse (buffer);   /* reverse string */
+}
+
 void printString(char* message){
     int length = 0;
     while(1){
@@ -189,6 +230,43 @@ void k_printf(char* format,...){
         }
     }
     va_end(arg);
+}
+
+
+unsigned long oldmousex = 0;
+unsigned long oldmousey = 0;
+char mousebuffer[10*10];
+
+void restoreMouseImageBuffer(){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            draw_pixel_at(oldmousex + x,oldmousey + y,mousebuffer[(y*10)+x]);
+        }
+    }
+}
+
+void storeMouseImageBuffer(){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            mousebuffer[(y*10)+x] = get_pixel_at(oldmousex + x,oldmousey + y);
+        }
+    }
+}
+
+void drawMouseAt(unsigned long xOff,unsigned long yOff){
+    restoreMouseImageBuffer();
+    oldmousex = xOff;
+    oldmousey = yOff;
+    storeMouseImageBuffer();
+    drawCharacter(getActiveFont(),'#',0x00000000,xOff,yOff);
+}
+
+void fillMouseImageBuffer(unsigned int val){
+    for (unsigned long y = 0; y < 0 + getActiveFont()->psf1_Header->charsize; y++){
+        for (unsigned long x = 0; x < 0+8; x++){
+            mousebuffer[(y*10)+x] = val;
+        }
+    }
 }
 
 

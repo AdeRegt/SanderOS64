@@ -4,7 +4,9 @@
 #include "../include/device.h"
 #include "../include/exec/program.h"
 #include "../include/multitasking.h"
+#include "../include/ethernet.h"
 #include "../include/cmos.h"
+#include "../include/fs/tftp.h"
 
 char wd[FILENAME_MAX];
 char pd[FILENAME_MAX];
@@ -47,6 +49,27 @@ void tty_inner_loop(){
                 }
                 memcpy((void*)(((upointer_t)&wd)+strlen((char*)&wd) + -1 ),strpath,strlen(strpath));
             }
+        }else if(memcmp(tw,"ipconfig",8)==0){
+            eth_dump_eth_addresses();
+        }else if(memcmp(tw,"tftp ",5)==0){
+            char *strpath = (char*) (tw+5);
+            char* file = load_tftp_file(strpath);
+            if(file){
+                k_printf("Load of %s succesful! \n",strpath);
+                char* pd2 = 0;
+                pd2 = (char*)strpath;
+                int rt = exec_memory(file,pd2);
+                if(rt==-1){
+                    k_printf("Unable to run program!\n");
+                }else if(rt && rt<1000){
+                    k_printf("Program is running in the background\n");
+                    waitForPid(rt);
+                }else{
+                    k_printf("Program exited with %d \n",rt);
+                }
+            }else{
+                k_printf("Unable to load %s \n",strpath);
+            }
         }else{
             memset((void*)&pd,0,50);
             if(tw[1]==':'){
@@ -82,6 +105,16 @@ void tty_inner_loop(){
     }
 }
 
+void tty_help(){
+    k_printf("Commands: \n");
+    k_printf("exit               - Exit the shell\n");
+    k_printf("dir                - Print contents of the working directory\n");
+    k_printf("cd        [path]   - Change working directory\n");
+    k_printf("ipconfig           - Print ethernet information\n");
+    k_printf("tftp      [path]   - Fetch file from an TFTP server\n");
+    k_printf("\n");
+}
+
 void initialise_tty(){
 
     clear_screen(0xF0F0F0F0);
@@ -101,10 +134,6 @@ void initialise_tty(){
         k_printf("Known programs: \n");
         k_printf("%s\n",kp);
     }
-    k_printf("Commands: \n");
-    k_printf("exit               - Exit the shell\n");
-    k_printf("dir                - Print contents of the working directory\n");
-    k_printf("cd        [path]   - Change working directory\n");
-    k_printf("\n");
+    tty_help();
     tty_inner_loop();
 }

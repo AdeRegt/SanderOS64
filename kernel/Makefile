@@ -1,7 +1,7 @@
 all: build_asm_files build_c_files
 
 build_asm_files:
-	nasm asmstub64.asm -f elf64 -o asmstub64.o
+	nasm asmstub64.asm -O0 -f elf64 -o asmstub64.o
 	nasm asmstub32.asm -O0 -f elf32 -o asmstub32.o
 
 CSOURCES := $(wildcard */*.c */*/*.c *.c)

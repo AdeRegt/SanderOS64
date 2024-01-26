@@ -1,6 +1,7 @@
 #include "../include/ethernet.h"
 #include "../include/graphics.h"
 #include "../include/memory.h"
+#include "../include/fs/tftp.h"
 unsigned short switch_endian16(unsigned short nb) {
     return (nb>>8) | (nb<<8);
 }
@@ -459,6 +460,12 @@ unsigned char* getIPFromName(char* name){
 }
 
 unsigned long ethjmplist[20000];
+unsigned long acklist[20000];
+unsigned long seqlist[20000];
+int tcpstackpointer = 0;
+unsigned long tcp_creat_ito = 1291004734;
+unsigned short tcpswitchboard[20000];
+unsigned long tcpswitchboardpointer = 100;
 
 void setTcpHandler(unsigned short port,unsigned long func){
     ethjmplist[port] = func;
@@ -471,12 +478,18 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     unsigned char* destmac;
     unsigned char* t4 = (unsigned char*)&to;
 
+    tcpswitchboard[from_port] = tcpswitchboardpointer;
+    from_port = tcpswitchboardpointer++;
+
     if(t4[0]==192){
         destmac = getMACFromIp(t4);
     }else{
         destmac = getMACFromIp((unsigned char*)&router_ip);
     }
     unsigned short size = sizetype - sizeof(struct EthernetHeader);
+
+    seqlist[from_port] = 0;
+    acklist[from_port] = 0;
 
     uint8_t *tv = (uint8_t*) ( ((upointer_t) tcp1) + sizeof(struct TCPHeader));
     tv[0] = 0x02; 
@@ -500,9 +513,39 @@ void create_tcp_session(unsigned long from, unsigned long to, unsigned short fro
     tv[18] = 0x03;
     tv[19] = 0x07;
     
-    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,1291004734,0,10,TCP_SYN,64800);
+    fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,tcp_creat_ito,0,10,TCP_SYN,64800);
+
+    tcp_creat_ito += 1291004734;
 
     setTcpHandler(to_port,func);
+
+    PackageRecievedDescriptor sec;
+    sec.buffersize = sizetype;
+    sec.high_buf = 0;
+    sec.low_buf = (unsigned long)tcp1;
+    sendEthernetPackage(sec);
+    freePage(tcp1);
+}
+
+void send_tcp_message(unsigned long from, unsigned long to, unsigned short from_port, unsigned short to_port, void* buffer, int size){
+    unsigned long sizetype = sizeof(struct TCPHeader) + size;
+    struct TCPHeader* tcp1 = (struct TCPHeader*) requestPage();
+    memset(tcp1,0,0x1000);
+    unsigned char* destmac;
+    unsigned char* t4 = (unsigned char*)&to;
+
+    from_port = tcpswitchboard[from_port];
+
+    if(t4[0]==192){
+        destmac = getMACFromIp(t4);
+    }else{
+        destmac = getMACFromIp((unsigned char*)&router_ip);
+    }
+    unsigned short size2 = sizetype - sizeof(struct EthernetHeader);
+    uint8_t *tv = (uint8_t*) ( ((upointer_t) tcp1) + sizeof(struct TCPHeader));
+    memcpy(tv,buffer,size);
+    
+    fillTcpHeader(tcp1,destmac,size2,from,to,from_port,to_port,seqlist[from_port],acklist[from_port],5,TCP_PUS | TCP_ACK,512);
 
     PackageRecievedDescriptor sec;
     sec.buffersize = sizetype;
@@ -565,13 +608,15 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 unsigned short size = (sizeof(struct TCPHeader) - sizeof(struct EthernetHeader)) + 12;
                 unsigned long sid = switch_endian32(tcp->sequence_number);
                 if(switch_endian16(tcp->flags) & TCP_PUS){
-                    unsigned long tr = desc.buffersize - sizeof(struct TCPHeader);
+                    unsigned long tr = desc.buffersize - ( sizeof(struct TCPHeader) + 16 );
                     sid += tr;
                 }else if(switch_endian16(tcp->flags) & TCP_SYN){
                     sid++;
                 }else if(switch_endian16(tcp->flags) & TCP_FIN){
                     sid++;
                 }
+                seqlist[from_port] = switch_endian32(tcp->acknowledge_number);
+                acklist[from_port] = sid;
                 fillTcpHeader(tcp1,destmac,size,from,to,from_port,to_port,switch_endian32(tcp->acknowledge_number),sid,8,TCP_ACK,507);
 
                 PackageRecievedDescriptor sec;
@@ -584,16 +629,31 @@ int ethernet_handle_package(PackageRecievedDescriptor desc){
                 if(switch_endian16(tcp->flags) & TCP_PUS){
                     unsigned long addr = desc.low_buf + sizeof(struct TCPHeader);
                     unsigned long count = desc.buffersize-sizeof(struct TCPHeader);
-                    unsigned long func = ethjmplist[switch_endian16(tcp->destination_port)];
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
                     if(func){
                         int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
                         sendPackage(addr,count);
                     }else{
                         k_printf("[ETH] No function handler for this tcpservice!\n");
                     }
+                }else if(switch_endian16(tcp->flags) & TCP_SYN){
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
+                    if(func){
+                        int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
+                        sendPackage(1,0);
+                    }else{
+                        k_printf("[ETH] No function handler for this tcpservice!\n");
+                    }
                 }
                 if(switch_endian16(tcp->flags) & TCP_FIN){
                     k_printf("[ETH] Stream is finished!\n");
+                    unsigned long func = ethjmplist[switch_endian16(tcp->source_port)];
+                    if(func){
+                        int (*sendPackage)(unsigned long a,unsigned long b) = (void*)func;
+                        sendPackage(2,0);
+                    }else{
+                        k_printf("[ETH] No function handler for this tcpservice!\n");
+                    }
                 }
             }
             return 1;
@@ -642,10 +702,25 @@ void exsend(unsigned long addr,unsigned long count){
     k_printf("\n");
 }
 
+void eth_dump_eth_addresses(){
+    if(ethernet_is_enabled()){
+        k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
+        k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
+        k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
+        k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
+    }else{
+        k_printf("[ETH] No ethernet enabled!\n");
+    }
+}
+
+uint8_t ethernet_is_enabled(){
+    EthernetDevice ed = getDefaultEthernetDevice();
+    return ed.is_enabled;
+}
+
 void initialise_ethernet(){
     k_printf("[ETH] Ethernet module reached!\n");
-    EthernetDevice ed = getDefaultEthernetDevice();
-    if(ed.is_enabled){
+    if(ethernet_is_enabled()){
         k_printf("[ETH] There is a ethernet device present on the system!\n");
         k_printf("[ETH] Asking DHCP server for our address....\n");
 
@@ -654,15 +729,13 @@ void initialise_ethernet(){
             fillIP((unsigned char*)&our_ip,dhcpid);
             freePage(dhcpid);
             k_printf("[ETH] DHCP is present\n");
+            tftp_detect_and_initialise();
         }else{
             k_printf("[ETH] No DHCP server present here, using static address\n");
             unsigned char dinges[SIZE_OF_IP] = {192,168,178,15};   
             fillIP((unsigned char*)&our_ip,(unsigned char*)&dinges);
         }
 
-        k_printf("[ETH] Our     IP is %d.%d.%d.%d \n",our_ip[0],our_ip[1],our_ip[2],our_ip[3]);
-        k_printf("[ETH] Gateway IP is %d.%d.%d.%d \n",router_ip[0],router_ip[1],router_ip[2],router_ip[3]);
-        k_printf("[ETH] DNS     IP is %d.%d.%d.%d \n",dns_ip[0],dns_ip[1],dns_ip[2],dns_ip[3]);
-        k_printf("[ETH] DHCP    IP is %d.%d.%d.%d \n",dhcp_ip[0],dhcp_ip[1],dhcp_ip[2],dhcp_ip[3]);
+        eth_dump_eth_addresses();
     }
 }

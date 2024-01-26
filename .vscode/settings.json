@@ -34,7 +34,18 @@
         "ps2.h": "c",
         "tty.h": "c",
         "gdt.h": "c",
-        "random": "c"
+        "random": "c",
+        "system_error": "c",
+        "string.h": "c",
+        "algorithm": "c",
+        "sanderos.h": "c",
+        "stdlib.h": "c",
+        "ostream": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "sizet.h": "c",
+        "boot.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -97,8 +97,10 @@ void memset(void *start, unsigned char value, upointer_t num){
 }
 
 void memcpy(void *to, void *from, upointer_t num){
-    for(upointer_t i = 0 ; i < num ; i++){
-        ((unsigned char*)((upointer_t)to + i))[0] = ((unsigned char*)((upointer_t)from + i))[0];
+    char *d = to;
+    const char *s = from;
+    for (size_t i=0; i<num; i++) {
+        d[i] = s[i];
     }
 }
 

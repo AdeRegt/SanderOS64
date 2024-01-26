@@ -6,7 +6,7 @@
         {
             "label": "Build kernel and put in tftp",
             "type": "shell",
-            "command": "make && cp bin/sanderos/kernel32.bin /srv/tftp/kernel32.bin",
+            "command": "make all grub_loader &&  cp bin/sanderos/kernel32.bin /srv/tftp/kernel32.bin &&  cp bin/sanderos/kernel64.bin /srv/tftp/kernel64.bin",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

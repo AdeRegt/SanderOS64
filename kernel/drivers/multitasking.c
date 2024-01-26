@@ -21,6 +21,7 @@ static Task tasks[MAX_TASKS];
     uint32_t _context_ebp;
     uint32_t _context_edi;
     uint32_t _context_esi;
+    uint32_t _context_esp;
     uint32_t _context_gs;
     uint32_t _context_fs;
     uint32_t _context_es;
@@ -116,34 +117,23 @@ void multitaskinghandler(stack_registers *ix){
 }
 
 int addTask(void *task,void *cr3,upointer_t size,char** args){
-    // fill the registry
-    // tasks[cmt].sessionregs.rip = (upointer_t)task;
-    // tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
-    // #ifndef __x86_64
-    // tasks[cmt].sessionregs.rax = 0;
-    // tasks[cmt].sessionregs.rax = 0x10;
-    // tasks[cmt].sessionregs.ds = tasks[cmt].sessionregs.rsp;
-    // tasks[cmt].sessionregs.es = tasks[cmt].sessionregs.rsp;
-    // tasks[cmt].sessionregs.fs = tasks[cmt].sessionregs.rsp;
-    // tasks[cmt].sessionregs.gs = tasks[cmt].sessionregs.rsp;
-    // tasks[cmt].sessionregs.ss = tasks[cmt].sessionregs.rsp;
-    // #endif
-    // tasks[cmt].cr3 = (upointer_t)cr3;
-    // tasks[cmt].size = (upointer_t)size;
-    // tasks[cmt].files[0].available = 1;
-    // tasks[cmt].files[1].available = 1;
-    // tasks[cmt].files[2].available = 1;
-    // tasks[cmt].files[3].available = 1;
-    // tasks[cmt].files[4].available = 1;
-    // tasks[cmt].task_running = 1;
-    // tasks[cmt].arguments = args;
+    asm volatile ("cli");
     memcpy(&tasks[cmt],&tasks[0],sizeof(Task));
-    tasks[cmt].sessionregs.rip = (upointer_t)task;
-    tasks[cmt].sessionregs.rsp = (upointer_t)requestPage();
-    #ifndef __x86_64
-    tasks[cmt].sessionregs.ss = tasks[cmt].sessionregs.rsp;
-    #endif
+
+    tasks[cmt].sessionregs.rip       =  (upointer_t) task;
+    tasks[cmt].sessionregs.rax       =  0;
+    tasks[cmt].sessionregs.rdx       =  0;
+    tasks[cmt].sessionregs.rcx       =  0;
+    tasks[cmt].sessionregs.rbx       =  0;
+    tasks[cmt].sessionregs.rdi       =  0;
+    tasks[cmt].sessionregs.rsi       =  0;
+    tasks[cmt].sessionregs.rsp       =  (upointer_t) requestPage() + 0x5000;
+    tasks[cmt].sessionregs.rbp       =  (upointer_t) tasks[cmt].sessionregs.rsp - 0x5000;
+    
+    tasks[cmt].task_running = 1;
+
     cmt++;
+    asm volatile ("sti");
     return cmt - 1;
 }
 
@@ -165,22 +155,20 @@ void _test_handler(){
         tasks[vl].sessionregs.rbp       =  _context_ebp;
         tasks[vl].sessionregs.rdi       =  _context_edi;
         tasks[vl].sessionregs.rsi       =  _context_esi;
+        tasks[vl].sessionregs.rsp       =  _context_esp;
         tasks[vl].sessionregs.gs        =  _context_gs;
         tasks[vl].sessionregs.fs        =  _context_fs;
         tasks[vl].sessionregs.es        =  _context_es;
         tasks[vl].sessionregs.ds        =  _context_ds;
     }
-    int tf = 0;
-    for(int i = vl ; i < MAX_TASKS ; i++){
-        if(tasks[i].task_running){
-            vl = i;
-            tf = 1;
-            break;
-        }
-    }
-    if(tf==0){
+    again:
+    vl++;
+    if(vl==MAX_TASKS){
         vl = 0;
+    }else if(tasks[vl].task_running==0){
+        goto again;
     }
+    // k_printf("%d: RIP=%x CS=%x |",vl,tasks[vl].sessionregs.rip,tasks[vl].sessionregs.cs);
     if(tasks[vl].task_running){
         _context_eip                    = tasks[vl].sessionregs.rip;
         _context_eax                    = tasks[vl].sessionregs.rax;
@@ -192,6 +180,7 @@ void _test_handler(){
         _context_ebp                    = tasks[vl].sessionregs.rbp;
         _context_edi                    = tasks[vl].sessionregs.rdi;
         _context_esi                    = tasks[vl].sessionregs.rsi;
+        _context_esp                    = tasks[vl].sessionregs.rsp;
         _context_gs                     = tasks[vl].sessionregs.gs;
         _context_fs                     = tasks[vl].sessionregs.fs;
         _context_es                     = tasks[vl].sessionregs.es;

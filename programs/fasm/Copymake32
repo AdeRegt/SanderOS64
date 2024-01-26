@@ -1,6 +1,6 @@
 all:
 	fasm ./fasm.asm
-	$(CC) -T ./linker.ld fasm.o ../../../../../programsapi/bin/stdlib32.o ../../../../../programsapi/bin/crt032.o -o ./fasmexec  -nostdlib -ffreestanding -m32
+	$(CC) -T ./linker.ld fasm.o ../../../../../programsapi/bin/gettimeofday32.o ../../../../../programsapi/bin/getenv32.o ../../../../../programsapi/bin/fwrite32.o ../../../../../programsapi/bin/write32.o ../../../../../programsapi/bin/time32.o ../../../../../programsapi/bin/malloc32.o ../../../../../programsapi/bin/free32.o ../../../../../programsapi/bin/fclose32.o ../../../../../programsapi/bin/puts32.o ../../../../../programsapi/bin/ftell32.o ../../../../../programsapi/bin/fseek32.o ../../../../../programsapi/bin/fread32.o ../../../../../programsapi/bin/fopen32.o ../../../../../programsapi/bin/strlen32.o ../../../../../programsapi/bin/hang32.o ../../../../../programsapi/bin/memcpy32.o ../../../../../programsapi/bin/__stack_chk_fail32.o ../../../../../programsapi/bin/putsc32.o ../../../../../programsapi/bin/getc32.o ../../../../../programsapi/bin/exit32.o ../../../../../programsapi/bin/crt032.o -o ./fasmexec  -nostdlib -ffreestanding -m32
 	cp ./fasmexec ../../../fasm32.bin
 	rm ./fasm.asm 
 	rm ./fasm.o

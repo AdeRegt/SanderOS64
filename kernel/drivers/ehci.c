@@ -43,6 +43,7 @@ __attribute__((interrupt)) void irq_ehci(interrupt_frame* frame)
     if(status&0x4)
     {
         k_printf("ehci: portchange!\n");
+        ((uint32_t*)(ehci_base_addr + caplength + 4))[0] |= 4;
     }
     if(status&0x2)
     {
@@ -409,7 +410,7 @@ void ehci_driver_start(int bus,int slot,int function)
 
     //
     // Enable busmastering
-    pci_enable_busmastering_when_needed(bus,slot,function);
+    // pci_enable_busmastering_when_needed(bus,slot,function);
 
     //
     // get BAR address first
@@ -421,7 +422,7 @@ void ehci_driver_start(int bus,int slot,int function)
     uint8_t ehci_version = ehci_info & 0xFF;
     if(ehci_version!=EHCI_PROTOCOL_VER)
     {
-        k_printf("ehci: invalid version number\n");
+        k_printf("ehci: invalid version number\n");for(;;);
         return;
     }
 
@@ -430,7 +431,7 @@ void ehci_driver_start(int bus,int slot,int function)
     uint16_t hci_ver = ((uint16_t*)(ehci_base_addr+2))[0];
     if(hci_ver!=EHCI_HCI_VER)
     {
-        k_printf("ehci: invalid hci version number\n");
+        k_printf("ehci: invalid hci version number\n");for(;;);
         return;
     }
 

@@ -1,5 +1,6 @@
 #include "../include/usb.h"
 #include "../include/graphics.h"
+#include "../include/SCSI.h"
 #include "../include/memory.h"
 #include "../include/device.h"
 #include "../include/fs/mbr.h"
@@ -93,7 +94,7 @@ void *usb_stick_one_read(Blockdevice *dev, upointer_t sector, uint32_t counter)
     ep->flags = 0x80;
     ep->command_len = 10;
     // command READ(0x12)
-    ep->data[0] = 0x28;
+    ep->data[0] = SCSI_READ_10;
     // reserved
     ep->data[1] = 0;
     // lba
@@ -116,20 +117,15 @@ uint8_t usb_stick_read(Blockdevice* dev, upointer_t sector, uint32_t counter, vo
     uint32_t dedway = 1;
     for(uint32_t i = 0 ; i < counter ; i+=dedway)
     {
-        uint32_t tleft = counter - i;
-        if(tleft>dedway)
-        {
-            tleft = dedway;
-        }
 
-        uint8_t* cq = usb_stick_one_read(dev,sector,tleft);
-        sector += tleft;
+        uint8_t* cq = usb_stick_one_read(dev,sector,dedway);
+        sector++;
         if(cq==0)
         {
             return 0;
         }
         uintptr_t bpnt = ((uintptr_t)buffer) + (512*i);
-        memcpy((void*)bpnt,cq,512*tleft);
+        memcpy((void*)bpnt,cq,dedway * 512);
         freePage(cq);
     }
     return 1;

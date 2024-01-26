@@ -1,6 +1,6 @@
 all:
 	nasm -felf64 startup.asm -o startup.o
 	$(CC) -I "../../programsapi/include" -ffreestanding -fno-PIE -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c origin/main.c -o ./chip8.o -D __SANDEROSUSB
-	$(CC) -ffreestanding -nostdlib -lgcc -T ./linker.ld -fno-PIE ./startup.o ../../programsapi/bin/stdlib64.o ./chip8.o -o ./chip8.bin
+	$(CC) -ffreestanding -nostdlib -lgcc -T ./linker.ld -fno-PIE ./startup.o ../../programsapi/bin/strcpy64.o ../../programsapi/bin/scanline64.o ../../programsapi/bin/free64.o ../../programsapi/bin/malloc64.o ../../programsapi/bin/memset64.o ../../programsapi/bin/fopen64.o ../../programsapi/bin/ftell64.o ../../programsapi/bin/fseek64.o ../../programsapi/bin/fread64.o ../../programsapi/bin/fclose64.o ../../programsapi/bin/draw_pixel64.o ../../programsapi/bin/memcpy64.o ../../programsapi/bin/hang64.o ../../programsapi/bin/putsc64.o ../../programsapi/bin/convert64.o ../../programsapi/bin/__stack_chk_fail64.o ../../programsapi/bin/puts64.o ../../programsapi/bin/scanf64.o ../../programsapi/bin/scan_for_character64.o ../../programsapi/bin/wait_for_character64.o ../../programsapi/bin/printf64.o ../../programsapi/bin/strlen64.o ../../programsapi/bin/exit64.o ./chip8.o -o ./chip8.bin
 	rm *.o
 	cp ./chip8.bin ../../bin/programs/64bit/chip8.bin
