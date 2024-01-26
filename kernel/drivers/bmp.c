@@ -1,5 +1,7 @@
 #include "../include/bmp.h"
 #include "../include/graphics.h"
+#include "../include/device.h"
+#include "../include/memory.h"
 
 /*
  * Renders a bmp file into the screen.
@@ -33,4 +35,13 @@ void draw_bmp(unsigned char* file_buffer, unsigned short offsetX, unsigned short
 			draw_pixel_at(offsetX + x, offsetY + y, a);
 		}
 	}
+}
+
+
+void draw_bmp_from_file(unsigned char* file_path, unsigned short offsetX, unsigned short offsetY){
+    void *programmem = requestPage();
+    if( !readFile(file_path,programmem) ){
+        return;
+    }
+    draw_bmp(programmem,offsetX,offsetY);
 }

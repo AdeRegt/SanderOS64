@@ -24,7 +24,7 @@ int scanf( const char *format, ... ){
             deze = format[length];
             if(deze=='s'){
                 char *s = va_arg(arg,char *);
-                scanline(s,1);
+                scanline(s);
             }else{
                 hang("invalid thing to scan");
             }

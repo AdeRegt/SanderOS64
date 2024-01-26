@@ -12,6 +12,7 @@
 #include "include/ps2.h"
 #include "include/exec/program.h"
 #include "include/exec/module.h"
+#include "include/bmp.h"
 
 BootInfo *bi;
 
@@ -53,6 +54,9 @@ void kernel_main(BootInfo *gi){
         loadModule("A:SANDEROS/DRIVERS/PS2KEY.SYS",0);
         initialise_drivers_from_pci();
     #endif 
+    clear_screen(0xFF0000FF);
+    draw_bmp_from_file("A:SANDEROS/SPLASH.BMP",10,10);
+    sleep(200);
     initialise_tty();
     halt("__end of kernel!\n");
 }

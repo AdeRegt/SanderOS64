@@ -15,3 +15,4 @@ typedef struct {
 }  __attribute__((packed)) BMP_HEADER;
 
 void draw_bmp(unsigned char* file_buffer, unsigned short offsetX, unsigned short offsetY);
+void draw_bmp_from_file(unsigned char* file_path, unsigned short offsetX, unsigned short offsetY);
