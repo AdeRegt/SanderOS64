@@ -27,11 +27,15 @@ PSF1_Font *getActiveFont(){
 }
 
 void drawCharacter(PSF1_Font *font,char character,unsigned int colour,unsigned long xOff,unsigned long yOff){
+    drawCharacterAtBuffer(get_graphics_info(),font,character,colour,xOff,yOff);
+}
+
+void drawCharacterAtBuffer(GraphicsInfo *gi, PSF1_Font *font,char character,unsigned int colour,unsigned long xOff,unsigned long yOff){
     char* fontPtr = font->glyphBuffer + (character * font->psf1_Header->charsize);
     for (unsigned long y = yOff; y < yOff + font->psf1_Header->charsize; y++){
         for (unsigned long x = xOff; x < xOff+8; x++){
             if ((*fontPtr & (0b10000000 >> (x - xOff))) > 0){
-                    draw_pixel_at(x,y,colour);
+                    draw_pixel_at_buffer(gi,x,y,colour);
             }
 
         }

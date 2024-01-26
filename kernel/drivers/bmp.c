@@ -32,7 +32,7 @@ void draw_bmp(unsigned char* file_buffer, unsigned short offsetX, unsigned short
             unsigned int a = xxx[(y*header->width)+x];
 
             // k_printf("%x ",a);
-			draw_pixel_at(offsetX + x, offsetY + y, a);
+			draw_pixel_at(offsetX + ( header->width - x ), offsetY + y, a);
 		}
 	}
 }

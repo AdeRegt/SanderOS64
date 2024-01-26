@@ -5,6 +5,18 @@
 
 GraphicsInfo *graphics_info;
 
+GraphicsInfo* new_instance_of_graphics_info(int width,int height){
+    GraphicsInfo* buff = requestPage();
+    memset(buff,0,sizeof(GraphicsInfo));
+    memcpy(buff,graphics_info,sizeof(GraphicsInfo));
+    buff->BaseAddress = requestPage();
+    buff->Height = height;
+    buff->Width = width;
+    buff->pointerX = 0;
+    buff->pointerY = 0;
+    return buff;
+}
+
 unsigned int* getMouseCoordinates();
 
 void repaint(){
@@ -19,9 +31,17 @@ GraphicsInfo *get_graphics_info(){
     return graphics_info;
 }
 
+void* get_graphics_buffer(){
+    return graphics_info->BaseAddress;
+}
+
 void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
+    draw_pixel_at_buffer(graphics_info,x,y,colour);
+}
+
+void draw_pixel_at_buffer(GraphicsInfo* buffer,unsigned int x,unsigned int y,unsigned int colour){
     unsigned int BBP = 4;
-    *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress) = colour;
+    *(unsigned int*)((x*BBP) +(y*buffer->PixelsPerScanLine*BBP) + buffer->BaseAddress) = colour;
 }
 
 unsigned int get_pixel_at(unsigned int x,unsigned int y){
@@ -29,72 +49,91 @@ unsigned int get_pixel_at(unsigned int x,unsigned int y){
     return *(unsigned int*)((x*BBP) +(y*graphics_info->PixelsPerScanLine*BBP) + graphics_info->BaseAddress);
 }
 
-unsigned long pointerX = 50;
-unsigned long pointerY = 50;
+unsigned int get_pixel_at_buffer(GraphicsInfo* buffer,unsigned int x,unsigned int y){
+    unsigned int BBP = 4;
+    return *(unsigned int*)((x*BBP) +(y*buffer->PixelsPerScanLine*BBP) + buffer->BaseAddress);
+}
+
+void move_text_pointer(unsigned long x,unsigned long y){
+    move_text_pointer_at_buffer(graphics_info,x,y);
+}
+
+void move_text_pointer_at_buffer(GraphicsInfo* buffer,unsigned long x,unsigned long y){
+    buffer->pointerX = x;
+    buffer->pointerY = y;
+}
 
 unsigned int create_colour_code(unsigned char red,unsigned char green,unsigned char blue,unsigned char alpha){
     return (alpha<<23) | (red<<16) | (green<<8) | blue;
 }
 
 void clear_screen(unsigned int colour){
+    clear_screen_at_buffer(graphics_info,colour);
+}
+
+void clear_screen_at_buffer(GraphicsInfo* buffer,unsigned int colour){
     asm volatile("cli");
-    if(graphics_info->strategy==1){
+    if(buffer->strategy==1){
         unsigned int BBP = 4;
-        for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
-            for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
-                draw_pixel_at(x,y,colour);
+        for(unsigned int y = 0 ; y < buffer->Height ; y++){
+            for(unsigned int x = 0 ; x < buffer->Width ; x++){
+                draw_pixel_at_buffer(buffer,x,y,colour);
             }
         }
-        pointerX = 50;
-        pointerY = 50;
+        buffer->pointerX = 50;
+        buffer->pointerY = 50;
     }else{
-        pointerX = 0;
-        pointerY = 0;
-        for(unsigned int y = 0 ; y < graphics_info->Height ; y++){
-            for(unsigned int x = 0 ; x < graphics_info->Width ; x++){
-                putc(' ');
+        buffer->pointerX = 0;
+        buffer->pointerY = 0;
+        for(unsigned int y = 0 ; y < buffer->Height ; y++){
+            for(unsigned int x = 0 ; x < buffer->Width ; x++){
+                putc_at_buffer(buffer,' ');
             }
         }
-        pointerX = 0;
-        pointerY = 0;
+        buffer->pointerX = 0;
+        buffer->pointerY = 0;
     }
     asm volatile("sti");
+}
+
+void putc_at_buffer(GraphicsInfo* buffer,char deze){
+    if(buffer->strategy==1){
+        if(buffer->pointerY>(buffer->Height-50)){
+            clear_screen(0xFFFFFFFF);
+            buffer->pointerX = 50;
+            buffer->pointerY = 50;
+        }
+        if(deze=='\n'||buffer->pointerX>(buffer->Width-50)){
+            buffer->pointerX = 50;
+            buffer->pointerY += 16;
+        }else{
+            drawCharacterAtBuffer(buffer,getActiveFont(),deze,0x00000000,buffer->pointerX,buffer->pointerY);
+            buffer->pointerX += 8;
+        }
+    }else{
+        if(buffer->pointerY>=25){
+            buffer->pointerX = 0;
+            buffer->pointerY = 0;
+        }
+        if(deze=='\n'){
+            buffer->pointerX = 0;
+            buffer->pointerY++;
+            return;
+        }
+        ((char*)(buffer->BaseAddress+(160*buffer->pointerY)+(buffer->pointerX*2)))[0] = deze;
+        buffer->pointerX++;
+        if(buffer->pointerX==80){
+            buffer->pointerX = 0;
+            buffer->pointerY++;
+        }
+    }
 }
 
 void putc(char deze){
     if(is_com_enabled()){
         com_write_debug_serial(deze);
     }
-    if(graphics_info->strategy==1){
-        if(pointerY>(graphics_info->Height-50)){
-            clear_screen(0xFFFFFFFF);
-            pointerX = 50;
-            pointerY = 50;
-        }
-        if(deze=='\n'||pointerX>(graphics_info->Width-50)){
-            pointerX = 50;
-            pointerY += 16;
-        }else{
-            drawCharacter(getActiveFont(),deze,0x00000000,pointerX,pointerY);
-            pointerX += 8;
-        }
-    }else{
-        if(pointerY>=25){
-            pointerX = 0;
-            pointerY = 0;
-        }
-        if(deze=='\n'){
-            pointerX = 0;
-            pointerY++;
-            return;
-        }
-        ((char*)(graphics_info->BaseAddress+(160*pointerY)+(pointerX*2)))[0] = deze;
-        pointerX++;
-        if(pointerX==80){
-            pointerX = 0;
-            pointerY++;
-        }
-    }
+    putc_at_buffer(graphics_info,deze);
 }
 
 char* strcpy(char* destination, char* source){
@@ -137,14 +176,14 @@ void itoa(int n, char *buffer, int base)
     reverse (buffer);   /* reverse string */
 }
 
-void printString(char* message){
+void printStringAt(GraphicsInfo* buffer,char* message){
     int length = 0;
     while(1){
         char deze = message[length];
         if(deze=='\0'){
             break;
         }else{
-            putc(deze);
+            putc_at_buffer(buffer,deze);
         }
         length++;
     }
@@ -207,21 +246,21 @@ void k_printf(char* format,...){
                 putc('%');
             }else if(deze=='s'){
                 char *s = va_arg(arg,char *);
-                printString(s);
+                printStringAt(graphics_info,s);
             }else if(deze=='x'){
                 int t = va_arg(arg,unsigned int);
                 putc('0');
                 putc('x');
                 char *convertednumber = convert(t,16);
-                printString(convertednumber);
+                printStringAt(graphics_info,convertednumber);
             }else if(deze=='d'){
                 int t = va_arg(arg,unsigned int);
                 char *convertednumber = convert(t,10);
-                printString(convertednumber);
+                printStringAt(graphics_info,convertednumber);
             }else if(deze=='o'){
                 int t = va_arg(arg,unsigned int);
                 char *convertednumber = convert(t,8);
-                printString(convertednumber);
+                printStringAt(graphics_info,convertednumber);
             }
             length++;
         }else{

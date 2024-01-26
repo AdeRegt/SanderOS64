@@ -13,6 +13,7 @@
 #include "include/exec/program.h"
 #include "include/exec/module.h"
 #include "include/bmp.h"
+#include "include/winman.h"
 
 BootInfo *bi;
 
@@ -57,6 +58,7 @@ void kernel_main(BootInfo *gi){
     clear_screen(0xFF0000FF);
     draw_bmp_from_file("A:SANDEROS/SPLASH.BMP",10,10);
     sleep(200);
+    window_manager_create_confirm_box("How are you?");
     initialise_tty();
     halt("__end of kernel!\n");
 }

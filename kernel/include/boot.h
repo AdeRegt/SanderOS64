@@ -26,6 +26,8 @@ typedef struct {
 	unsigned int Height;
 	unsigned int PixelsPerScanLine;
     unsigned char strategy;
+	unsigned long pointerX;
+	unsigned long pointerY;
 } GraphicsInfo;
 
 typedef struct {
