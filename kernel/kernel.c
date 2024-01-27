@@ -58,7 +58,10 @@ void kernel_main(BootInfo *gi){
     clear_screen(0xFF0000FF);
     draw_bmp_from_file("A:SANDEROS/SPLASH.BMP",10,10);
     sleep(200);
-    window_manager_create_confirm_box("How are you?");
-    initialise_tty();
+    if(window_manager_create_confirm_box("Use the windowmanager?")==1){
+
+    }else{
+        initialise_tty();
+    }
     halt("__end of kernel!\n");
 }

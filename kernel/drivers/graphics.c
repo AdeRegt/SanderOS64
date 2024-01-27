@@ -40,6 +40,12 @@ void draw_pixel_at(unsigned int x,unsigned int y,unsigned int colour){
 }
 
 void draw_pixel_at_buffer(GraphicsInfo* buffer,unsigned int x,unsigned int y,unsigned int colour){
+    if(x>=buffer->Width){
+        return;
+    }
+    if(y>=buffer->Height){
+        return;
+    }
     unsigned int BBP = 4;
     *(unsigned int*)((x*BBP) +(y*buffer->PixelsPerScanLine*BBP) + buffer->BaseAddress) = colour;
 }

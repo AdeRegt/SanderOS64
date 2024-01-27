@@ -17,6 +17,7 @@ typedef struct {
     int y;
     int type;
     void *data;
+    int can_be_selected;
 } __attribute__ ((packed)) SElement;
 
 typedef struct {
@@ -27,6 +28,8 @@ typedef struct {
     int focuslocation;
     SElement elements[100];
     GraphicsInfo *gi;
+    int is_active;
+    int is_used;
 } __attribute__ ((packed)) SWindow;
 
 int window_manager_create_window(char* title);
@@ -34,3 +37,4 @@ int window_manager_create_confirm_box(char* message);
 int window_manager_poll_event();
 int window_manager_add_element(int window_id,int type,int x,int y,void* data);
 void move_text_pointer_buffer(int window_id,unsigned long x,unsigned long y);
+void window_manager_clear_window(int window_id);
