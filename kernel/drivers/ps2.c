@@ -219,11 +219,19 @@ __attribute__((interrupt)) void irq_mouse(interrupt_frame *frame)
 					}
 					if(mousetype){
 						if(mousetype==1){
-							mouse_x += mouse_byte[1];
-							mouse_y += mouse_byte[2];
+                            if(!((mouse_x+mouse_byte[2]-1)>get_graphics_info()->Width||(mouse_x+mouse_byte[2]-1)<1)){
+							    mouse_x += mouse_byte[2];
+                            }
+                            if(!((mouse_y - mouse_byte[1]-1)>get_graphics_info()->Height||(mouse_y - mouse_byte[1]-1)<1)){
+							    mouse_y -= mouse_byte[1];
+                            }
 						}else{
-							mouse_x += mouse_byte[0];
-							mouse_y += mouse_byte[2];
+                            if(!((mouse_x+mouse_byte[2]-1)>get_graphics_info()->Width||(mouse_x+mouse_byte[2]-1)<1)){
+							    mouse_x += mouse_byte[2];
+                            }
+                            if(!((mouse_y - mouse_byte[0]-1)>get_graphics_info()->Height||(mouse_y - mouse_byte[0]-1)<1)){
+							    mouse_y -= mouse_byte[0];
+                            }
 						}
 					}
 					break;
