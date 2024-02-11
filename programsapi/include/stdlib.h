@@ -1,3 +1,6 @@
+#ifndef STDLIB_H
+#define STDLIB_H
+
 #include <stdint.h>
 
 void free( void* ptr );
@@ -8,3 +11,5 @@ char *realpath(const char *restrict path, char *restrict resolved_path);
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
+
+#endif

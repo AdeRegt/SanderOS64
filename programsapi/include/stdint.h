@@ -1,3 +1,6 @@
+#ifndef STDINT_H
+#define STDINT_H
+
 #include <stddef.h>
 
 #ifdef __INT8_TYPE__
@@ -33,3 +36,5 @@ typedef __UINT64_TYPE__ uint64_t;
     #endif
     typedef upointer_t off_t;
 #endif 
+
+#endif
