@@ -5,3 +5,4 @@ all:
 	$(MAKE) -C fasm
 	$(MAKE) -C hello
 	$(MAKE) -C dragon
+	$(MAKE) -C tty

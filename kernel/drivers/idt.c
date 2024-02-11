@@ -461,6 +461,31 @@ void isr2handler(stack_registers *ix){
         k_printf("isr2:cls \n");
         #endif
         clear_screen(0xF0F0F0F0);
+    }else if(ix->rax==415){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:dir \n");
+        #endif
+        ix->rax = (upointer_t) dir((char*) ix->rdx);
+    }else if(ix->rax==416){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:waitforpid \n");
+        #endif
+        waitForPid(ix->rdx);
+    }else if(ix->rax==417){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:scan_x_characters \n");
+        #endif
+        uint8_t *result = (uint8_t*) malloc(ix->rdx);
+        memset(result,0,ix->rdx);
+        for(uint64_t i = 0 ; i < ix->rdx ; i++){
+            uint8_t r = getch(1);
+            if(r=='\n'){
+                break;
+            }
+            putc(r);
+            result[i] = r;
+        }
+        ix->rax = (upointer_t) result;
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

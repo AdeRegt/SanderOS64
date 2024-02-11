@@ -14,7 +14,7 @@ char pd[FILENAME_MAX];
 void tty_inner_loop(){
     while(1){
         k_printf("%s > ",wd);
-        uint8_t *tw = scanLine(50);
+        uint8_t *tw = scan_x_characters(50);
         k_printf("\n");
         if(memcmp(tw,"exit",4)==0){
             break;

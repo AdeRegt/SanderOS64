@@ -108,7 +108,7 @@ uint64_t getFileSize(char* path){
     return 0;
 }
 
-uint8_t *scanLine(uint64_t maxsize){
+uint8_t *scan_x_characters(uint64_t maxsize){
     uint8_t *result = (uint8_t*) malloc(maxsize);
     memset(result,0,maxsize);
     for(uint64_t i = 0 ; i < maxsize ; i++){

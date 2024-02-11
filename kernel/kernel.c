@@ -61,7 +61,12 @@ void kernel_main(BootInfo *gi){
     if(window_manager_create_confirm_box("Use the windowmanager?")==1){
 
     }else{
-        initialise_tty();
+        char* pd2 = 0;
+        #ifdef __x86_64
+            int rt = exec("A:PROGRAMS/64BIT/TTY.BIN",pd2);
+        #else
+            int rt = exec("A:PROGRAMS/32BIT/TTY.BIN",pd2);
+        #endif
     }
     halt("__end of kernel!\n");
 }

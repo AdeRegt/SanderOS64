@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 typedef struct{
 	unsigned long buffersize;
 	unsigned long low_buf;
@@ -15,3 +17,7 @@ char *itos(unsigned int num, int base);
 void hang(const char* func);
 void cls();
 void scanline(char* where);
+uint8_t *scan_x_characters(upointer_t maxsize);
+char* dir(char* basepath);
+int exec(uint8_t *path,char *argv);
+void waitForPid(int pid);

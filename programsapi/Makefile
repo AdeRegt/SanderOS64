@@ -1,4 +1,4 @@
-all: bin/crt064.o bin/system32.o bin/cls32.o bin/tolower32.o bin/atoll32.o bin/isalpha32.o bin/fputc32.o bin/vsprintf32.o bin/strtol32.o bin/realloc32.o bin/vsnprintf32.o bin/vfprintf32.o bin/fprintf32.o bin/sprintf32.o bin/putchar32.o bin/realpath32.o bin/ungetc32.o bin/strncpy32.o bin/calloc32.o bin/strcmp32.o bin/assert32.o bin/crt032.o bin/gettimeofday32.o bin/getenv32.o bin/fwrite32.o bin/stdlib64.o bin/write32.o bin/time32.o bin/strcpy32.o bin/scanline32.o bin/free32.o bin/memset32.o bin/malloc32.o bin/fopen32.o bin/ftell32.o bin/fseek32.o bin/stdlib32.o bin/fread32.o bin/fclose32.o bin/draw_pixel32.o bin/memcpy32.o bin/scanf32.o bin/scan_for_character32.o bin/exit32.o bin/wait_for_character32.o bin/getc32.o bin/strlen32.o bin/printf32.o bin/puts32.o bin/putsc32.o bin/convert32.o bin/__stack_chk_fail32.o bin/hang32.o bin/send_tcp_message32.o bin/start_tcp_session32.o
+all: bin/crt064.o bin/waitForPid32.o bin/exec32.o bin/dir32.o bin/memcmp32.o bin/scan_x_characters32.o bin/system32.o bin/cls32.o bin/tolower32.o bin/atoll32.o bin/isalpha32.o bin/fputc32.o bin/vsprintf32.o bin/strtol32.o bin/realloc32.o bin/vsnprintf32.o bin/vfprintf32.o bin/fprintf32.o bin/sprintf32.o bin/putchar32.o bin/realpath32.o bin/ungetc32.o bin/strncpy32.o bin/calloc32.o bin/strcmp32.o bin/assert32.o bin/crt032.o bin/gettimeofday32.o bin/getenv32.o bin/fwrite32.o bin/stdlib64.o bin/write32.o bin/time32.o bin/strcpy32.o bin/scanline32.o bin/free32.o bin/memset32.o bin/malloc32.o bin/fopen32.o bin/ftell32.o bin/fseek32.o bin/stdlib32.o bin/fread32.o bin/fclose32.o bin/draw_pixel32.o bin/memcpy32.o bin/scanf32.o bin/scan_for_character32.o bin/exit32.o bin/wait_for_character32.o bin/getc32.o bin/strlen32.o bin/printf32.o bin/puts32.o bin/putsc32.o bin/convert32.o bin/__stack_chk_fail32.o bin/hang32.o bin/send_tcp_message32.o bin/start_tcp_session32.o
 
 bin/crt064.o: crt064.S 
 	$(AS) -c crt064.S -o bin/crt064.o
@@ -11,6 +11,26 @@ bin/stdlib64.o: stdlib.c
 
 bin/stdlib32.o: stdlib.c 
 	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c stdlib.c -o bin/stdlib32.o
+
+bin/waitForPid32.o: calls/waitForPid.c 
+	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/waitForPid.c -o bin/waitForPid64.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c calls/waitForPid.c -o bin/waitForPid32.o
+
+bin/exec32.o: calls/exec.c 
+	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/exec.c -o bin/exec64.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c calls/exec.c -o bin/exec32.o
+
+bin/dir32.o: calls/dir.c 
+	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/dir.c -o bin/dir64.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c calls/dir.c -o bin/dir32.o
+
+bin/scan_x_characters32.o: calls/scan_x_characters.c 
+	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/scan_x_characters.c -o bin/scan_x_characters64.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c calls/scan_x_characters.c -o bin/scan_x_characters32.o
+
+bin/memcmp32.o: calls/memcmp.c 
+	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/memcmp.c -o bin/memcmp64.o
+	$(CC) -nostdlib -m32 -I "./include" -ffreestanding -fno-PIC -c calls/memcmp.c -o bin/memcmp32.o
 
 bin/exit32.o: calls/exit.c 
 	$(CC) -nostdlib -m64 -I "./include" -ffreestanding -fno-PIC -c calls/exit.c -o bin/exit64.o
