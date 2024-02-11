@@ -1,4 +1,4 @@
-all: bin/crt064.o bin/system32.o bin/cls32.o bin/tolower32.o bin/atoll32.o bin/isalpha32.o bin/fputc32.o \ 
+all: bin/crt064.o bin/system32.o bin/cls32.o bin/tolower32.o bin/atoll32.o bin/isalpha32.o bin/fputc32.o \
 	 bin/vsprintf32.o bin/strtol32.o bin/realloc32.o bin/vsnprintf32.o bin/vfprintf32.o bin/fprintf32.o \
 	 bin/sprintf32.o bin/putchar32.o bin/realpath32.o bin/ungetc32.o bin/strncpy32.o bin/calloc32.o \
 	 bin/strcmp32.o bin/assert32.o bin/crt032.o bin/gettimeofday32.o bin/getenv32.o bin/fwrite32.o \
