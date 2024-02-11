@@ -5,6 +5,7 @@
 #include "../include/paging.h"
 #include "../include/idt.h"
 #include "../include/timer.h"
+#include "../include/winman.h"
 
 static int vl = 0;
 static int cmt = 1;
@@ -61,6 +62,56 @@ void new_program_starter(){
     for(;;);
 }
 
+void _test_handler(){
+    window_manager_interrupt();
+    #ifndef __x86_64
+    if(tasks[vl].task_running){
+        tasks[vl].sessionregs.rip       = _context_eip;
+        tasks[vl].sessionregs.rax       =  _context_eax;
+        tasks[vl].sessionregs.cs        =  _context_cs;
+        tasks[vl].sessionregs.rflags    =  _context_eflags;
+        tasks[vl].sessionregs.rdx       =  _context_edx;
+        tasks[vl].sessionregs.rcx       =  _context_ecx;
+        tasks[vl].sessionregs.rbx       =  _context_ebx;
+        tasks[vl].sessionregs.rbp       =  _context_ebp;
+        tasks[vl].sessionregs.rdi       =  _context_edi;
+        tasks[vl].sessionregs.rsi       =  _context_esi;
+        tasks[vl].sessionregs.rsp       =  _context_esp;
+        tasks[vl].sessionregs.gs        =  _context_gs;
+        tasks[vl].sessionregs.fs        =  _context_fs;
+        tasks[vl].sessionregs.es        =  _context_es;
+        tasks[vl].sessionregs.ds        =  _context_ds;
+    }
+    again:
+    vl++;
+    if(vl==MAX_TASKS){
+        vl = 0;
+    }else if(tasks[vl].task_running==0){
+        goto again;
+    }
+    // k_printf("%d: RIP=%x CS=%x |",vl,tasks[vl].sessionregs.rip,tasks[vl].sessionregs.cs);
+    if(tasks[vl].task_running){
+        _context_eip                    = tasks[vl].sessionregs.rip;
+        _context_eax                    = tasks[vl].sessionregs.rax;
+        _context_cs                     = tasks[vl].sessionregs.cs;
+        _context_eflags                 = tasks[vl].sessionregs.rflags;
+        _context_edx                    = tasks[vl].sessionregs.rdx;
+        _context_ecx                    = tasks[vl].sessionregs.rcx;
+        _context_ebx                    = tasks[vl].sessionregs.rbx;
+        _context_ebp                    = tasks[vl].sessionregs.rbp;
+        _context_edi                    = tasks[vl].sessionregs.rdi;
+        _context_esi                    = tasks[vl].sessionregs.rsi;
+        _context_esp                    = tasks[vl].sessionregs.rsp;
+        _context_gs                     = tasks[vl].sessionregs.gs;
+        _context_fs                     = tasks[vl].sessionregs.fs;
+        _context_es                     = tasks[vl].sessionregs.es;
+        _context_ds                     = tasks[vl].sessionregs.ds;
+    }
+    #endif 
+    timerfunc();
+    return;
+}
+
 void multitaskinghandler(stack_registers *ix){
     // vl = 0;
     // goto finishup;
@@ -112,6 +163,7 @@ void multitaskinghandler(stack_registers *ix){
     }
     // k_printf("Switch to pid %d !\n",vl);
     timerfunc();
+    window_manager_interrupt();
     outportb(0xA0,0x20);
 	outportb(0x20,0x20);
 }
@@ -140,55 +192,6 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
 __attribute__((interrupt)) void legacy_timer_handler(interrupt_frame* frame){
     timerfunc();
     interrupt_eoi();
-}
-
-void _test_handler(){
-    #ifndef __x86_64
-    if(tasks[vl].task_running){
-        tasks[vl].sessionregs.rip       = _context_eip;
-        tasks[vl].sessionregs.rax       =  _context_eax;
-        tasks[vl].sessionregs.cs        =  _context_cs;
-        tasks[vl].sessionregs.rflags    =  _context_eflags;
-        tasks[vl].sessionregs.rdx       =  _context_edx;
-        tasks[vl].sessionregs.rcx       =  _context_ecx;
-        tasks[vl].sessionregs.rbx       =  _context_ebx;
-        tasks[vl].sessionregs.rbp       =  _context_ebp;
-        tasks[vl].sessionregs.rdi       =  _context_edi;
-        tasks[vl].sessionregs.rsi       =  _context_esi;
-        tasks[vl].sessionregs.rsp       =  _context_esp;
-        tasks[vl].sessionregs.gs        =  _context_gs;
-        tasks[vl].sessionregs.fs        =  _context_fs;
-        tasks[vl].sessionregs.es        =  _context_es;
-        tasks[vl].sessionregs.ds        =  _context_ds;
-    }
-    again:
-    vl++;
-    if(vl==MAX_TASKS){
-        vl = 0;
-    }else if(tasks[vl].task_running==0){
-        goto again;
-    }
-    // k_printf("%d: RIP=%x CS=%x |",vl,tasks[vl].sessionregs.rip,tasks[vl].sessionregs.cs);
-    if(tasks[vl].task_running){
-        _context_eip                    = tasks[vl].sessionregs.rip;
-        _context_eax                    = tasks[vl].sessionregs.rax;
-        _context_cs                     = tasks[vl].sessionregs.cs;
-        _context_eflags                 = tasks[vl].sessionregs.rflags;
-        _context_edx                    = tasks[vl].sessionregs.rdx;
-        _context_ecx                    = tasks[vl].sessionregs.rcx;
-        _context_ebx                    = tasks[vl].sessionregs.rbx;
-        _context_ebp                    = tasks[vl].sessionregs.rbp;
-        _context_edi                    = tasks[vl].sessionregs.rdi;
-        _context_esi                    = tasks[vl].sessionregs.rsi;
-        _context_esp                    = tasks[vl].sessionregs.rsp;
-        _context_gs                     = tasks[vl].sessionregs.gs;
-        _context_fs                     = tasks[vl].sessionregs.fs;
-        _context_es                     = tasks[vl].sessionregs.es;
-        _context_ds                     = tasks[vl].sessionregs.ds;
-    }
-    #endif 
-    timerfunc();
-    return;
 }
 
 void initialise_multitasking_driver(){

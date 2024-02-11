@@ -38,3 +38,6 @@ int window_manager_poll_event();
 int window_manager_add_element(int window_id,int type,int x,int y,void* data);
 void move_text_pointer_buffer(int window_id,unsigned long x,unsigned long y);
 void window_manager_clear_window(int window_id);
+void window_manager_interrupt();
+void window_manager_draw_window(SWindow window,int window_id);
+int window_manager_get_retention_time();

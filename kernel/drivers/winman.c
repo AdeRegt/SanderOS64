@@ -6,6 +6,27 @@
 int window_manager_window_count = 0;
 SWindow windows[10];
 
+int window_manager_get_retention_time(){
+    return 10;
+}
+
+upointer_t counting_multitask = 0;
+void window_manager_interrupt(){
+    counting_multitask++;
+    if(counting_multitask!=window_manager_get_retention_time()){
+        return;
+    }
+    counting_multitask = 0;
+
+    if(window_manager_window_count>0){
+        // draw everything
+        for(int i = 0 ; i < window_manager_window_count ; i++){
+            SWindow window = windows[i];
+            window_manager_draw_window(window,i);
+        }
+    }
+}
+
 int window_manager_create_window(char* title){
     for(int i = 0 ; i < window_manager_window_count ; i++){
         windows[i].is_active = 0;
@@ -125,13 +146,6 @@ void window_manager_focus_loop(int direction){
 
 int window_manager_poll_event(){
     window_manager_focus_loop(1);
-    draw_again:
-    clear_screen(0xFF009900);
-    // draw everything
-    for(int i = 0 ; i < window_manager_window_count ; i++){
-        SWindow window = windows[i];
-        window_manager_draw_window(window,i);
-    }
     // wait for input
     input_again:
     unsigned char z = getch(1) & 0x000000FF;
@@ -156,7 +170,7 @@ int window_manager_poll_event(){
             }
         }
     }
-    goto draw_again;
+    goto input_again;
 }
 
 void window_manager_clear_window(int window_id){
