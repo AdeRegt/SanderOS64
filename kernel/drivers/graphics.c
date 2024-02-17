@@ -234,6 +234,49 @@ char *convert(unsigned int num, int base) {
 	return(ptr); 
 }
 
+void k_printf_at(GraphicsInfo* buffer,char* format,...){
+    va_list arg; 
+	va_start(arg, format);
+    int length = 0;
+    while(1){
+        char deze = format[length];
+        if(deze=='\0'){
+            break;
+        }else if(deze=='%'){
+            length++;
+            deze = format[length];
+            if(deze=='c'){
+                char i = va_arg(arg,int);
+                putc_at_buffer(buffer,i);
+            }else if(deze=='%'){
+                putc_at_buffer(buffer,'%');
+            }else if(deze=='s'){
+                char *s = va_arg(arg,char *);
+                printStringAt(buffer,s);
+            }else if(deze=='x'){
+                int t = va_arg(arg,unsigned int);
+                putc_at_buffer(buffer,'0');
+                putc_at_buffer(buffer,'x');
+                char *convertednumber = convert(t,16);
+                printStringAt(buffer,convertednumber);
+            }else if(deze=='d'){
+                int t = va_arg(arg,unsigned int);
+                char *convertednumber = convert(t,10);
+                printStringAt(buffer,convertednumber);
+            }else if(deze=='o'){
+                int t = va_arg(arg,unsigned int);
+                char *convertednumber = convert(t,8);
+                printStringAt(buffer,convertednumber);
+            }
+            length++;
+        }else{
+            putc_at_buffer(buffer,deze);
+            length++;
+        }
+    }
+    va_end(arg);
+}
+
 void k_printf(char* format,...){
     va_list arg; 
 	va_start(arg, format);

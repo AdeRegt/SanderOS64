@@ -8,6 +8,7 @@
 #include "../include/timer.h"
 #include "../include/ethernet.h"
 #include "../include/tty.h"
+#include "../include/winman.h"
 
 static IDTR idtr;
 uint8_t idtoffsetcode = 0;
@@ -266,8 +267,13 @@ void isr2handler(stack_registers *ix){
         char* z = ((char*) (ix->rsi));
         File *fl = (File*) &(getCurrentTaskInfo()->files[ix->rbx]);
         if(ix->rdi<5){
+            SWindow *si = getWindowFromId(getCurrentTaskInfo()->window_id);
             for(upointer_t i = 0 ; i < ix->rdx ; i++){
-                k_printf("%c",z[i]);
+                if(window_manager_is_enabled()){
+                    k_printf_at(si->gi,"%c",z[i]);
+                }else{
+                    k_printf("%c",z[i]);
+                }
             }
         }else{
             upointer_t oldsize = 0;
@@ -460,7 +466,12 @@ void isr2handler(stack_registers *ix){
         #ifdef IDT_DEBUG
         k_printf("isr2:cls \n");
         #endif
-        clear_screen(0xF0F0F0F0);
+        if(window_manager_is_enabled()){
+            SWindow *si = getWindowFromId(getCurrentTaskInfo()->window_id);
+            clear_screen_at_buffer(si->gi,WINDOW_MANAGER_WINDOW_COLOR);
+        }else{
+            clear_screen(0xF0F0F0F0);
+        }
     }else if(ix->rax==415){
         #ifdef IDT_DEBUG
         k_printf("isr2:dir \n");

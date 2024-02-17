@@ -13,6 +13,7 @@ unsigned int get_pixel_at(unsigned int x,unsigned int y);
 unsigned int get_pixel_at_buffer(GraphicsInfo* buffer,unsigned int x,unsigned int y);
 void printStringAt(GraphicsInfo* buffer,char* message);
 void* get_graphics_buffer();
+void k_printf_at(GraphicsInfo* buffer,char* format,...);
 void k_printf(char* format,...);
 void initialise_graphics_driver();
 void putc(char deze);

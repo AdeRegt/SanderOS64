@@ -52,6 +52,7 @@ typedef struct{
     File files[10];
     uint8_t task_running;
     char** arguments;
+    int window_id;
 }__attribute__((packed)) Task;
 
 #define MAX_TASKS 10

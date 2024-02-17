@@ -6,11 +6,25 @@
 int window_manager_window_count = 0;
 SWindow windows[10];
 
-int window_manager_get_retention_time(){
-    return 10;
+int window_manager_enabled = 0;
+
+void window_manager_set_enabled(int a){
+    window_manager_enabled = a;
 }
 
-upointer_t counting_multitask = 0;
+int window_manager_is_enabled(){
+    return window_manager_enabled;
+}
+
+int window_manager_get_retention_time(){
+    return 50;
+}
+
+SWindow *getWindowFromId(int id){
+    return (SWindow*) &windows[id];
+}
+
+int counting_multitask = 0;
 void window_manager_interrupt(){
     counting_multitask++;
     if(counting_multitask!=window_manager_get_retention_time()){
@@ -18,7 +32,7 @@ void window_manager_interrupt(){
     }
     counting_multitask = 0;
 
-    if(window_manager_window_count>0){
+    if(window_manager_is_enabled()){
         // draw everything
         for(int i = 0 ; i < window_manager_window_count ; i++){
             SWindow window = windows[i];
@@ -28,6 +42,7 @@ void window_manager_interrupt(){
 }
 
 int window_manager_create_window(char* title){
+    asm volatile ("cli");
     for(int i = 0 ; i < window_manager_window_count ; i++){
         windows[i].is_active = 0;
     }
@@ -41,6 +56,7 @@ int window_manager_create_window(char* title){
     windows[oldcount].focuslocation = 0;
     windows[oldcount].is_used = 1;
     clear_screen_at_buffer(windows[oldcount].gi,WINDOW_MANAGER_WINDOW_COLOR);
+    asm volatile ("sti");
     return oldcount;
 }
 
@@ -188,9 +204,11 @@ void window_manager_clear_window(int window_id){
     windows[window_id].title = 0;
     windows[window_id].x = 0;
     windows[window_id].y = 0;
+    window_manager_window_count--;
 }
 
 int window_manager_create_confirm_box(char* message){
+    window_manager_set_enabled(1);
     int window_id = window_manager_create_window("Question");
     window_manager_add_element(window_id,WINDOW_MANAGER_COMPONENT_LABEL,10,10,message);
     window_manager_add_element(window_id,WINDOW_MANAGER_COMPONENT_BUTTON,10,30,"OK");

@@ -63,7 +63,6 @@ void new_program_starter(){
 }
 
 void _test_handler(){
-    window_manager_interrupt();
     #ifndef __x86_64
     if(tasks[vl].task_running){
         tasks[vl].sessionregs.rip       = _context_eip;
@@ -109,12 +108,11 @@ void _test_handler(){
     }
     #endif 
     timerfunc();
+    window_manager_interrupt();
     return;
 }
 
 void multitaskinghandler(stack_registers *ix){
-    // vl = 0;
-    // goto finishup;
     #ifdef __x86_64
     upointer_t cr0, cr2, cr3;
     __asm__ __volatile__ (
@@ -185,6 +183,9 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     tasks[cmt].task_running = 1;
 
     cmt++;
+    if(window_manager_is_enabled()){
+        tasks[cmt].window_id = window_manager_create_window("TTT");
+    }
     asm volatile ("sti");
     return cmt - 1;
 }

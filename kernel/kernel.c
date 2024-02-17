@@ -58,15 +58,14 @@ void kernel_main(BootInfo *gi){
     clear_screen(0xFF0000FF);
     draw_bmp_from_file("A:SANDEROS/SPLASH.BMP",10,10);
     sleep(200);
-    if(window_manager_create_confirm_box("Use the windowmanager?")==1){
-
-    }else{
-        char* pd2 = 0;
-        #ifdef __x86_64
-            int rt = exec("A:PROGRAMS/64BIT/TTY.BIN",pd2);
-        #else
-            int rt = exec("A:PROGRAMS/32BIT/TTY.BIN",pd2);
-        #endif
+    if(window_manager_create_confirm_box("Use the windowmanager?")==2){
+        window_manager_set_enabled(0);
     }
+    char* pd2 = 0;
+    #ifdef __x86_64
+        int rt = exec("A:PROGRAMS/64BIT/TTY.BIN",pd2);
+    #else
+        int rt = exec("A:PROGRAMS/32BIT/TTY.BIN",pd2);
+    #endif
     halt("__end of kernel!\n");
 }

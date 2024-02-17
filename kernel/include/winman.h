@@ -41,3 +41,6 @@ void window_manager_clear_window(int window_id);
 void window_manager_interrupt();
 void window_manager_draw_window(SWindow window,int window_id);
 int window_manager_get_retention_time();
+int window_manager_is_enabled();
+void window_manager_set_enabled(int a);
+SWindow *getWindowFromId(int id);
