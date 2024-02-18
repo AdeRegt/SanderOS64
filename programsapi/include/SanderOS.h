@@ -1,3 +1,6 @@
+#ifndef SANDEROS_H
+#define SANDEROS_H
+
 typedef struct{
 	unsigned long buffersize;
 	unsigned long low_buf;
@@ -15,3 +18,5 @@ char *itos(unsigned int num, int base);
 void hang(const char* func);
 void cls();
 void scanline(char* where);
+
+#endif

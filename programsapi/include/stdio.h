@@ -1,3 +1,6 @@
+#ifndef STDIO_H
+#define STDIO_H
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -41,3 +44,5 @@ int vsnprintf(char *str, size_t size, const char *format, va_list arg);
 int sprintf(char *str, const char *string,...); 
 int putsc(const char p2);
 uint32_t write(int fildes, void *buf, uint32_t nbyte);
+
+#endif
