@@ -53,8 +53,8 @@ void tty_inner_loop(){
                 int m1 = -1;
                 memcpy((void*)&pd,(char*)&wd,strlen((char*)&wd));
                 if(strlen((char*)&pd)>2){
-                    memcpy((void*)(((upointer_t)&pd) + strlen((char*)&wd) -1  ),"/",1);
-                    m1 = 0;
+                    memcpy((void*)(((upointer_t)&pd) + strlen((char*)&wd)  ),"/",2);
+                    m1 = 1;
                 }
                 memcpy((void*)(((upointer_t)&pd) + strlen((char*)&wd) + m1  ),tw,strlen(tw));
             }
@@ -66,15 +66,21 @@ void tty_inner_loop(){
                     break;
                 }
             }
+            printf("Command recieved: \n- working directory: %s \n- program path     : %s \n",wd,pd);
             int rt = exec(pd,pd2);
             if(rt==-1){
                 printf("Unable to run program!\n");
-            }else if(rt && rt<1000){
-                printf("Program is running in the background\n");
-                waitForPid(rt);
-            }else{
-                printf("Program exited with %d \n",rt);
-            }
+            }else 
+            #ifdef __x86_64
+                {
+                    printf("Program is running in the background\n");
+                    waitForPid(rt);
+                }
+            #else 
+                {
+                    printf("Program exited with %d \n",rt);
+                }
+            #endif 
         }
         free(tw);
     }

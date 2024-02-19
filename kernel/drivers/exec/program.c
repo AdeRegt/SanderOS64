@@ -14,8 +14,11 @@ int use_paging = 1;
 int use_paging = 0;
 #endif
 
+int exec_is_using_paging(){
+    return use_paging;
+}
+
 int exec_memory(void* buffer,char *argv){
-     k_printf("Trying to execute %s with %s \n","{memory}",argv==0?"<no args>":argv);
     char *data[10];// = {path, argv};
     for(int i = 0 ; i < 10 ; i++){
         data[i] = 0;
@@ -55,8 +58,15 @@ int exec_memory(void* buffer,char *argv){
     }else if(is_sxe(buffer)){
         return sxe_run(buffer);
     }else if(use_paging){
+        asm volatile ("cli");
+        void* om = getMappedMemoryFor(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS);
         map_memory(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS,buffer);
-        return addTask((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x1000,data);
+        int taskid = addTask((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x5000,data);
+        if(EXTERNAL_PROGRAM_ADDRESS!=(upointer_t)om){
+            map_memory(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS,om);
+        }
+        asm volatile ("sti");
+        return taskid;
     }else{
         memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,0x5000);
         address = EXTERNAL_PROGRAM_ADDRESS;
@@ -72,33 +82,6 @@ int exec_memory(void* buffer,char *argv){
 int exec(uint8_t *path,char *argv){
 
     k_printf("Trying to execute %s with %s \n",path,argv==0?"<no args>":argv);
-    char *data[10];// = {path, argv};
-    for(int i = 0 ; i < 10 ; i++){
-        data[i] = 0;
-    }
-    data[0] = path;
-    int asc = 1;
-    if(argv!=0){
-        char* buffer2 = 0;
-        int z = 0;
-        while(1){
-            char deze = argv[z];
-            if(deze==0){
-                break;
-            }
-            if(deze==' '){
-                argv[z] = 0;
-                z++;
-                buffer2 = 0;
-                continue;
-            }
-            if(buffer2==0){
-                buffer2 = (char*)(argv + z);
-                data[asc++] = buffer2;
-            }
-            z++;
-        }
-    }
 
     //
     // First load the image....
@@ -118,27 +101,5 @@ int exec(uint8_t *path,char *argv){
         return -1;
     }
 
-    //
-    // Then interpetate the engine....
-    upointer_t address = 0;
-    if(is_elf(buffer)){
-        address = elf_load_image(buffer);
-        if(!address){
-            return -1;
-        }
-    }else if(is_sxe(buffer)){
-        return sxe_run(buffer);
-    }else if(use_paging){
-        map_memory(getPagingTable(),(void*)EXTERNAL_PROGRAM_ADDRESS,buffer);
-        return addTask((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz,data);
-    }else{
-        memcpy((void*)EXTERNAL_PROGRAM_ADDRESS,buffer,fz);
-        address = EXTERNAL_PROGRAM_ADDRESS;
-    }
-
-    // call!
-    k_printf("exec: running BIN program at %x \n",address);
-    int (*callProgram)(int,char**) = (void*)address;
-    char **dictionary = data;
-    return callProgram(1 + asc,dictionary);
+    return exec_memory(buffer,argv);
 }

@@ -7,3 +7,6 @@
 [submodule "programs/dragon/origin"]
 	path = programs/dragon/origin
 	url = https://github.com/nibblebits/DragonCompiler.git
+[submodule "programs/stapel/origin"]
+	path = programs/stapel/origin
+	url = https://github.com/AdeRegt/Stapel.git

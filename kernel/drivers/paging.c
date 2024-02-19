@@ -29,6 +29,33 @@ void dumpPageInfo(Page pageinfo){
 
 void *memreg = (void*)0xF00000;
 
+void *getMappedMemoryFor(void* pml4mem,void *virtualmemory){
+    #ifdef __x86_64
+    PageLookupResult lookup = page_map_indexer((unsigned long long)virtualmemory);
+    PageTable* PLM4 = (PageTable*) pml4mem;
+    Page PDE = PLM4->pages[lookup.page_map_level_4_table_index];
+    PageTable *PDP;
+    if(!PDE.present){
+        return 0;
+    }else{
+        PDP = (PageTable*)((unsigned long long)PDE.address<<12);
+    }
+
+    PDE = PDP->pages[lookup.page_directory_pointer_table_index];
+    PageTable *PD;
+    if(!PDE.present){
+        return 0;
+    }else{
+        PD = (PageTable*)((unsigned long long)PDE.address<<12);
+    }
+
+    PDE = PD->pages[lookup.page_directory_table_index];
+    PageTable *PE;
+    return (void*) (upointer_t)(PDE.address<<12);
+    #endif 
+    return 0;
+}
+
 void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
     #ifdef __x86_64
         // k_printf("Mapping page %x to %x \n",physicalmemory,virtualmemory);

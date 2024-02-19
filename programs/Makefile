@@ -6,3 +6,4 @@ all:
 	$(MAKE) -C hello
 	$(MAKE) -C dragon
 	$(MAKE) -C tty
+	$(MAKE) -C stapel

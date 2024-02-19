@@ -1,0 +1,5 @@
+all:
+	nasm -felf64 startup.asm -o startup64.o
+	$(CC) -m64 -I "../../programsapi/include" -ffreestanding -fno-PIE -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -c origin/src/main.c -o ./mn64.o -D __SANDEROSUSB
+	$(CC) -m64 -ffreestanding -nostdlib -T ../../programsapi/linker64.ld -fno-PIE startup64.o ./mn64.o ../../programsapi/bin/exit64.o ../../programsapi/bin/fseek64.o ../../programsapi/bin/ftell64.o ../../programsapi/bin/malloc64.o ../../programsapi/bin/hang64.o ../../programsapi/bin/convert64.o ../../programsapi/bin/puts64.o ../../programsapi/bin/putsc64.o ../../programsapi/bin/__stack_chk_fail64.o ../../programsapi/bin/printf64.o ../../programsapi/bin/strlen64.o ../../programsapi/bin/fopen64.o ../../programsapi/bin/fread64.o  ../../programsapi/bin/fclose64.o -o ../../bin/programs/64bit/stapel.bin
+	rm *.o

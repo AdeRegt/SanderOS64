@@ -9,6 +9,7 @@
 #include "../include/ethernet.h"
 #include "../include/tty.h"
 #include "../include/winman.h"
+#include "../include/exec/program.h"
 
 static IDTR idtr;
 uint8_t idtoffsetcode = 0;
@@ -186,6 +187,10 @@ void scanline(){
     __asm__ __volatile__( "int $0x81" :  : "a"(modus) , "b" (where) );
 }
 
+void isr_zombie_stub(){
+    k_printf("Program has been finished!\n");
+}
+
 // http://faculty.nps.edu/cseagle/assembly/sys_call.html
 #ifndef __x86_64
 void isrhandler(){
@@ -208,7 +213,8 @@ void isrhandler(stack_registers *ix){
 	outportb(0x20,0x20);
     if(ix->rax==1){
         k_printf("program returned with %d from %x \n",ix->rbx,ix->rip);
-        ix->rip = (upointer_t)tty_inner_loop;
+        finish_task(getPid());
+        ix->rip = (upointer_t)isr_zombie_stub;
     }else if(ix->rax==2){
         k_printf("isr: fork not implemented!\n");
     }else if(ix->rax==3){
@@ -497,6 +503,19 @@ void isr2handler(stack_registers *ix){
             result[i] = r;
         }
         ix->rax = (upointer_t) result;
+    }else if(ix->rax==418){
+        #ifdef IDT_DEBUG
+        k_printf("isr2:request exec\n");
+        #endif
+        ix->rax = exec((uint8_t*)ix->rbx,(char*)ix->rcx);
+        __asm__ __volatile__( "int $0x20" :  :  );
+    }else if(ix->rax==419){
+        #ifdef IDT_DEBUG
+        k_printf("isr2: end of program\n");
+        #endif
+        k_printf("reached end of program!\n");
+        finish_task(getPid());
+        ix->rip = (upointer_t) isr_zombie_stub;
     }else{
         k_printf("\n\n------------------------\n"); 
         k_printf("interrupt: isr2: RAX=%x RIP=%x \n",ix->rax,ix->rip);

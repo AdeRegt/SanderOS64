@@ -40,3 +40,4 @@ void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory);
 void unmap_memory(void* pml4mem, void *virtualmemory);
 Page *getPageOf(void* pml4mem, void *virtualmemory);
 void *getPagingTable();
+void *getMappedMemoryFor(void* pml4mem,void *virtualmemory);

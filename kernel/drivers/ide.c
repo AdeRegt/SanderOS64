@@ -253,6 +253,7 @@ void init_ide_device(IDEDevice device)
 	sleep(2);
 	if (inportb(device.command + 7) == 0)
 	{
+		k_printf("ide: disabled\n");
 		return;
 	}
 

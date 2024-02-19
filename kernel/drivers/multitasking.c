@@ -44,6 +44,10 @@ Task* getCurrentTaskInfo(){
     return (Task*)&tasks[vl];
 }
 
+void finish_task(int taskid){
+    tasks[taskid].task_running = 0;
+}
+
 void waitForPid(int pid){
     volatile Task* ts = (volatile Task*) (tasks + (sizeof(volatile Task)*pid));
     ts->task_running=1;
@@ -113,34 +117,6 @@ void _test_handler(){
 }
 
 void multitaskinghandler(stack_registers *ix){
-    #ifdef __x86_64
-    upointer_t cr0, cr2, cr3;
-    __asm__ __volatile__ (
-        "mov %%cr0, %%rax\n\t"
-        "mov %%eax, %0\n\t"
-        "mov %%cr2, %%rax\n\t"
-        "mov %%eax, %1\n\t"
-        "mov %%cr3, %%rax\n\t"
-        "mov %%eax, %2\n\t"
-    : "=m" (cr0), "=m" (cr2), "=m" (cr3)
-    : /* no input */
-    : "%rax"
-    );
-    #endif 
-    #ifndef __x86_64
-    upointer_t cr0, cr2, cr3;
-    __asm__ __volatile__ (
-        "mov %%cr0, %%eax\n\t"
-        "mov %%eax, %0\n\t"
-        "mov %%cr2, %%eax\n\t"
-        "mov %%eax, %1\n\t"
-        "mov %%cr3, %%eax\n\t"
-        "mov %%eax, %2\n\t"
-    : "=m" (cr0), "=m" (cr2), "=m" (cr3)
-    : /* no input */
-    : "%eax"
-    );
-    #endif 
     if(vl==0xf){
         vl = 0;
         for(int i = 0 ; i < MAX_TASKS ; i++){
@@ -157,7 +133,7 @@ void multitaskinghandler(stack_registers *ix){
     // k_printf("Switch to pid %d %d | ",vl,cmt);
     memcpy(ix,&tasks[vl].sessionregs,sizeof(stack_registers));
     if(tasks[vl].cr3){
-        map_memory((void*) cr3,(void*) EXTERNAL_PROGRAM_ADDRESS ,(void*) tasks[vl].cr3 );
+        map_memory((void*) getPagingTable(),(void*) EXTERNAL_PROGRAM_ADDRESS ,(void*) tasks[vl].cr3 );
     }
     // k_printf("Switch to pid %d !\n",vl);
     timerfunc();
@@ -167,7 +143,6 @@ void multitaskinghandler(stack_registers *ix){
 }
 
 int addTask(void *task,void *cr3,upointer_t size,char** args){
-    asm volatile ("cli");
     memcpy(&tasks[cmt],&tasks[0],sizeof(Task));
 
     tasks[cmt].sessionregs.rip       =  (upointer_t) task;
@@ -179,6 +154,7 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     tasks[cmt].sessionregs.rsi       =  0;
     tasks[cmt].sessionregs.rsp       =  (upointer_t) requestPage() + 0x5000;
     tasks[cmt].sessionregs.rbp       =  (upointer_t) tasks[cmt].sessionregs.rsp - 0x5000;
+    tasks[cmt].cr3 = (upointer_t)cr3;
     
     tasks[cmt].task_running = 1;
 
@@ -186,7 +162,6 @@ int addTask(void *task,void *cr3,upointer_t size,char** args){
     if(window_manager_is_enabled()){
         tasks[cmt].window_id = window_manager_create_window("TTT");
     }
-    asm volatile ("sti");
     return cmt - 1;
 }
 

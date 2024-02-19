@@ -64,3 +64,4 @@ int addTask(void *task,void *cr3,upointer_t size,char** args);
 int getPid();
 Task* getCurrentTaskInfo();
 void waitForPid(int pid);
+void finish_task(int taskid);

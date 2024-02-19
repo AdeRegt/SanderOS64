@@ -45,6 +45,7 @@ Filesystem* registerFileSystem(Blockdevice *bd,void *read,void *dir,void *filesi
     fs->dir = dir;
     fs->filesize = filesize;
     fs->write = write;
+    k_printf("fs: Filesystem initialised!\n");
     return fs;
 }
 
