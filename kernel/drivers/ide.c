@@ -11,8 +11,8 @@
 #include "../include/fs/mbr.h"
 #include "../include/fs/iso9660.h"
 
-unsigned short ide_port_primary = 0;
-unsigned short ide_port_secondary = 0;
+unsigned short ide_port_primary = IDE_PORT_PRIMARY;
+unsigned short ide_port_secondary = IDE_PORT_SECONDARY;
 
 IDEDevice ata1 = {.command = 0x1f0, .control = 0x3f6, .irq = 14, .slave = 0};
 IDEDevice ata2 = {.command = 0x1f0, .control = 0x3f6, .irq = 14, .slave = 1};
@@ -284,19 +284,8 @@ void init_ide_device(IDEDevice device)
 	if (inportb(device.command + 4) == 0 && inportb(device.command + 5) == 0)
 	{
 		k_printf("ide: device is ATA\n");
-		unsigned char *identbuffer = (unsigned char *) requestPage();
-		for (int i = 0; i < 256; i++)
-		{
-			unsigned short datapart = inportw(device.command);
-			unsigned char datapartA = (datapart>>8) & 0xFF;
-			unsigned char datapartB = datapart & 0xFF;
-			identbuffer[(i*2)+0] = datapartA;
-			identbuffer[(i*2)+1] = datapartB;
-		}
-		IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
-		ident->unused2[0] = 0;
-		ident->unused3[0] = 0;
-		k_printf("ide: ATA version=%s name=%s \n",ident->version,ident->name);
+
+		void *identbuffer = requestPage();
 
 		Blockdevice *regdev = (Blockdevice*)registerBlockDevice(512, ide_ata_read, ide_ata_write, 0, (void*)&device);
 		initialise_fs(regdev,identbuffer);
@@ -307,65 +296,17 @@ void init_ide_device(IDEDevice device)
 	if( inportb(device.command+4)==0x14 && inportb(device.command+5)==0xEB )
 	{
 		k_printf("ide: ATAPI\n");
-		for (int i = 0; i < 256; i++)
-		{
-			inportw(device.command);
-		}
 
-		resetIDEFire();
-
-		outportb(device.command + 6, device.slave == 1 ? 0xB0 : 0xA0);
-		outportb(device.command + 2, 0);
-		outportb(device.command + 3, 0);
-		outportb(device.command + 4, 0);
-		outportb(device.command + 5, 0);
-		outportb(device.command + 7, 0xA1);
-
-		sleep(2);
-		getIDEError(device);
-		ide_wait_for_ready(device);
-
-		if (inportb(device.command + 7) == 0)
-		{
-			return;
-		}
-		if (getIDEError(device) == 0)
-		{
-			k_printf("ide: device is ATAPI\n");
-			unsigned char *identbuffer = (unsigned char *) requestPage();
-			for (int i = 0; i < 256; i++)
-			{
-				unsigned short datapart = inportw(device.command);
-				unsigned char datapartA = (datapart>>8) & 0xFF;
-				unsigned char datapartB = datapart & 0xFF;
-				identbuffer[(i*2)+0] = datapartA;
-				identbuffer[(i*2)+1] = datapartB;
-			}
-			IDE_IDENTIFY *ident = (IDE_IDENTIFY*) identbuffer;
-			ident->unused2[0] = 0;
-			ident->unused3[0] = 0;
-			k_printf("ide: ATAPI version=%s name=%s \n",ident->version,ident->name);
-			// ide_atapi_eject(device);
-
-			Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ISO9660_LOGICAL_BLOCK_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
-			initialise_iso9660(regdev);
-		}
+		Blockdevice *regdev = (Blockdevice*)registerBlockDevice(ISO9660_LOGICAL_BLOCK_SIZE, ide_atapi_read, ide_atapi_write, 0, (void*)&device);
+		initialise_iso9660(regdev);
 		
 	}
 
 }
 
 void ide_driver_start(int bus,int slot,int function){
-    ide_port_primary = getBARaddress(bus,slot,function,0x10);
-    ide_port_secondary = getBARaddress(bus,slot,function,0x14);
-    if(!ide_port_primary){
-        k_printf("ide: warning, primary port not defined, defaulting at standard port.\n");
-        ide_port_primary = 0x1f0;
-    }
-    if(!ide_port_secondary){
-        k_printf("ide: warning, secondary port not defined, defaulting at standard port.\n");
-        ide_port_secondary = 0x170;
-    }
+	unsigned short base = pciConfigReadWord(bus,slot,function,0x20);
+    
     init_ide_device(ata1);
     init_ide_device(ata2);
     init_ide_device(ata3);

@@ -12,6 +12,7 @@ sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk hdd.img
   q
 EOF
 mkfs.vfat hdd.img
+dd status=noxfer conv=notrunc if=bootloader/sanderloader/bootsector.bin of=hdd.img
 mkdir test
 sudo mount hdd.img ./test
 sudo cp -R ./bin/* ./test

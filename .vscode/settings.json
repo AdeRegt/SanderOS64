@@ -47,7 +47,8 @@
         "sizet.h": "c",
         "boot.h": "c",
         "bmp.h": "c",
-        "winman.h": "c"
+        "winman.h": "c",
+        "ide.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

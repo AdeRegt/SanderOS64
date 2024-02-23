@@ -37,7 +37,8 @@
 #define      ATAPI_CMD_READ       0xA8
 #define      ATAPI_CMD_EJECT      0x1B
 
-
+#define IDE_PORT_PRIMARY 		  0x1f0
+#define IDE_PORT_SECONDARY 		  0x170
 
 typedef struct {
 	uint8_t unused1[46];
