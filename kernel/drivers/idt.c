@@ -805,9 +805,10 @@ void initialise_idt_driver(){
     return;
     #else
     // k_printf("get some info from the old idt...\n");
+    asm volatile ("cli");
     asm volatile ("sidt %0" : "=m"(idtr));
     
-    k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
+    // k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
     IDTDescEntry *idtentries = (IDTDescEntry*) idtr.Offset;
     for(uint16_t i = 0 ; i < idtr.Limit ; i++){
         setRawInterrupt(i,NakedInterruptHandler);

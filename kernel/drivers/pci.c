@@ -133,7 +133,9 @@ void initialise_pci_driver(){
                         unsigned long bar5 = getBARaddress(bus,slot,function,0x24);
                         unsigned long usbint = getBARaddress(bus,slot,function,0x3C) & 0x000000FF;
                         initialise_ahci_driver(bar5,usbint);
-                    }else if( classc==0x0C && sublca==0x03 && subsub==0x30 ){
+                    }else if(classc==0x04){
+                        k_printf("PCI: Audio device : vendor:%x subA:%x subB:%x \n",vendor,sublca,subsub);
+                    }else if(classc==0x0C && sublca==0x03 && subsub==0x30 ){
                         xhci_driver_start(bus,slot,function);
                     }else if(classc==0x0C && sublca==0x03 && subsub==0x20 ){
                         ehci_driver_start(bus,slot,function);

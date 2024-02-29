@@ -172,7 +172,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 	EFI_FILE* Kernel = LoadFile(NULL, L"sanderos\\kernel64.bin", ImageHandle, SystemTable);
 	if (Kernel == NULL){
-		Print(L"Could not load kernel \n\r");
+		Print(L"Could not load kernel \n\r");for(;;);
 	}
 	else{
 		Print(L"Kernel Loaded Successfully \n\r");
@@ -199,7 +199,7 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 		header.e_version != EV_CURRENT
 	)
 	{
-		Print(L"kernel format is bad\r\n");
+		Print(L"kernel format is bad\r\n");for(;;);
 	}
 	else
 	{
