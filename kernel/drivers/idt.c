@@ -140,6 +140,7 @@ void setInterrupt(int offset,void *fun){
         interrupt_set_offset(int_PageFault,(upointer_t)fun);
         int_PageFault->type_attr = IDT_TA_InterruptGate;
         int_PageFault->selector = GDT_CODE_SEGMENT;
+        IRQ_clear_mask(offset);
     #else 
         IRQ_clear_mask(32 + offset);
         idt_set_gate(32 + (unsigned char)offset, (unsigned long)fun, GDT_CODE_SEGMENT, IDT_TA_InterruptGate);
@@ -731,10 +732,10 @@ __attribute__((interrupt)) void Error1F(interrupt_frame* frame){
 }
 
 void initialise_idt_driver(){
-    idtoffsetcode = 0x20;
 
-    uint8_t oldpic1 = inportb(PIC1_DATA);
-    uint8_t oldpic2 = inportb(PIC2_DATA);
+    idtoffsetcode = 0x20;
+    asm volatile ("cli");
+    
     outportb(PIC1, 0x11);
     outportb(PIC2, 0x11);
     outportb(PIC1_DATA, idtoffsetcode);
@@ -745,8 +746,8 @@ void initialise_idt_driver(){
     outportb(PIC2_DATA, ICW1_ICW4);
     outportb(PIC1_DATA, 0x0);
     outportb(PIC2_DATA, 0x0);
-    outportb(PIC1_DATA,oldpic1);
-    outportb(PIC2_DATA,oldpic2);
+    outportb(PIC1_DATA, 0);
+    outportb(PIC2_DATA, 0);
 
     #ifndef __x86_64
     idtr.Offset = (uintptr_t)&idt[0];
@@ -805,7 +806,6 @@ void initialise_idt_driver(){
     return;
     #else
     // k_printf("get some info from the old idt...\n");
-    asm volatile ("cli");
     asm volatile ("sidt %0" : "=m"(idtr));
     
     // k_printf("sidt: Limit:%x Offset:%x \n",idtr.Limit,idtr.Offset);
