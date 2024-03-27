@@ -31,3 +31,4 @@ upointer_t strlen(uint8_t* message);
 
 void *malloc(upointer_t size);
 void free(void* memory);
+upointer_t getMaxAddress();

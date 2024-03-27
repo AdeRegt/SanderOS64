@@ -27,7 +27,7 @@ void dumpPageInfo(Page pageinfo){
 }
 #endif
 
-void *memreg = (void*)0xF00000;
+void *memreg = (void*)0x100000;
 
 void *getMappedMemoryFor(void* pml4mem,void *virtualmemory){
     #ifdef __x86_64
@@ -64,9 +64,8 @@ void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
         Page PDE = PLM4->pages[lookup.page_map_level_4_table_index];
         PageTable *PDP;
         if(!PDE.present){
-            PDP = (PageTable*) memreg;
-            memreg += 0x1000;
-            memset(PDP, 0, 0x1000);
+            PDP = (PageTable*) requestPage();
+            memset(PDP, 0, PAGE_SIZE);
             PDE.address = (unsigned long long)PDP >> 12;
             PDE.present = 1;
             PDE.readwrite = 1;
@@ -78,9 +77,8 @@ void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
         PDE = PDP->pages[lookup.page_directory_pointer_table_index];
         PageTable *PD;
         if(!PDE.present){
-            PD = (PageTable*) memreg;
-            memreg += 0x1000;
-            memset(PD, 0, 0x1000);
+            PD = (PageTable*) requestPage();
+            memset(PD, 0, PAGE_SIZE);
             PDE.address = (unsigned long long)PD >> 12;
             PDE.present = 1;
             PDE.readwrite = 1;
@@ -103,10 +101,11 @@ void map_memory(void* pml4mem, void *virtualmemory,void* physicalmemory){
 void initialise_paging_driver(){
 
     pagemaplevel4 = requestPage();
-    memset(pagemaplevel4,0,sizeof(PageTable));
-    for(upointer_t valve = 0 ; valve < (0xFFFFF000/PAGE_GAP_SIZE) ; valve++){
+    memset(pagemaplevel4,0,PAGE_SIZE);
+    for(upointer_t valve = 0 ; valve < (0xFFFFF000/PAGE_GAP_SIZE)-1 ; valve++){
         map_memory(pagemaplevel4,(void*)(valve*PAGE_GAP_SIZE),(void*)(valve*PAGE_GAP_SIZE));
     }
+    k_printf("All pages are filled now load it to the cr3 register!\n");
     asm volatile ("mov %0, %%cr3" : : "r" (pagemaplevel4));
     k_printf("When we hit this point, we are safe! (new method)\n");
     

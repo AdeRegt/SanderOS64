@@ -1,4 +1,0 @@
-#!/bin/bash 
-guestmount --add "/home/sander/VirtualBox VMs/_s/svm.vdi" -m /dev/sda1 test 
-cp -r bin/. test/
-guestunmount test

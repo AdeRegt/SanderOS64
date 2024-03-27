@@ -267,7 +267,12 @@ EFI_STATUS efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
 
 	Print(L"KernelStart: %x \n",KernelStart);
-	SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
+	EFI_STATUS ebs = SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
+	if(ebs!=EFI_SUCCESS)
+	{
+		SystemTable->BootServices->GetMemoryMap(&MapSize, Map, &MapKey, &DescriptorSize, &DescriptorVersion);
+		SystemTable->BootServices->ExitBootServices(ImageHandle, MapKey);
+	}
 
 	KernelStart(&bootInfo);
 

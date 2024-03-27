@@ -14,6 +14,12 @@ upointer_t free_memory_max;
 upointer_t empty_memory_min;
 upointer_t empty_memory_max;
 
+upointer_t maxaddr = 0;
+
+upointer_t getMaxAddress(){
+    return maxaddr;
+}
+
 upointer_t getExmptyMax(){
     return empty_memory_max;
 }
@@ -56,7 +62,7 @@ void initialise_memory_driver(){
     used_memory = 0;
     free_memory_min = 0;
     empty_memory_min = 0;
-    upointer_t maxaddr = 0;
+    maxaddr = 0;
     for (int i = 0; i < mMapEntries; i++){
         MemoryDescriptor* desc = (MemoryDescriptor*)((upointer_t)memory_info->mMap + (i * memory_info->mMapDescSize));
         upointer_t size = desc->NumberOfPages * 4096 ;
